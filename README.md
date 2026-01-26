@@ -5,7 +5,7 @@ A SaaS Starter Kit built with React, Vite, and Supabase - optimized for Lovable 
 ## Features
 
 - ⚡️ **Vite** - Lightning fast builds
-- ⚛️ **React 18** - Latest React with hooks
+- ⚛️ **React 19** - Latest React with hooks
 - 🎨 **Tailwind CSS** - Utility-first styling
 - 🔐 **Supabase Auth** - Email, social, and magic link auth
 - 💳 **Stripe Integration** - Subscriptions via Edge Functions
