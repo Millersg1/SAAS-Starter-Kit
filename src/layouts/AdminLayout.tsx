@@ -72,9 +72,10 @@ function AdminSidebar() {
                             className={cn(
                                 "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
                                 isActive
-                                    ? "bg-primary text-white"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-blue-50 dark:hover:bg-blue-950"
+                                    ? "bg-blue-500"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                             )}
+                            style={isActive ? { color: "#ffffff" } : undefined}
                         >
                             {Icon}
                             {item.label}

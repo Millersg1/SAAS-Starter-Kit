@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.91.1";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
@@ -96,11 +96,19 @@ serve(async (req) => {
             }
 
             // Get user's brand
-            const { data: userProfile } = await adminSupabase
+            const { data: userProfile, error: profileError } = await adminSupabase
                 .from("profiles")
                 .select("current_brand_id")
                 .eq("id", userId)
                 .single();
+
+            if (profileError) {
+                console.error("Error fetching user profile:", profileError);
+                return new Response(
+                    JSON.stringify({ error: "Failed to fetch user profile: " + profileError.message }),
+                    { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
 
             if (!userProfile?.current_brand_id) {
                 return new Response(
@@ -109,15 +117,26 @@ serve(async (req) => {
                 );
             }
 
-            // Check if subscription exists for brand
-            const { data: existingSub } = await adminSupabase
+            console.log("Changing plan for brand:", userProfile.current_brand_id, "to plan:", planSlug);
+
+            // Check if subscription exists for brand - use maybeSingle to avoid error when no rows
+            const { data: existingSub, error: subError } = await adminSupabase
                 .from("subscriptions")
                 .select("id")
                 .eq("brand_id", userProfile.current_brand_id)
-                .single();
+                .maybeSingle();
+
+            if (subError) {
+                console.error("Error checking subscription:", subError);
+                return new Response(
+                    JSON.stringify({ error: "Failed to check subscription: " + subError.message }),
+                    { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
+            }
 
             if (existingSub) {
                 // Update existing subscription
+                console.log("Updating existing subscription:", existingSub.id);
                 const { error } = await adminSupabase
                     .from("subscriptions")
                     .update({
@@ -129,12 +148,13 @@ serve(async (req) => {
                 if (error) {
                     console.error("Error updating subscription:", error);
                     return new Response(
-                        JSON.stringify({ error: "Failed to update plan" }),
+                        JSON.stringify({ error: "Failed to update plan: " + error.message }),
                         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
                     );
                 }
             } else {
                 // Create new subscription for brand
+                console.log("Creating new subscription for brand:", userProfile.current_brand_id);
                 const { error } = await adminSupabase
                     .from("subscriptions")
                     .insert({
@@ -146,7 +166,7 @@ serve(async (req) => {
                 if (error) {
                     console.error("Error creating subscription:", error);
                     return new Response(
-                        JSON.stringify({ error: "Failed to create subscription" }),
+                        JSON.stringify({ error: "Failed to create subscription: " + error.message }),
                         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
                     );
                 }

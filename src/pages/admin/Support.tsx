@@ -398,7 +398,8 @@ export default function AdminSupportPage() {
                                 href="https://thefinal20.com"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center justify-center gap-2 w-full px-6 py-3 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                                className="inline-flex items-center justify-center gap-2 w-full px-6 py-3 bg-blue-500 rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                                style={{ color: "#ffffff" }}
                             >
                                 Get Expert Help
                                 <ExternalLink className="w-4 h-4" />

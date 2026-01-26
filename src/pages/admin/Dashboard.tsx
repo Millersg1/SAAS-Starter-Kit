@@ -379,23 +379,41 @@ export default function AdminDashboard() {
     // ============================================================================
     async function fetchSignups() {
         try {
-            // Recent signups
-            const { data: recentSignups } = await (supabase as any)
+            // Get total users count (excluding admins)
+            const { count: totalUsers } = await (supabase as any)
                 .from("profiles")
-                .select(`
-                    id, full_name, email, created_at, current_brand_id,
-                    brands:current_brand_id (
-                        name,
-                        subscriptions (plan)
-                    )
-                `)
+                .select("*", { count: "exact", head: true })
+                .neq("role", "admin");
+
+            // Recent signups - get user profiles with their subscription info
+            const { data: recentProfiles } = await (supabase as any)
+                .from("profiles")
+                .select("id, full_name, email, created_at, current_brand_id")
                 .neq("role", "admin")
                 .order("created_at", { ascending: false })
                 .limit(5);
 
-            const signups = (recentSignups || []).map((user: any) => {
-                const brand = Array.isArray(user.brands) ? user.brands[0] : user.brands;
-                const plan = brand?.subscriptions?.[0]?.plan || "free";
+            // Get subscription data for these users' brands
+            const brandIds = (recentProfiles || [])
+                .map((p: any) => p.current_brand_id)
+                .filter(Boolean);
+
+            let subscriptionsByBrand: Record<string, string> = {};
+            if (brandIds.length > 0) {
+                const { data: subs } = await (supabase as any)
+                    .from("subscriptions")
+                    .select("brand_id, plan")
+                    .in("brand_id", brandIds);
+
+                if (subs) {
+                    subs.forEach((s: any) => {
+                        subscriptionsByBrand[s.brand_id] = s.plan;
+                    });
+                }
+            }
+
+            const signups = (recentProfiles || []).map((user: any) => {
+                const plan = subscriptionsByBrand[user.current_brand_id] || "free";
                 return {
                     id: user.id,
                     full_name: user.full_name,
@@ -405,7 +423,7 @@ export default function AdminDashboard() {
                 };
             });
 
-            // Plan distribution
+            // Plan distribution - count from subscriptions table
             const { data: subscriptions } = await (supabase as any)
                 .from("subscriptions")
                 .select("plan");
@@ -417,6 +435,11 @@ export default function AdminDashboard() {
                     planCounts[plan] = (planCounts[plan] || 0) + 1;
                 });
             }
+
+            // Calculate free users: total users minus users with subscriptions
+            const usersWithSubscriptions = Object.values(planCounts).reduce((a, b) => a + b, 0);
+            const freeUsers = Math.max(0, (totalUsers || 0) - usersWithSubscriptions + planCounts.free);
+            planCounts.free = freeUsers;
 
             const planDistribution = Object.entries(planCounts).map(([plan, count]) => ({
                 label: plan.charAt(0).toUpperCase() + plan.slice(1),

@@ -501,6 +501,43 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ===========================================
+-- FUNCTION: Prevent role escalation
+-- ===========================================
+-- Prevents users from changing their own role to admin.
+-- Only existing admins or service role can change roles.
+
+CREATE OR REPLACE FUNCTION public.prevent_role_escalation()
+RETURNS TRIGGER AS $$
+DECLARE
+    caller_is_admin BOOLEAN;
+BEGIN
+    -- If role hasn't changed, allow the update
+    IF OLD.role = NEW.role THEN
+        RETURN NEW;
+    END IF;
+    
+    -- Check if the caller is an admin (if auth.uid() is set)
+    IF auth.uid() IS NOT NULL THEN
+        SELECT role = 'admin' INTO caller_is_admin
+        FROM public.profiles
+        WHERE id = auth.uid();
+        
+        -- If caller is not an admin and is trying to change their own role, deny
+        IF caller_is_admin IS NOT TRUE THEN
+            RAISE EXCEPTION 'Only administrators can change user roles';
+        END IF;
+    END IF;
+    -- If auth.uid() IS NULL, it's service role/trigger, allow it
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER prevent_role_escalation_trigger
+    BEFORE UPDATE ON public.profiles
+    FOR EACH ROW EXECUTE FUNCTION public.prevent_role_escalation();
+
+-- ===========================================
 -- RLS POLICIES: PROFILES
 -- ===========================================
 -- Note: We use public.is_admin() which is SECURITY DEFINER to avoid recursion
@@ -638,6 +675,40 @@ CREATE POLICY "Admins can view all subscriptions"
             WHERE id = auth.uid() AND role = 'admin'
         )
     );
+
+CREATE POLICY "Admins can create subscriptions"
+    ON public.subscriptions FOR INSERT
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admins can update subscriptions"
+    ON public.subscriptions FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
+
+CREATE POLICY "Admins can delete subscriptions"
+    ON public.subscriptions FOR DELETE
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.profiles
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
+
+-- Allow service role (used by Edge Functions and webhooks)
+CREATE POLICY "Service role can manage subscriptions"
+    ON public.subscriptions FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
 
 -- ===========================================
 -- RLS POLICIES: PAYMENT PLANS

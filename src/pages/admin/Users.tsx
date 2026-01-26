@@ -21,6 +21,8 @@ type PaymentPlan = {
     id: string;
     slug: string;
     name: string;
+    price_monthly: number;
+    price_yearly: number;
 };
 
 export default function AdminUsers() {
@@ -35,7 +37,7 @@ export default function AdminUsers() {
     const [actionLoading, setActionLoading] = useState(false);
     const [paymentPlans, setPaymentPlans] = useState<PaymentPlan[]>([]);
     const [newPassword, setNewPassword] = useState("");
-    const [selectedPlan, setSelectedPlan] = useState("");
+    const [selectedPlanOption, setSelectedPlanOption] = useState(""); // format: "slug:interval"
     const { toast } = useToast();
 
     const pageSize = 10;
@@ -49,7 +51,7 @@ export default function AdminUsers() {
         try {
             const { data } = await supabase
                 .from("payment_plans" as any)
-                .select("id, slug, name")
+                .select("id, slug, name, price_monthly, price_yearly")
                 .eq("is_active", true)
                 .order("price_monthly", { ascending: true });
 
@@ -189,7 +191,12 @@ export default function AdminUsers() {
     }
 
     async function handleChangePlan() {
-        if (!selectedUser || !selectedPlan) return;
+        if (!selectedUser || !selectedPlanOption) return;
+
+        // Parse plan slug from option (format: "slug:interval" or just "slug")
+        const planSlug = selectedPlanOption.includes(":")
+            ? selectedPlanOption.split(":")[0]
+            : selectedPlanOption;
 
         if (!selectedUser.current_brand_id) {
             toast({
@@ -203,21 +210,44 @@ export default function AdminUsers() {
         setActionLoading(true);
 
         try {
-            const { error } = await supabase.functions.invoke("admin-users", {
-                body: {
-                    action: "change_plan",
-                    userId: selectedUser.id,
-                    planSlug: selectedPlan,
-                },
-            });
+            // Check if subscription exists for brand
+            const { data: existingSub } = await supabase
+                .from("subscriptions" as any)
+                .select("id")
+                .eq("brand_id", selectedUser.current_brand_id)
+                .maybeSingle();
 
-            if (error) throw error;
+            if (existingSub) {
+                // Update existing subscription
+                const { error } = await supabase
+                    .from("subscriptions" as any)
+                    .update({
+                        plan: planSlug,
+                        updated_at: new Date().toISOString(),
+                    })
+                    .eq("brand_id", selectedUser.current_brand_id);
+
+                if (error) throw error;
+            } else {
+                // Create new subscription for brand
+                const { error } = await supabase
+                    .from("subscriptions" as any)
+                    .insert({
+                        brand_id: selectedUser.current_brand_id,
+                        plan: planSlug,
+                        status: "active",
+                    });
+
+                if (error) throw error;
+            }
 
             toast({
                 title: "Success",
                 description: "Plan updated successfully",
             });
+            loadUsers(); // Refresh the user list
         } catch (err) {
+            console.error("Error changing plan:", err);
             toast({
                 title: "Error",
                 description: err instanceof Error ? err.message : "Failed to change plan",
@@ -231,7 +261,7 @@ export default function AdminUsers() {
     function openEditModal(user: User) {
         setSelectedUser(user);
         setNewPassword("");
-        setSelectedPlan("");
+        setSelectedPlanOption("");
         setShowEditModal(true);
     }
 
@@ -482,20 +512,25 @@ export default function AdminUsers() {
                                 ) : (
                                     <div className="flex gap-2">
                                         <select
-                                            value={selectedPlan}
-                                            onChange={(e) => setSelectedPlan(e.target.value)}
+                                            value={selectedPlanOption}
+                                            onChange={(e) => setSelectedPlanOption(e.target.value)}
                                             className="flex-1 px-3 py-2 rounded-lg border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                                         >
                                             <option value="">Select a plan</option>
                                             {paymentPlans.map((plan) => (
-                                                <option key={plan.id} value={plan.slug}>
-                                                    {plan.name}
-                                                </option>
+                                                <optgroup key={plan.id} label={plan.name}>
+                                                    <option value={`${plan.slug}:monthly`}>
+                                                        {plan.name} (Monthly) - ${(plan.price_monthly / 100).toFixed(2)}/mo
+                                                    </option>
+                                                    <option value={`${plan.slug}:yearly`}>
+                                                        {plan.name} (Yearly) - ${(plan.price_yearly / 100).toFixed(2)}/yr
+                                                    </option>
+                                                </optgroup>
                                             ))}
                                         </select>
                                         <Button
                                             onClick={handleChangePlan}
-                                            disabled={!selectedPlan || actionLoading}
+                                            disabled={!selectedPlanOption || actionLoading}
                                             isLoading={actionLoading}
                                         >
                                             Update
