@@ -93,6 +93,19 @@ serve(async (req) => {
         }
 
         const data = await response.json();
+
+        // If the response is an error, enhance the error message
+        if (!response.ok) {
+            const errorMessage = data.detail || data.error || data.message || `API error: ${response.status}`;
+            return new Response(
+                JSON.stringify({ error: errorMessage, status: response.status }),
+                {
+                    status: response.status,
+                    headers: { ...corsHeaders, "Content-Type": "application/json" }
+                }
+            );
+        }
+
         return new Response(
             JSON.stringify(data),
             {
@@ -102,8 +115,9 @@ serve(async (req) => {
         );
     } catch (err) {
         console.error("Security scan error:", err);
+        const errorMessage = (err as Error).message || "Unknown error occurred";
         return new Response(
-            JSON.stringify({ error: (err as Error).message }),
+            JSON.stringify({ error: errorMessage }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
     }

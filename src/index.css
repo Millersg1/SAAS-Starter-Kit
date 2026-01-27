@@ -103,14 +103,17 @@ body {
     color: white;
 }
 
-/* Links */
-a {
+/* Links - only style basic links, not styled button-links */
+a:not([class*="bg-"]):not([class*="text-"]) {
     color: var(--color-primary);
+}
+
+a {
     text-decoration: none;
     transition: color 0.15s ease;
 }
 
-a:hover {
+a:not([class*="bg-"]):not([class*="text-"]):hover {
     color: var(--color-primary-dark);
 }
 

@@ -83,15 +83,32 @@ export interface GMAError {
     status: number;
 }
 
-// ============================================
-// API Client (via Edge Function)
-// ============================================
+// Get Supabase anon key for Edge Function authentication
+function getSupabaseAnonKey(): string {
+    return import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "";
+}
 
 async function callEdgeFunction(action: string, params: Record<string, unknown> = {}): Promise<Response> {
     const supabaseUrl = getSupabaseUrl();
+    const anonKey = getSupabaseAnonKey();
+
+    if (!supabaseUrl) {
+        throw new Error("Supabase URL not configured. Please add VITE_SUPABASE_URL to your .env file.");
+    }
+
+    const headers: HeadersInit = {
+        "Content-Type": "application/json",
+    };
+
+    // Add Supabase anon key if available (required for Edge Function authentication)
+    if (anonKey) {
+        headers["apikey"] = anonKey;
+        headers["Authorization"] = `Bearer ${anonKey}`;
+    }
+
     return fetch(`${supabaseUrl}/functions/v1/security-scan`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ action, ...params }),
     });
 }
@@ -110,7 +127,7 @@ export async function isGMAConfigured(): Promise<boolean> {
 }
 
 /**
- * Start a URL scan (FREE - works with or without API key)
+ * Start a URL scan (FREE - proxied through Edge Function to avoid CORS)
  */
 export async function startUrlScan(url: string, force: boolean = true): Promise<{ scan_id?: string; websocket_url?: string; error?: GMAError }> {
     try {
@@ -118,7 +135,7 @@ export async function startUrlScan(url: string, force: boolean = true): Promise<
         const data = await response.json();
 
         if (!response.ok) {
-            return { error: { detail: data.error || data.detail || "Failed to start scan", status: response.status } };
+            return { error: { detail: data.error || data.detail || data.message || "Failed to start scan", status: response.status } };
         }
 
         return { scan_id: data.scan_id, websocket_url: data.websocket_url };
@@ -128,7 +145,7 @@ export async function startUrlScan(url: string, force: boolean = true): Promise<
 }
 
 /**
- * Get URL scan results
+ * Get URL scan results (FREE - proxied through Edge Function to avoid CORS)
  */
 export async function getUrlScanResult(scanId: string): Promise<{ data?: GMAUrlScanResult; error?: GMAError }> {
     try {
@@ -136,7 +153,7 @@ export async function getUrlScanResult(scanId: string): Promise<{ data?: GMAUrlS
         const data = await response.json();
 
         if (!response.ok) {
-            return { error: { detail: data.error || data.detail || "Failed to get scan", status: response.status } };
+            return { error: { detail: data.error || data.detail || data.message || "Failed to get scan", status: response.status } };
         }
 
         return { data };
