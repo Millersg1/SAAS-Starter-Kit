@@ -1,0 +1,6 @@
+{
+  "role": "member",
+  "permissions": {
+    "canViewProjects": true
+  }
+}

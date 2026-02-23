@@ -1,0 +1,23 @@
+{
+  "name": "Acme Corporation",
+  "email": "contact@acmecorp.com",
+  "phone": "+12025551234",
+  "company": "Acme Corporation",
+  "address": "123 Business St",
+  "city": "New York",
+  "state": "NY",
+  "country": "USA",
+  "postal_code": "10001",
+  "status": "active",
+  "client_type": "enterprise",
+  "industry": "Technology",
+  "website": "https://acmecorp.com",
+  "tax_id": "12-3456789",
+  "notes": "Important enterprise client with multiple projects",
+  "tags": ["enterprise", "technology", "priority"],
+  "custom_fields": {
+    "account_manager": "John Doe",
+    "contract_value": 50000,
+    "renewal_date": "2026-12-31"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "name": "Startup Inc",
+  "email": "contact@startup.com",
+  "phone": "+14155551234",
+  "company": "Startup Inc",
+  "address": "789 Innovation Blvd",
+  "city": "San Francisco",
+  "state": "CA",
+  "country": "USA",
+  "postal_code": "94102",
+  "status": "pending",
+  "client_type": "regular",
+  "industry": "Technology",
+  "website": "https://startup.com",
+  "notes": "New client in onboarding process",
+  "tags": ["startup", "technology", "onboarding"]
+}

@@ -1,0 +1,11 @@
+{
+  "status": "inactive",
+  "notes": "Client requested to pause services temporarily",
+  "tags": ["enterprise", "technology", "priority", "on-hold"],
+  "custom_fields": {
+    "renewal_date": "2027-06-30",
+    "contract_value": 75000,
+    "account_manager": "Jane Smith",
+    "pause_reason": "Budget review"
+  }
+}

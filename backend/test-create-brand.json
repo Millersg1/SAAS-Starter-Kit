@@ -1,0 +1,13 @@
+{
+  "name": "Faith Harbor Agency",
+  "slug": "faith-harbor",
+  "description": "A full-service digital agency specializing in web development and design",
+  "logo_url": "https://example.com/logo.png",
+  "website": "https://faithharbor.com",
+  "primary_color": "#007bff",
+  "secondary_color": "#6c757d",
+  "settings": {
+    "emailNotifications": true,
+    "timezone": "America/New_York"
+  }
+}

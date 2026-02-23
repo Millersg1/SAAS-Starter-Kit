@@ -1,0 +1,26 @@
+{
+  "client_id": "REPLACE_WITH_CLIENT_ID",
+  "due_date": "2026-03-17",
+  "notes": "Thank you for your business!",
+  "terms": "Payment due within 30 days",
+  "items": [
+    {
+      "description": "Website Design & Development",
+      "quantity": 1,
+      "unit_price": 5000.00,
+      "tax_rate": 8.5
+    },
+    {
+      "description": "SEO Optimization",
+      "quantity": 3,
+      "unit_price": 500.00,
+      "tax_rate": 8.5
+    },
+    {
+      "description": "Monthly Maintenance",
+      "quantity": 12,
+      "unit_price": 200.00,
+      "tax_rate": 8.5
+    }
+  ]
+}

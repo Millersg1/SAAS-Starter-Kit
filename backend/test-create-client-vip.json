@@ -1,0 +1,23 @@
+{
+  "name": "Premium Client LLC",
+  "email": "premium@client.com",
+  "phone": "+13105551234",
+  "company": "Premium Client LLC",
+  "address": "456 Luxury Ave",
+  "city": "Los Angeles",
+  "state": "CA",
+  "country": "USA",
+  "postal_code": "90001",
+  "status": "active",
+  "client_type": "vip",
+  "industry": "Finance",
+  "website": "https://premiumclient.com",
+  "assigned_to": "2ceb5352-0c0c-4fc2-af31-93a7a60759c6",
+  "notes": "VIP client requiring special attention",
+  "tags": ["vip", "finance", "high-value"],
+  "custom_fields": {
+    "account_manager": "Sarah Johnson",
+    "contract_value": 150000,
+    "renewal_date": "2027-01-15"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "name": "Test Get Subscription Plans",
+  "requests": [
+    {
+      "name": "Get All Plans",
+      "method": "GET",
+      "url": "http://localhost:5000/api/subscriptions/plans",
+      "description": "Should return all 6 subscription plans"
+    },
+    {
+      "name": "Get Basic Monthly Plan",
+      "method": "GET",
+      "url": "http://localhost:5000/api/subscriptions/plans/1",
+      "description": "Should return Basic Monthly plan details"
+    },
+    {
+      "name": "Get Pro Annual Plan",
+      "method": "GET",
+      "url": "http://localhost:5000/api/subscriptions/plans/4",
+      "description": "Should return Pro Annual plan details"
+    },
+    {
+      "name": "Get Non-existent Plan",
+      "method": "GET",
+      "url": "http://localhost:5000/api/subscriptions/plans/999",
+      "description": "Should return 404 error"
+    }
+  ]
+}

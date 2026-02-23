@@ -1,0 +1,21 @@
+{
+  "status": "in_progress",
+  "progress_percentage": 25,
+  "actual_hours": 50,
+  "milestones": [
+    {
+      "id": "1",
+      "name": "Design Phase Complete",
+      "due_date": "2026-03-15",
+      "completed": true,
+      "completed_date": "2026-03-14"
+    },
+    {
+      "id": "2",
+      "name": "Development Phase",
+      "due_date": "2026-04-15",
+      "completed": false,
+      "completed_date": null
+    }
+  ]
+}

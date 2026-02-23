@@ -1,0 +1,21 @@
+{
+  "client_id": "06b689c5-2635-4aa0-b1d9-7e54deac78a5",
+  "name": "Website Redesign Project",
+  "description": "Complete redesign of the company website with modern UI/UX",
+  "project_type": "website",
+  "status": "planning",
+  "priority": "high",
+  "start_date": "2026-02-20",
+  "due_date": "2026-04-30",
+  "budget": 25000.00,
+  "currency": "USD",
+  "estimated_hours": 200,
+  "project_manager_id": "2ceb5352-0c0c-4fc2-af31-93a7a60759c6",
+  "assigned_team": ["2ceb5352-0c0c-4fc2-af31-93a7a60759c6"],
+  "tags": ["website", "redesign", "ui-ux", "high-priority"],
+  "custom_fields": {
+    "tech_stack": ["React", "Node.js", "PostgreSQL"],
+    "design_tool": "Figma",
+    "hosting": "AWS"
+  }
+}

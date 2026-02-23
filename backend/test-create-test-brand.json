@@ -1,0 +1,13 @@
+{
+  "name": "Test Agency",
+  "slug": "test-agency",
+  "description": "A test agency for Phase 5 client management testing",
+  "logo_url": "https://example.com/logo.png",
+  "website": "https://testagency.com",
+  "primary_color": "#007bff",
+  "secondary_color": "#6c757d",
+  "settings": {
+    "timezone": "America/New_York",
+    "emailNotifications": true
+  }
+}

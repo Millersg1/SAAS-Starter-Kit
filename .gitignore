@@ -8,10 +8,17 @@ dist/
 dist-ssr/
 build/
 
-# Environment
+# Environment — never commit secrets
 .env
 .env.local
 .env.*.local
+.env.production
+.env.backup
+**/.env
+**/.env.production
+**/.env.backup
+**/.env.local
+uploads/
 
 # Logs
 logs

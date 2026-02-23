@@ -1,0 +1,176 @@
+import { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { PortalAuthProvider } from './context/PortalAuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import PortalProtectedRoute from './components/PortalProtectedRoute';
+import CookieBanner from './components/CookieBanner';
+import ScrollToTop from './components/ScrollToTop';
+
+// Eagerly loaded — needed immediately on first paint
+import Landing from './pages/Landing';
+import Login from './pages/Login';
+import Register from './pages/Register';
+
+// Lazy loaded — only fetched when the route is visited
+const Dashboard       = lazy(() => import('./pages/Dashboard'));
+const Profile         = lazy(() => import('./pages/Profile'));
+const Brands          = lazy(() => import('./pages/Brands'));
+const BrandDetails    = lazy(() => import('./pages/BrandDetails'));
+const Clients         = lazy(() => import('./pages/Clients'));
+const NewClient       = lazy(() => import('./pages/NewClient'));
+const ClientDetails   = lazy(() => import('./pages/ClientDetails'));
+const Documents       = lazy(() => import('./pages/Documents'));
+const DocumentDetails = lazy(() => import('./pages/DocumentDetails'));
+const Messages        = lazy(() => import('./pages/Messages'));
+const Projects        = lazy(() => import('./pages/Projects'));
+const NewProject      = lazy(() => import('./pages/NewProject'));
+const ProjectDetails  = lazy(() => import('./pages/ProjectDetails'));
+const Invoices        = lazy(() => import('./pages/Invoices'));
+const InvoiceDetails  = lazy(() => import('./pages/InvoiceDetails'));
+const Subscriptions   = lazy(() => import('./pages/Subscriptions'));
+const Proposals       = lazy(() => import('./pages/Proposals'));
+const ProposalDetails = lazy(() => import('./pages/ProposalDetails'));
+const TimeTracking    = lazy(() => import('./pages/TimeTracking'));
+const Pipeline        = lazy(() => import('./pages/Pipeline'));
+const Analytics       = lazy(() => import('./pages/Analytics'));
+const Tasks           = lazy(() => import('./pages/Tasks'));
+const PublicInvoice   = lazy(() => import('./pages/PublicInvoice'));
+const SuperAdmin      = lazy(() => import('./pages/SuperAdmin'));
+const Contact         = lazy(() => import('./pages/Contact'));
+const Contracts       = lazy(() => import('./pages/Contracts'));
+const ContractDetails = lazy(() => import('./pages/ContractDetails'));
+
+// Policy pages — rarely visited, no reason to be in main bundle
+const PrivacyPolicy           = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService          = lazy(() => import('./pages/TermsOfService'));
+const CookiePolicy            = lazy(() => import('./pages/CookiePolicy'));
+const AcceptableUsePolicy     = lazy(() => import('./pages/AcceptableUsePolicy'));
+const RefundPolicy            = lazy(() => import('./pages/RefundPolicy'));
+const DataProcessingAgreement = lazy(() => import('./pages/DataProcessingAgreement'));
+const BillingTerms            = lazy(() => import('./pages/BillingTerms'));
+const SecurityPolicy          = lazy(() => import('./pages/SecurityPolicy'));
+const ServiceLevelAgreement   = lazy(() => import('./pages/ServiceLevelAgreement'));
+
+// Portal pages — separate user flow, no reason to include in agency bundle
+const PortalLogin     = lazy(() => import('./pages/portal/PortalLogin'));
+const PortalDashboard = lazy(() => import('./pages/portal/PortalDashboard'));
+const PortalProjects  = lazy(() => import('./pages/portal/PortalProjects'));
+const PortalDocuments = lazy(() => import('./pages/portal/PortalDocuments'));
+const PortalInvoices  = lazy(() => import('./pages/portal/PortalInvoices'));
+const PortalMessages  = lazy(() => import('./pages/portal/PortalMessages'));
+const PortalProposals  = lazy(() => import('./pages/portal/PortalProposals'));
+const PortalContracts  = lazy(() => import('./pages/portal/PortalContracts'));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+  </div>
+);
+
+const SuperAdminRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (!user?.is_superadmin) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
+function App() {
+  return (
+    <Router>
+      <PortalAuthProvider>
+        <AuthProvider>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              {/* ── Agency Public Routes ── */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+
+              {/* ── Agency Protected Routes ── */}
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+              {/* Brand Management */}
+              <Route path="/brands" element={<ProtectedRoute><Brands /></ProtectedRoute>} />
+              <Route path="/brands/:id" element={<ProtectedRoute><BrandDetails /></ProtectedRoute>} />
+
+              {/* Client Management */}
+              <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
+              <Route path="/clients/new" element={<ProtectedRoute><NewClient /></ProtectedRoute>} />
+              <Route path="/clients/:id" element={<ProtectedRoute><ClientDetails /></ProtectedRoute>} />
+
+              {/* Project Management */}
+              <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+              <Route path="/projects/new" element={<ProtectedRoute><NewProject /></ProtectedRoute>} />
+              <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
+
+              {/* Document Management */}
+              <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+              <Route path="/documents/:id" element={<ProtectedRoute><DocumentDetails /></ProtectedRoute>} />
+
+              {/* Messaging */}
+              <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+
+              {/* Invoice Management */}
+              <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+              <Route path="/invoices/:id" element={<ProtectedRoute><InvoiceDetails /></ProtectedRoute>} />
+
+              {/* Proposals */}
+              <Route path="/proposals" element={<ProtectedRoute><Proposals /></ProtectedRoute>} />
+              <Route path="/proposals/:id" element={<ProtectedRoute><ProposalDetails /></ProtectedRoute>} />
+              {/* Contracts */}
+              <Route path="/contracts" element={<ProtectedRoute><Contracts /></ProtectedRoute>} />
+              <Route path="/contracts/:id" element={<ProtectedRoute><ContractDetails /></ProtectedRoute>} />
+
+              {/* Time Tracking */}
+              <Route path="/time" element={<ProtectedRoute><TimeTracking /></ProtectedRoute>} />
+
+              {/* Sales Power Pack */}
+              <Route path="/pipeline"  element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/tasks"     element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+
+              {/* Subscriptions */}
+              <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
+
+              {/* ── Public (no auth) ── */}
+              <Route path="/pay/:token" element={<PublicInvoice />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/cookie-policy" element={<CookiePolicy />} />
+              <Route path="/acceptable-use-policy" element={<AcceptableUsePolicy />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/data-processing-agreement" element={<DataProcessingAgreement />} />
+              <Route path="/billing-terms" element={<BillingTerms />} />
+              <Route path="/security-policy" element={<SecurityPolicy />} />
+              <Route path="/service-level-agreement" element={<ServiceLevelAgreement />} />
+              <Route path="/contact" element={<Contact />} />
+
+              {/* ── Client Portal Routes ── */}
+              <Route path="/portal/login" element={<PortalLogin />} />
+              <Route path="/portal/dashboard" element={<PortalProtectedRoute><PortalDashboard /></PortalProtectedRoute>} />
+              <Route path="/portal/projects" element={<PortalProtectedRoute><PortalProjects /></PortalProtectedRoute>} />
+              <Route path="/portal/documents" element={<PortalProtectedRoute><PortalDocuments /></PortalProtectedRoute>} />
+              <Route path="/portal/invoices" element={<PortalProtectedRoute><PortalInvoices /></PortalProtectedRoute>} />
+              <Route path="/portal/messages" element={<PortalProtectedRoute><PortalMessages /></PortalProtectedRoute>} />
+              <Route path="/portal/proposals" element={<PortalProtectedRoute><PortalProposals /></PortalProtectedRoute>} />
+              <Route path="/portal/contracts" element={<PortalProtectedRoute><PortalContracts /></PortalProtectedRoute>} />
+              <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
+
+              {/* ── Superadmin (hidden, no nav link) ── */}
+              <Route path="/superadmin" element={<SuperAdminRoute><SuperAdmin /></SuperAdminRoute>} />
+
+              {/* ── Default / 404 ── */}
+              <Route path="/" element={<Landing />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
+          <ScrollToTop />
+          <CookieBanner />
+        </AuthProvider>
+      </PortalAuthProvider>
+    </Router>
+  );
+}
+
+export default App;

@@ -1,0 +1,8 @@
+{
+  "user_id": "1092c330-a077-46c8-9dda-e3a17c68a315",
+  "role": "admin",
+  "permissions": {
+    "canManageProjects": true,
+    "canManageClients": true
+  }
+}

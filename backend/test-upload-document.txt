@@ -1,0 +1,13 @@
+This is a test document for Phase 7: Document Management System.
+
+This file will be used to test the document upload functionality.
+
+Features being tested:
+- File upload with metadata
+- Document categorization
+- Visibility settings
+- Brand isolation
+- Authentication and authorization
+
+Test Date: February 17, 2026
+Phase: 7 - Document Management

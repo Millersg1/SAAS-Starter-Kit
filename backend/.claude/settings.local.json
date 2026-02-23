@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "c:\\Users\\shawn\\OneDrive\\Desktop\\SAAS Starter Kit\\saas-starter-kit\\frontend\\src\\pages",
+      "c:\\Users\\shawn\\OneDrive\\Desktop\\SAAS Starter Kit\\saas-starter-kit\\frontend\\src\\components"
+    ]
+  }
+}

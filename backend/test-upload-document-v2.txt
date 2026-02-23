@@ -1,0 +1,16 @@
+# Phase 7 Document Management Test - Version 2
+
+This is version 2 of the test document for Phase 7 Document Management testing.
+
+## Changes in Version 2:
+- Updated content
+- Added version information
+- Testing version control functionality
+
+## Test Details:
+- Brand: Phase 7 Test Agency
+- User: phase7@test.com
+- Feature: Document version control
+- Date: February 17, 2026
+
+This file tests the document versioning system.

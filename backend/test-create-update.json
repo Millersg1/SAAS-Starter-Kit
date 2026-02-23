@@ -1,0 +1,19 @@
+{
+  "update_type": "milestone",
+  "title": "Design Phase Completed",
+  "content": "We have successfully completed the design phase. All mockups have been approved by the client and we're ready to move into development.",
+  "is_visible_to_client": true,
+  "attachments": [
+    {
+      "name": "design-mockups.pdf",
+      "url": "https://example.com/files/design-mockups.pdf",
+      "type": "pdf",
+      "size": 2048000
+    }
+  ],
+  "metadata": {
+    "milestone_id": "1",
+    "hours_logged": 50,
+    "team_members": ["designer1", "designer2"]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "theme": "dark",
+  "language": "en",
+  "notifications": {
+    "email": true,
+    "push": false,
+    "sms": true
+  },
+  "timezone": "America/New_York",
+  "dateFormat": "MM/DD/YYYY",
+  "currency": "USD"
+}
