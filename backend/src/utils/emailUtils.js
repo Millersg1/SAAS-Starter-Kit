@@ -616,3 +616,56 @@ export const sendWeeklyReportEmail = async (ownerEmail, ownerName, brandName, st
 
   return transporter.sendMail(mailOptions);
 };
+
+export const sendBookingConfirmationEmail = async (email, name, pageTitle, startTime, cancelToken) => {
+  const transporter = createTransporter();
+  const date = new Date(startTime).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const cancelUrl = `${process.env.FRONTEND_URL || 'https://faithharborclienthub.com'}/book/cancel/${cancelToken}`;
+  await transporter.sendMail({
+    from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
+    to: email,
+    subject: `Booking Confirmed: ${pageTitle}`,
+    html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;"><h2 style="color:#1d4ed8;">Your booking is confirmed ✓</h2><p>Hi ${name},</p><p>Your appointment for <strong>${pageTitle}</strong> is confirmed for:</p><p style="font-size:18px;font-weight:bold;color:#111;">${date}</p><p style="margin-top:24px;"><a href="${cancelUrl}" style="color:#6b7280;font-size:13px;">Need to cancel?</a></p></div>`,
+  });
+};
+
+export const sendBookingNotificationEmail = async (brandName, pageTitle, clientName, clientEmail, startTime) => {
+  const transporter = createTransporter();
+  const date = new Date(startTime).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  await transporter.sendMail({
+    from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
+    to: process.env.SMTP_FROM_EMAIL,
+    subject: `New Booking: ${pageTitle} — ${clientName}`,
+    html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;"><h2 style="color:#1d4ed8;">New booking received</h2><p><strong>Page:</strong> ${pageTitle}</p><p><strong>Client:</strong> ${clientName} (${clientEmail})</p><p><strong>Time:</strong> ${date}</p></div>`,
+  });
+};
+
+export const sendNewTicketEmail = async (email, name, clientName, subject, ticketNumber) => {
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
+    to: email,
+    subject: `New Support Ticket [${ticketNumber}]: ${subject}`,
+    html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;"><h2 style="color:#1d4ed8;">New Support Ticket</h2><p>Hi ${name},</p><p><strong>${clientName}</strong> opened a new support ticket:</p><p><strong>Subject:</strong> ${subject}</p><p><strong>Ticket #:</strong> ${ticketNumber}</p><p><a href="${process.env.FRONTEND_URL}/tickets" style="background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:12px;">View Ticket</a></p></div>`,
+  });
+};
+
+export const sendTicketReplyEmail = async (email, clientName, subject, ticketNumber, replyBody) => {
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
+    to: email,
+    subject: `Re: [${ticketNumber}] ${subject}`,
+    html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;"><h2 style="color:#1d4ed8;">Reply to your ticket</h2><p>Hi ${clientName},</p><p>New reply on ticket <strong>${ticketNumber}</strong>:</p><div style="background:#f9fafb;border-left:4px solid #1d4ed8;padding:12px 16px;margin:16px 0;border-radius:4px;">${replyBody}</div><p><a href="${process.env.FRONTEND_URL}/portal/tickets" style="background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;">View Full Thread</a></p></div>`,
+  });
+};
+
+export const sendLeadNotificationEmail = async (email, name, formName, leadName, leadEmail) => {
+  const transporter = createTransporter();
+  await transporter.sendMail({
+    from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
+    to: email,
+    subject: `New Lead from "${formName}"`,
+    html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;"><h2 style="color:#1d4ed8;">New Lead Submission 🎯</h2><p>Hi ${name},</p><p>New submission from <strong>${formName}</strong>:</p><p><strong>Name:</strong> ${leadName || 'Unknown'}</p><p><strong>Email:</strong> ${leadEmail || 'Not provided'}</p><p><a href="${process.env.FRONTEND_URL}/lead-forms" style="background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:12px;">View Submissions</a></p></div>`,
+  });
+};

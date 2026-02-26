@@ -38,8 +38,22 @@ const Tasks           = lazy(() => import('./pages/Tasks'));
 const PublicInvoice   = lazy(() => import('./pages/PublicInvoice'));
 const SuperAdmin      = lazy(() => import('./pages/SuperAdmin'));
 const Contact         = lazy(() => import('./pages/Contact'));
-const Contracts       = lazy(() => import('./pages/Contracts'));
-const ContractDetails = lazy(() => import('./pages/ContractDetails'));
+const Contracts          = lazy(() => import('./pages/Contracts'));
+const ContractDetails    = lazy(() => import('./pages/ContractDetails'));
+const CallLogs           = lazy(() => import('./pages/CallLogs'));
+const Calendar           = lazy(() => import('./pages/Calendar'));
+const BookingPages       = lazy(() => import('./pages/BookingPages'));
+const PublicBooking      = lazy(() => import('./pages/PublicBooking'));
+const Tickets            = lazy(() => import('./pages/Tickets'));
+const TicketDetails      = lazy(() => import('./pages/TicketDetails'));
+const LeadForms          = lazy(() => import('./pages/LeadForms'));
+const LeadSubmissions    = lazy(() => import('./pages/LeadSubmissions'));
+const PublicLeadForm     = lazy(() => import('./pages/PublicLeadForm'));
+const Campaigns          = lazy(() => import('./pages/Campaigns'));
+const CampaignDetails    = lazy(() => import('./pages/CampaignDetails'));
+const EmailConnections   = lazy(() => import('./pages/EmailConnections'));
+const SmsInbox           = lazy(() => import('./pages/SmsInbox'));
+const Automations        = lazy(() => import('./pages/Automations'));
 
 // Policy pages — rarely visited, no reason to be in main bundle
 const PrivacyPolicy           = lazy(() => import('./pages/PrivacyPolicy'));
@@ -61,6 +75,7 @@ const PortalInvoices  = lazy(() => import('./pages/portal/PortalInvoices'));
 const PortalMessages  = lazy(() => import('./pages/portal/PortalMessages'));
 const PortalProposals  = lazy(() => import('./pages/portal/PortalProposals'));
 const PortalContracts  = lazy(() => import('./pages/portal/PortalContracts'));
+const PortalTickets    = lazy(() => import('./pages/portal/PortalTickets'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -133,8 +148,24 @@ function App() {
               {/* Subscriptions */}
               <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
 
+              {/* CRM Features */}
+              <Route path="/call-logs"             element={<ProtectedRoute><CallLogs /></ProtectedRoute>} />
+              <Route path="/calendar"              element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
+              <Route path="/booking-pages"         element={<ProtectedRoute><BookingPages /></ProtectedRoute>} />
+              <Route path="/tickets"               element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
+              <Route path="/tickets/:ticketId"     element={<ProtectedRoute><TicketDetails /></ProtectedRoute>} />
+              <Route path="/lead-forms"            element={<ProtectedRoute><LeadForms /></ProtectedRoute>} />
+              <Route path="/lead-forms/:formId/submissions" element={<ProtectedRoute><LeadSubmissions /></ProtectedRoute>} />
+              <Route path="/campaigns"             element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+              <Route path="/campaigns/:campaignId" element={<ProtectedRoute><CampaignDetails /></ProtectedRoute>} />
+              <Route path="/email-connections"     element={<ProtectedRoute><EmailConnections /></ProtectedRoute>} />
+              <Route path="/sms"                  element={<ProtectedRoute><SmsInbox /></ProtectedRoute>} />
+              <Route path="/automations"          element={<ProtectedRoute><Automations /></ProtectedRoute>} />
+
               {/* ── Public (no auth) ── */}
               <Route path="/pay/:token" element={<PublicInvoice />} />
+              <Route path="/book/:slug" element={<PublicBooking />} />
+              <Route path="/f/:slug"    element={<PublicLeadForm />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />
@@ -155,6 +186,7 @@ function App() {
               <Route path="/portal/messages" element={<PortalProtectedRoute><PortalMessages /></PortalProtectedRoute>} />
               <Route path="/portal/proposals" element={<PortalProtectedRoute><PortalProposals /></PortalProtectedRoute>} />
               <Route path="/portal/contracts" element={<PortalProtectedRoute><PortalContracts /></PortalProtectedRoute>} />
+              <Route path="/portal/tickets"   element={<PortalProtectedRoute><PortalTickets /></PortalProtectedRoute>} />
               <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
 
               {/* ── Superadmin (hidden, no nav link) ── */}

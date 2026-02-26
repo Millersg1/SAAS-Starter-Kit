@@ -89,7 +89,11 @@ backend/
 
 - `npm start` - Start production server
 - `npm run dev` - Start development server with nodemon
-- `npm test` - Run tests (coming soon)
+- `npm test` - Run backend tests
+- `npm run test:smoke` - Run API smoke tests
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:coverage:check` - Enforce minimum coverage thresholds
+- `npm run migrate` - Run all SQL migrations in `src/migrations`
 
 ### Environment Variables
 

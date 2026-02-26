@@ -2,6 +2,8 @@
 -- Description: Outbound webhook endpoints and delivery log for Zapier/custom integrations
 -- Date: 2026-02-23
 
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE TABLE IF NOT EXISTS webhook_endpoints (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,

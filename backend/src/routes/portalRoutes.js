@@ -1,6 +1,7 @@
 import express from 'express';
 import * as portalController from '../controllers/portalController.js';
 import { portalListContracts, portalGetContract, portalSignContract } from '../controllers/contractController.js';
+import { portalListTickets, portalGetTicket, portalCreateTicket, portalReplyTicket } from '../controllers/ticketController.js';
 import { protectPortal } from '../middleware/portalMiddleware.js';
 
 const router = express.Router();
@@ -47,5 +48,11 @@ router.post('/proposals/:proposalId/reject', portalController.rejectProposal);
 router.get('/contracts', portalListContracts);
 router.get('/contracts/:contractId', portalGetContract);
 router.post('/contracts/:contractId/sign', portalSignContract);
+
+// Support Tickets
+router.get('/tickets', portalListTickets);
+router.get('/tickets/:ticketId', portalGetTicket);
+router.post('/tickets', portalCreateTicket);
+router.post('/tickets/:ticketId/reply', portalReplyTicket);
 
 export default router;

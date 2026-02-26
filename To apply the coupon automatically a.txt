@@ -1,0 +1,9 @@
+To apply the coupon automatically at checkout, please use the following link structure: https://explodely.com/p/[ProductID]?cid=[YourCouponCode]
+
+Coupon code
+Explodely10off
+
+
+
+Coupon code
+wapl10off

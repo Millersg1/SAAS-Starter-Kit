@@ -15,6 +15,10 @@ router.get('/assigned', clientController.getAssignedClients);
 // Get client statistics for a brand
 router.get('/:brandId/stats', clientController.getClientStats);
 
+// Tags & bulk actions
+router.get('/:brandId/tags', clientController.getBrandTags);
+router.post('/:brandId/bulk-tag', clientController.bulkTagClients);
+
 // Portal activity
 router.get('/:brandId/portal-activity', clientController.getPortalActivity);
 

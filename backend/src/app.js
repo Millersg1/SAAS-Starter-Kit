@@ -83,6 +83,7 @@ app.use(customDomainMiddleware);
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import brandRoutes from './routes/brandRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
 import clientRoutes from './routes/clientRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
@@ -106,11 +107,25 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import webhookEndpointRoutes from './routes/webhookEndpointRoutes.js';
 import contractRoutes from './routes/contractRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import callLogRoutes from './routes/callLogRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
+import bookingRoutes from './routes/bookingRoutes.js';
+import ticketRoutes from './routes/ticketRoutes.js';
+import leadFormRoutes from './routes/leadFormRoutes.js';
+import campaignRoutes from './routes/campaignRoutes.js';
+import emailConnectionRoutes from './routes/emailConnectionRoutes.js';
+import trackingRoutes from './routes/trackingRoutes.js';
+import smsRoutes from './routes/smsRoutes.js';
+import voipRoutes from './routes/voipRoutes.js';
+import workflowRoutes from './routes/workflowRoutes.js';
+import googleCalendarRoutes from './routes/googleCalendarRoutes.js';
+import exportRoutes from './routes/exportRoutes.js';
 
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/brands', brandRoutes);
+app.use('/api/contacts', contactRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/documents', documentRoutes);
@@ -134,6 +149,19 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/webhooks/endpoints', webhookEndpointRoutes);
 app.use('/api/contracts', contractRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/call-logs', callLogRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/tickets', ticketRoutes);
+app.use('/api/lead-forms', leadFormRoutes);
+app.use('/api/campaigns', campaignRoutes);
+app.use('/api/email-connections', emailConnectionRoutes);
+app.use('/api/track', trackingRoutes);
+app.use('/api/sms', smsRoutes);
+app.use('/api/voip', voipRoutes);
+app.use('/api/workflows', workflowRoutes);
+app.use('/api/google-calendar', googleCalendarRoutes);
+app.use('/api/export', exportRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

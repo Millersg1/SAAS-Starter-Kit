@@ -536,6 +536,50 @@ export const importClients = async (req, res, next) => {
 };
 
 /**
+ * GET /api/clients/:brandId/tags
+ * Returns all distinct tags used across a brand's clients.
+ */
+export const getBrandTags = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    const member = await brandModel.getBrandMember(brandId, req.user.id);
+    if (!member) return res.status(403).json({ status: 'fail', message: 'Access denied.' });
+
+    const result = await query(
+      `SELECT DISTINCT UNNEST(tags) AS tag FROM clients WHERE brand_id = $1 AND is_active = TRUE AND tags IS NOT NULL ORDER BY tag`,
+      [brandId]
+    );
+    res.json({ status: 'success', data: { tags: result.rows.map(r => r.tag) } });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/clients/:brandId/bulk-tag
+ * Body: { client_ids: string[], tags: string[], action: 'add'|'remove' }
+ */
+export const bulkTagClients = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    const { client_ids, tags, action = 'add' } = req.body;
+    const member = await brandModel.getBrandMember(brandId, req.user.id);
+    if (!member) return res.status(403).json({ status: 'fail', message: 'Access denied.' });
+    if (!Array.isArray(client_ids) || client_ids.length === 0) return res.status(400).json({ status: 'fail', message: 'client_ids required' });
+    if (!Array.isArray(tags) || tags.length === 0) return res.status(400).json({ status: 'fail', message: 'tags required' });
+
+    const op = action === 'remove'
+      ? `UPDATE clients SET tags = ARRAY(SELECT UNNEST(COALESCE(tags,'{}')) EXCEPT SELECT UNNEST($1::text[])) WHERE id = ANY($2::uuid[]) AND brand_id = $3`
+      : `UPDATE clients SET tags = ARRAY(SELECT DISTINCT UNNEST(COALESCE(tags,'{}') || $1::text[])) WHERE id = ANY($2::uuid[]) AND brand_id = $3`;
+
+    await query(op, [tags, client_ids, brandId]);
+    res.json({ status: 'success', message: `Tags ${action}ed successfully` });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * GET /api/clients/:brandId/portal-activity
  * Returns portal-enabled clients with last login time and payment totals.
  */

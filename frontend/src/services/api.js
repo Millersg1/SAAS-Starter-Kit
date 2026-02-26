@@ -95,6 +95,8 @@ export const clientAPI = {
 
   // Bulk CSV import
   importClients: (brandId, clients) => api.post(`/clients/${brandId}/import`, { clients }),
+  getBrandTags: (brandId) => api.get(`/clients/${brandId}/tags`),
+  bulkTagClients: (brandId, data) => api.post(`/clients/${brandId}/bulk-tag`, data),
 };
 
 // Project API calls
@@ -359,6 +361,103 @@ export const contractAPI = {
   update:   (brandId, id, d)=> api.patch(`/contracts/${brandId}/${id}`, d),
   send:     (brandId, id)   => api.post(`/contracts/${brandId}/${id}/send`),
   remove:   (brandId, id)   => api.delete(`/contracts/${brandId}/${id}`),
+};
+
+export const callLogAPI = {
+  list:       (brandId, p)       => api.get(`/call-logs/${brandId}`, { params: p }),
+  getLogs:    (brandId, p)       => api.get(`/call-logs/${brandId}`, { params: p }),
+  create:     (brandId, data)    => api.post(`/call-logs/${brandId}`, data),
+  createLog:  (brandId, data)    => api.post(`/call-logs/${brandId}`, data),
+  update:     (brandId, id, d)   => api.patch(`/call-logs/${brandId}/${id}`, d),
+  updateLog:  (brandId, id, d)   => api.patch(`/call-logs/${brandId}/${id}`, d),
+  remove:     (brandId, id)      => api.delete(`/call-logs/${brandId}/${id}`),
+  deleteLog:  (brandId, id)      => api.delete(`/call-logs/${brandId}/${id}`),
+};
+
+export const calendarAPI = {
+  getEvents:   (brandId, p)      => api.get(`/calendar/${brandId}`, { params: p }),
+  createEvent: (brandId, data)   => api.post(`/calendar/${brandId}`, data),
+  updateEvent: (brandId, id, d)  => api.patch(`/calendar/${brandId}/${id}`, d),
+  deleteEvent: (brandId, id)     => api.delete(`/calendar/${brandId}/${id}`),
+};
+
+export const bookingAPI = {
+  getPages:      (brandId)       => api.get(`/bookings/${brandId}/pages`),
+  createPage:    (brandId, data) => api.post(`/bookings/${brandId}/pages`, data),
+  updatePage:    (brandId, id, d)=> api.patch(`/bookings/${brandId}/pages/${id}`, d),
+  deletePage:    (brandId, id)   => api.delete(`/bookings/${brandId}/pages/${id}`),
+  getBookings:   (brandId)       => api.get(`/bookings/${brandId}`),
+  getPublicPage: (slug)          => api.get(`/bookings/public/${slug}`),
+  getSlots:      (slug, date)    => api.get(`/bookings/public/${slug}/slots`, { params: { date } }),
+  createBooking: (slug, data)    => api.post(`/bookings/public/${slug}/book`, data),
+  cancelBooking: (token)         => api.post(`/bookings/public/cancel/${token}`),
+};
+
+export const ticketAPI = {
+  getTickets:   (brandId, p)       => api.get(`/tickets/${brandId}`, { params: p }),
+  getTicket:    (brandId, id)      => api.get(`/tickets/${brandId}/${id}`),
+  createTicket: (brandId, data)    => api.post(`/tickets/${brandId}`, data),
+  updateTicket: (brandId, id, d)   => api.patch(`/tickets/${brandId}/${id}`, d),
+  replyTicket:  (brandId, id, d)   => api.post(`/tickets/${brandId}/${id}/reply`, d),
+  deleteTicket: (brandId, id)      => api.delete(`/tickets/${brandId}/${id}`),
+};
+
+export const leadFormAPI = {
+  getForms:        (brandId)          => api.get(`/lead-forms/${brandId}`),
+  createForm:      (brandId, data)    => api.post(`/lead-forms/${brandId}`, data),
+  updateForm:      (brandId, id, d)   => api.patch(`/lead-forms/${brandId}/${id}`, d),
+  deleteForm:      (brandId, id)      => api.delete(`/lead-forms/${brandId}/${id}`),
+  getSubmissions:  (brandId, id, p)   => api.get(`/lead-forms/${brandId}/${id}/submissions`, { params: p }),
+  getAllSubmissions:(brandId, p)       => api.get(`/lead-forms/${brandId}/submissions/all`, { params: p }),
+  convertToClient: (brandId, subId)   => api.post(`/lead-forms/${brandId}/submissions/${subId}/convert`),
+  getPublicForm:   (slug)             => api.get(`/lead-forms/view/${slug}`),
+  submitForm:      (slug, data)       => api.post(`/lead-forms/submit/${slug}`, data),
+};
+
+export const campaignAPI = {
+  getCampaigns:    (brandId)          => api.get(`/campaigns/${brandId}`),
+  getCampaign:     (brandId, id)      => api.get(`/campaigns/${brandId}/${id}`),
+  createCampaign:  (brandId, data)    => api.post(`/campaigns/${brandId}`, data),
+  updateCampaign:  (brandId, id, d)   => api.patch(`/campaigns/${brandId}/${id}`, d),
+  deleteCampaign:  (brandId, id)      => api.delete(`/campaigns/${brandId}/${id}`),
+  addRecipients:   (brandId, id, d)   => api.post(`/campaigns/${brandId}/${id}/recipients`, d),
+  sendCampaign:    (brandId, id)      => api.post(`/campaigns/${brandId}/${id}/send`),
+};
+
+export const emailConnectionAPI = {
+  getConnections:    (brandId)        => api.get(`/email-connections/${brandId}`),
+  createConnection:  (brandId, data)  => api.post(`/email-connections/${brandId}`, data),
+  deleteConnection:  (brandId, id)    => api.delete(`/email-connections/${brandId}/${id}`),
+  testConnection:    (brandId, id)    => api.post(`/email-connections/${brandId}/${id}/test`),
+  syncNow:           (brandId, id)    => api.post(`/email-connections/${brandId}/${id}/sync`),
+};
+
+export const smsAPI = {
+  getConnection:    (brandId)           => api.get(`/sms/${brandId}/connection`),
+  saveConnection:   (brandId, data)     => api.post(`/sms/${brandId}/connection`, data),
+  removeConnection: (brandId)           => api.delete(`/sms/${brandId}/connection`),
+  getConversations: (brandId)           => api.get(`/sms/${brandId}/conversations`),
+  getMessages:      (brandId, clientId) => api.get(`/sms/${brandId}/messages`, { params: clientId ? { client_id: clientId } : {} }),
+  sendMessage:      (brandId, data)     => api.post(`/sms/${brandId}/send`, data),
+};
+
+export const voipAPI = {
+  initiateCall: (brandId, data) => api.post(`/voip/${brandId}/call`, data),
+};
+
+export const workflowAPI = {
+  list:   (brandId)              => api.get(`/workflows/${brandId}`),
+  get:    (brandId, id)          => api.get(`/workflows/${brandId}/${id}`),
+  create: (brandId, data)        => api.post(`/workflows/${brandId}`, data),
+  update: (brandId, id, d)       => api.patch(`/workflows/${brandId}/${id}`, d),
+  remove: (brandId, id)          => api.delete(`/workflows/${brandId}/${id}`),
+};
+
+export const googleCalendarAPI = {
+  getConnection: (brandId)  => api.get(`/google-calendar/${brandId}/connection`),
+  initiateAuth:  (brandId)  => api.post(`/google-calendar/${brandId}/auth`),
+  disconnect:    (brandId)  => api.delete(`/google-calendar/${brandId}/connection`),
+  syncNow:       (brandId)  => api.post(`/google-calendar/${brandId}/sync`),
 };
 
 export default api;
