@@ -36,7 +36,7 @@ deploy_frontend() {
   npm run build
 
   echo "  → Uploading frontend assets with rsync..."
-  rsync -avz --delete "$FRONTEND_DIR/dist/" "$SSH_USER@$SSH_HOST:$FRONTEND_REMOTE_DIR/"
+  rsync -avz --delete --exclude 'api.faithharborclienthub.com' --exclude '.well-known' --exclude 'cgi-bin' "$FRONTEND_DIR/dist/" "$SSH_USER@$SSH_HOST:$FRONTEND_REMOTE_DIR/"
   echo "✅ Frontend deployment successful!"
 }
 
