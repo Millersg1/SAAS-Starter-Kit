@@ -1,6 +1,0 @@
-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
-
-git remote add origin https://Millersg1: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
-/Millersg1/meenalcon.git && git push -u origin main
-
-git push https://Millersg1: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@github.com/Millersg1/meenalcon.git main

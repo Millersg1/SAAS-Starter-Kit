@@ -1,3 +1,0 @@
-"C:\Users\shawn\OneDrive\Documents\faithharborweb"
-
-cd /home/faithharborclien/

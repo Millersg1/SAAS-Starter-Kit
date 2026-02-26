@@ -1,5 +1,0 @@
-cd ~/public_html/app.faithharborlegalpages.com/
-ls -la
-
-
-https://app.faithharborlegalpages.com/export.php?key=privacy&format=pdf

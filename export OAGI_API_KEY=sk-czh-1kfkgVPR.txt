@@ -1,2 +1,0 @@
-export OAGI_API_KEY=sk-czh-1kfkgVPRmhJQoxxDoy2juwoCFZd0fNpDn5JbPmM
-export OAGI_BASE_URL=https://api.agiopen.org
