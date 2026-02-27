@@ -27,6 +27,8 @@
         "axios": "^1.13.5",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "jspdf": "^4.2.0",
+        "jspdf-autotable": "^5.0.7",
         "lovable-tagger": "^1.1.13",
         "lucide-react": "^0.563.0",
         "papaparse": "^5.4.1",
