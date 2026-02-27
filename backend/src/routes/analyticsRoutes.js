@@ -8,5 +8,6 @@ router.use(protect);
 router.get('/:brandId/revenue',    analyticsController.getRevenueAnalytics);
 router.get('/:brandId/conversion', analyticsController.getConversionAnalytics);
 router.get('/:brandId/pipeline',   analyticsController.getPipelineAnalytics);
+router.get('/:brandId/forecast',   analyticsController.getForecast);
 
 export default router;

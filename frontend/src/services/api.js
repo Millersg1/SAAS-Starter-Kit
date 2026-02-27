@@ -314,8 +314,14 @@ export const superadminAPI = {
 };
 
 export const pipelineAPI = {
+  // Pipeline management
+  getPipelines:   (brandId)         => api.get(`/pipeline/${brandId}/pipelines`),
+  createPipeline: (brandId, data)   => api.post(`/pipeline/${brandId}/pipelines`, data),
+  updatePipeline: (brandId, id, d)  => api.patch(`/pipeline/${brandId}/pipelines/${id}`, d),
+  deletePipeline: (brandId, id)     => api.delete(`/pipeline/${brandId}/pipelines/${id}`),
+  // Deals
   getDeals:   (brandId, params) => api.get(`/pipeline/${brandId}`, { params }),
-  getSummary: (brandId)         => api.get(`/pipeline/${brandId}/summary`),
+  getSummary: (brandId, params) => api.get(`/pipeline/${brandId}/summary`, { params }),
   createDeal: (brandId, data)   => api.post(`/pipeline/${brandId}`, data),
   updateDeal: (brandId, id, d)  => api.patch(`/pipeline/${brandId}/deals/${id}`, d),
   deleteDeal: (brandId, id)     => api.delete(`/pipeline/${brandId}/deals/${id}`),
@@ -339,6 +345,7 @@ export const revenueAnalyticsAPI = {
   getRevenue:    (brandId) => api.get(`/analytics/${brandId}/revenue`),
   getConversion: (brandId) => api.get(`/analytics/${brandId}/conversion`),
   getPipeline:   (brandId) => api.get(`/analytics/${brandId}/pipeline`),
+  getForecast:   (brandId) => api.get(`/analytics/${brandId}/forecast`),
 };
 
 export const webhookAPI = {
@@ -415,13 +422,17 @@ export const leadFormAPI = {
 };
 
 export const campaignAPI = {
-  getCampaigns:    (brandId)          => api.get(`/campaigns/${brandId}`),
-  getCampaign:     (brandId, id)      => api.get(`/campaigns/${brandId}/${id}`),
-  createCampaign:  (brandId, data)    => api.post(`/campaigns/${brandId}`, data),
-  updateCampaign:  (brandId, id, d)   => api.patch(`/campaigns/${brandId}/${id}`, d),
-  deleteCampaign:  (brandId, id)      => api.delete(`/campaigns/${brandId}/${id}`),
-  addRecipients:   (brandId, id, d)   => api.post(`/campaigns/${brandId}/${id}/recipients`, d),
-  sendCampaign:    (brandId, id)      => api.post(`/campaigns/${brandId}/${id}/send`),
+  getCampaigns:    (brandId)              => api.get(`/campaigns/${brandId}`),
+  getCampaign:     (brandId, id)          => api.get(`/campaigns/${brandId}/${id}`),
+  createCampaign:  (brandId, data)        => api.post(`/campaigns/${brandId}`, data),
+  updateCampaign:  (brandId, id, d)       => api.patch(`/campaigns/${brandId}/${id}`, d),
+  deleteCampaign:  (brandId, id)          => api.delete(`/campaigns/${brandId}/${id}`),
+  addRecipients:   (brandId, id, d)       => api.post(`/campaigns/${brandId}/${id}/recipients`, d),
+  sendCampaign:    (brandId, id)          => api.post(`/campaigns/${brandId}/${id}/send`),
+  getVariants:     (brandId, id)          => api.get(`/campaigns/${brandId}/${id}/variants`),
+  upsertVariant:   (brandId, id, name, d) => api.put(`/campaigns/${brandId}/${id}/variants/${name}`, d),
+  deleteVariant:   (brandId, id, vid)     => api.delete(`/campaigns/${brandId}/${id}/variants/${vid}`),
+  declareWinner:   (brandId, id, vid)     => api.post(`/campaigns/${brandId}/${id}/variants/${vid}/winner`),
 };
 
 export const emailConnectionAPI = {
@@ -451,6 +462,27 @@ export const workflowAPI = {
   create: (brandId, data)        => api.post(`/workflows/${brandId}`, data),
   update: (brandId, id, d)       => api.patch(`/workflows/${brandId}/${id}`, d),
   remove: (brandId, id)          => api.delete(`/workflows/${brandId}/${id}`),
+};
+
+export const customFieldAPI = {
+  list:    (brandId, entityType = 'client') => api.get(`/custom-fields/${brandId}`, { params: { entity_type: entityType } }),
+  create:  (brandId, data) => api.post(`/custom-fields/${brandId}`, data),
+  update:  (brandId, id, data) => api.patch(`/custom-fields/${brandId}/${id}`, data),
+  remove:  (brandId, id) => api.delete(`/custom-fields/${brandId}/${id}`),
+  reorder: (brandId, ids) => api.post(`/custom-fields/${brandId}/reorder`, { ids }),
+};
+
+export const enrichmentAPI = {
+  enrich: (brandId, clientId) => api.post(`/enrichment/${brandId}/enrich/${clientId}`),
+};
+
+export const segmentAPI = {
+  list:       (brandId)           => api.get(`/segments/${brandId}`),
+  create:     (brandId, data)     => api.post(`/segments/${brandId}`, data),
+  update:     (brandId, id, data) => api.patch(`/segments/${brandId}/${id}`, data),
+  remove:     (brandId, id)       => api.delete(`/segments/${brandId}/${id}`),
+  preview:    (brandId, filters)  => api.post(`/segments/${brandId}/preview`, { filter_config: filters }),
+  getClients: (brandId, id)       => api.get(`/segments/${brandId}/${id}/clients`),
 };
 
 export const googleCalendarAPI = {

@@ -40,3 +40,42 @@ export const updateRecipientStatus = async (id, status, error_message = null) =>
 export const incrementSentCount = async (campaignId) => { await query(`UPDATE email_campaigns SET sent_count = sent_count + 1 WHERE id = $1`, [campaignId]); };
 
 export const markCampaignSent = async (id) => (await query(`UPDATE email_campaigns SET status = 'sent', sent_at = NOW() WHERE id = $1 RETURNING *`, [id])).rows[0] || null;
+
+// ============================================
+// A/B VARIANTS
+// ============================================
+
+export const getVariants = async (campaignId) =>
+  (await query(`SELECT * FROM campaign_variants WHERE campaign_id = $1 ORDER BY variant_name ASC`, [campaignId])).rows;
+
+export const upsertVariant = async (campaignId, variantName, data) => {
+  const { subject, html_content, text_content, send_percentage } = data;
+  return (await query(
+    `INSERT INTO campaign_variants (campaign_id, variant_name, subject, html_content, text_content, send_percentage)
+     VALUES ($1, $2, $3, $4, $5, $6)
+     ON CONFLICT (campaign_id, variant_name)
+     DO UPDATE SET subject = EXCLUDED.subject,
+                   html_content = EXCLUDED.html_content,
+                   text_content = EXCLUDED.text_content,
+                   send_percentage = EXCLUDED.send_percentage
+     RETURNING *`,
+    [campaignId, variantName, subject || null, html_content || null, text_content || null, send_percentage ?? 50]
+  )).rows[0];
+};
+
+export const deleteVariant = async (id) =>
+  (await query(`DELETE FROM campaign_variants WHERE id = $1 RETURNING id`, [id])).rows[0] || null;
+
+export const declareWinner = async (campaignId, winnerId) => {
+  await query(`UPDATE campaign_variants SET is_winner = FALSE WHERE campaign_id = $1`, [campaignId]);
+  return (await query(`UPDATE campaign_variants SET is_winner = TRUE WHERE id = $1 RETURNING *`, [winnerId])).rows[0] || null;
+};
+
+export const incrementVariantCount = async (variantId, field) => {
+  const allowed = ['sent_count', 'open_count', 'click_count'];
+  if (!allowed.includes(field)) return;
+  await query(`UPDATE campaign_variants SET ${field} = ${field} + 1 WHERE id = $1`, [variantId]);
+};
+
+export const setRecipientVariant = async (recipientId, variantName) =>
+  query(`UPDATE campaign_recipients SET variant_name = $2 WHERE id = $1`, [recipientId, variantName]);

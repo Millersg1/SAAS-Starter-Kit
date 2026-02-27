@@ -114,6 +114,7 @@ const Layout = ({ children }) => {
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
     { name: 'Brands', href: '/brands', icon: '🏢' },
     { name: 'Clients', href: '/clients', icon: '👥' },
+    { name: 'Segments', href: '/segments', icon: '🎯' },
     { name: 'Projects', href: '/projects', icon: '📁' },
     { name: 'Documents', href: '/documents', icon: '📄' },
     { name: 'Messages', href: '/messages', icon: '💬' },

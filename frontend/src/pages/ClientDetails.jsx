@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI } from '../services/api';
+import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI } from '../services/api';
 
 const ClientDetails = () => {
   const { id } = useParams();
@@ -45,12 +45,18 @@ const ClientDetails = () => {
     custom_fields: {},
     lead_source: '',
     lead_source_detail: '',
+    linkedin_url: '',
+    twitter_url: '',
+    facebook_url: '',
+    instagram_url: '',
   });
 
   const [tagInput, setTagInput] = useState('');
   const [customFieldKey, setCustomFieldKey] = useState('');
   const [customFieldValue, setCustomFieldValue] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [fieldDefs, setFieldDefs] = useState([]);
 
   useEffect(() => {
     fetchBrands();
@@ -80,6 +86,8 @@ const ClientDetails = () => {
           const response = await clientAPI.getClient(brand.id, id);
           const clientData = response.data.data.client;
           setClient(clientData);
+          // Load typed field definitions for this brand
+          customFieldAPI.list(brand.id).then(r => setFieldDefs(r.data.data?.fields || [])).catch(() => {});
           setFormData({
             name: clientData.name || '',
             email: clientData.email || '',
@@ -100,6 +108,10 @@ const ClientDetails = () => {
             custom_fields: clientData.custom_fields || {},
             lead_source: clientData.lead_source || '',
             lead_source_detail: clientData.lead_source_detail || '',
+            linkedin_url: clientData.linkedin_url || '',
+            twitter_url: clientData.twitter_url || '',
+            facebook_url: clientData.facebook_url || '',
+            instagram_url: clientData.instagram_url || '',
           });
           setError('');
           break;
@@ -324,6 +336,29 @@ const ClientDetails = () => {
     }
   };
 
+  const handleEnrich = async () => {
+    setEnriching(true);
+    setError('');
+    try {
+      const res = await enrichmentAPI.enrich(client.brand_id, id);
+      const updated = res.data.data.client;
+      setClient((prev) => ({ ...prev, ...updated }));
+      setFormData((prev) => ({
+        ...prev,
+        linkedin_url: updated.linkedin_url || prev.linkedin_url,
+        twitter_url: updated.twitter_url || prev.twitter_url,
+        facebook_url: updated.facebook_url || prev.facebook_url,
+        instagram_url: updated.instagram_url || prev.instagram_url,
+      }));
+      setSuccessMessage('Contact enriched successfully!');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Enrichment failed');
+    } finally {
+      setEnriching(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -409,8 +444,16 @@ const ClientDetails = () => {
                 </label>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
+                <div className="flex items-center gap-3">
+                  <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
+                  {client.company_logo_url && (
+                    <img src={client.company_logo_url} alt="logo" className="w-8 h-8 rounded object-contain border border-gray-200" />
+                  )}
+                </div>
                 <p className="text-gray-600 mt-1">{client.company}</p>
+                {client.enriched_at && (
+                  <p className="text-xs text-gray-400 mt-1">Enriched {new Date(client.enriched_at).toLocaleDateString()}</p>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
@@ -462,6 +505,13 @@ const ClientDetails = () => {
                   Enable Portal Access
                 </button>
               )}
+              <button
+                onClick={handleEnrich}
+                disabled={enriching}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
+              >
+                {enriching ? 'Enriching…' : '🔍 Enrich'}
+              </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
                 className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
@@ -806,56 +856,99 @@ const ClientDetails = () => {
           {/* Custom Fields */}
           <div className="border-t pt-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Custom Fields</h2>
-            {isEditing && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
-                <input
-                  type="text"
-                  value={customFieldKey}
-                  onChange={(e) => setCustomFieldKey(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                  placeholder="Field name"
-                />
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={customFieldValue}
-                    onChange={(e) => setCustomFieldValue(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                    placeholder="Field value"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddCustomField}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-            )}
-            {Object.keys(formData.custom_fields).length > 0 ? (
-              <div className="space-y-2">
-                {Object.entries(formData.custom_fields).map(([key, value]) => (
-                  <div key={key} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-                    <div>
-                      <span className="font-medium text-gray-700">{key}:</span>{' '}
-                      <span className="text-gray-900">{value}</span>
+            {fieldDefs.length > 0 ? (
+              /* Typed inputs based on field definitions */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {fieldDefs.map((f) => {
+                  const val = formData.custom_fields[f.field_key] ?? '';
+                  const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 disabled:bg-gray-100';
+                  const onChange = (v) => setFormData(prev => ({
+                    ...prev,
+                    custom_fields: { ...prev.custom_fields, [f.field_key]: v }
+                  }));
+                  return (
+                    <div key={f.id}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {f.field_label}{f.required && <span className="text-red-500 ml-1">*</span>}
+                      </label>
+                      {f.field_type === 'dropdown' ? (
+                        <select value={val} disabled={!isEditing} onChange={e => onChange(e.target.value)} className={inputCls}>
+                          <option value="">Select…</option>
+                          {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      ) : f.field_type === 'checkbox' ? (
+                        <input type="checkbox" checked={!!val} disabled={!isEditing}
+                          onChange={e => onChange(e.target.checked)} className="h-4 w-4 accent-blue-600" />
+                      ) : (
+                        <input
+                          type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : f.field_type === 'email' ? 'email' : f.field_type === 'phone' ? 'tel' : f.field_type === 'url' ? 'url' : 'text'}
+                          value={val} disabled={!isEditing} onChange={e => onChange(e.target.value)}
+                          className={inputCls} />
+                      )}
                     </div>
-                    {isEditing && (
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveCustomField(key)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm">No custom fields</p>
+              /* Fallback: free-form key-value pairs */
+              <>
+                {isEditing && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-2">
+                    <input type="text" value={customFieldKey} onChange={(e) => setCustomFieldKey(e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      placeholder="Field name" />
+                    <div className="flex gap-2">
+                      <input type="text" value={customFieldValue} onChange={(e) => setCustomFieldValue(e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                        placeholder="Field value" />
+                      <button type="button" onClick={handleAddCustomField}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add</button>
+                    </div>
+                  </div>
+                )}
+                {Object.keys(formData.custom_fields).length > 0 ? (
+                  <div className="space-y-2">
+                    {Object.entries(formData.custom_fields).map(([key, value]) => (
+                      <div key={key} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <div><span className="font-medium text-gray-700">{key}:</span>{' '}<span className="text-gray-900">{String(value)}</span></div>
+                        {isEditing && (
+                          <button type="button" onClick={() => handleRemoveCustomField(key)} className="text-red-600 hover:text-red-800">Remove</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-500 text-sm">No custom fields. Define fields in Brand Settings → Custom Fields.</p>
+                )}
+              </>
             )}
+          </div>
+
+          {/* Social Profiles */}
+          <div className="border-t pt-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Social Profiles</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                { name: 'linkedin_url',  label: '🔗 LinkedIn',  placeholder: 'https://linkedin.com/in/...' },
+                { name: 'twitter_url',   label: '🐦 Twitter/X', placeholder: 'https://twitter.com/...' },
+                { name: 'facebook_url',  label: '📘 Facebook',  placeholder: 'https://facebook.com/...' },
+                { name: 'instagram_url', label: '📸 Instagram', placeholder: 'https://instagram.com/...' },
+              ].map(({ name, label, placeholder }) => (
+                <div key={name}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+                  {isEditing ? (
+                    <input type="url" name={name} value={formData[name]} onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900"
+                      placeholder={placeholder} />
+                  ) : formData[name] ? (
+                    <a href={formData[name]} target="_blank" rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline text-sm truncate block">{formData[name]}</a>
+                  ) : (
+                    <span className="text-gray-400 text-sm">Not set</span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Notes */}

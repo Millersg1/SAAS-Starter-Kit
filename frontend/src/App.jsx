@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PortalProtectedRoute from './components/PortalProtectedRoute';
 import CookieBanner from './components/CookieBanner';
 import ScrollToTop from './components/ScrollToTop';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 
 // Eagerly loaded — needed immediately on first paint
 import Landing from './pages/Landing';
@@ -49,6 +50,7 @@ const TicketDetails      = lazy(() => import('./pages/TicketDetails'));
 const LeadForms          = lazy(() => import('./pages/LeadForms'));
 const LeadSubmissions    = lazy(() => import('./pages/LeadSubmissions'));
 const PublicLeadForm     = lazy(() => import('./pages/PublicLeadForm'));
+const Segments           = lazy(() => import('./pages/Segments'));
 const Campaigns          = lazy(() => import('./pages/Campaigns'));
 const CampaignDetails    = lazy(() => import('./pages/CampaignDetails'));
 const EmailConnections   = lazy(() => import('./pages/EmailConnections'));
@@ -156,6 +158,7 @@ function App() {
               <Route path="/tickets/:ticketId"     element={<ProtectedRoute><TicketDetails /></ProtectedRoute>} />
               <Route path="/lead-forms"            element={<ProtectedRoute><LeadForms /></ProtectedRoute>} />
               <Route path="/lead-forms/:formId/submissions" element={<ProtectedRoute><LeadSubmissions /></ProtectedRoute>} />
+              <Route path="/segments"              element={<ProtectedRoute><Segments /></ProtectedRoute>} />
               <Route path="/campaigns"             element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
               <Route path="/campaigns/:campaignId" element={<ProtectedRoute><CampaignDetails /></ProtectedRoute>} />
               <Route path="/email-connections"     element={<ProtectedRoute><EmailConnections /></ProtectedRoute>} />
@@ -199,6 +202,7 @@ function App() {
           </Suspense>
           <ScrollToTop />
           <CookieBanner />
+          <PwaInstallPrompt />
         </AuthProvider>
       </PortalAuthProvider>
     </Router>

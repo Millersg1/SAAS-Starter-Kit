@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { brandAPI, uploadAPI, connectAPI, auditAPI, webhookAPI } from '../services/api';
+import { brandAPI, uploadAPI, connectAPI, auditAPI, webhookAPI, customFieldAPI } from '../services/api';
 
 const BrandDetails = () => {
   const { id } = useParams();
@@ -27,6 +27,17 @@ const BrandDetails = () => {
   const [connectStatus, setConnectStatus] = useState(null);
   const [connectLoading, setConnectLoading] = useState(false);
   const [connectingStripe, setConnectingStripe] = useState(false);
+
+  // Custom Fields
+  const [fieldDefs, setFieldDefs] = useState([]);
+  const [showFieldModal, setShowFieldModal] = useState(false);
+  const [fieldForm, setFieldForm] = useState({ field_key: '', field_label: '', field_type: 'text', options: '', required: false });
+  const [savingField, setSavingField] = useState(false);
+
+  // Integrations (Hunter.io)
+  const [hunterKey, setHunterKey] = useState('');
+  const [showHunterKey, setShowHunterKey] = useState(false);
+  const [savingHunterKey, setSavingHunterKey] = useState(false);
 
   // Webhooks
   const [webhooks, setWebhooks] = useState([]);
@@ -67,6 +78,7 @@ const BrandDetails = () => {
         logo_url: b.logo_url || '',
         custom_domain: b.custom_domain || '',
       });
+      setHunterKey(b.hunter_api_key || '');
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load brand details');
@@ -187,6 +199,15 @@ const BrandDetails = () => {
   const isOwner = members.find(m => m.user_id === brand?.owner_id)?.role === 'owner'
     ? brand?.userRole === 'owner'
     : brand?.userRole === 'owner';
+
+  // Load custom field defs when tab opens
+  useEffect(() => {
+    if (activeTab === 'custom-fields' && id) {
+      customFieldAPI.list(id)
+        .then(res => setFieldDefs(res.data.data?.fields || []))
+        .catch(() => {});
+    }
+  }, [activeTab, id]);
 
   // Load Connect status when Payments tab opens
   useEffect(() => {
@@ -358,7 +379,7 @@ const BrandDetails = () => {
 
         {/* Tab Navigation */}
         <div className="flex gap-1 border-b border-gray-200 mb-6">
-          {['members', 'branding', 'payments', 'webhooks', 'audit'].map((tab) => (
+          {['members', 'branding', 'payments', 'webhooks', 'custom-fields', 'integrations', 'audit'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -368,7 +389,7 @@ const BrandDetails = () => {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab === 'members' ? 'Team Members' : tab === 'branding' ? 'Branding' : tab === 'payments' ? 'Payments' : tab === 'webhooks' ? 'Webhooks' : 'Audit Log'}
+              {tab === 'members' ? 'Team Members' : tab === 'branding' ? 'Branding' : tab === 'payments' ? 'Payments' : tab === 'webhooks' ? 'Webhooks' : tab === 'custom-fields' ? 'Custom Fields' : tab === 'integrations' ? 'Integrations' : 'Audit Log'}
             </button>
           ))}
         </div>
@@ -935,6 +956,193 @@ const BrandDetails = () => {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Custom Fields Tab */}
+        {activeTab === 'custom-fields' && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Custom Fields</h2>
+                <p className="text-gray-500 text-sm mt-1">Define typed fields that appear on every client record.</p>
+              </div>
+              <button
+                onClick={() => { setFieldForm({ field_key: '', field_label: '', field_type: 'text', options: '', required: false }); setShowFieldModal(true); }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+              >
+                + Add Field
+              </button>
+            </div>
+
+            {fieldDefs.length === 0 ? (
+              <div className="text-center py-10 text-gray-400">No custom fields yet. Add one to get started.</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-gray-500 border-b">
+                    <th className="pb-2 font-medium">Label</th>
+                    <th className="pb-2 font-medium">Key</th>
+                    <th className="pb-2 font-medium">Type</th>
+                    <th className="pb-2 font-medium">Required</th>
+                    <th className="pb-2 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {fieldDefs.map((f) => (
+                    <tr key={f.id} className="hover:bg-gray-50">
+                      <td className="py-3 font-medium text-gray-900">{f.field_label}</td>
+                      <td className="py-3 font-mono text-gray-500 text-xs">{f.field_key}</td>
+                      <td className="py-3">
+                        <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded text-xs font-medium capitalize">{f.field_type}</span>
+                      </td>
+                      <td className="py-3">{f.required ? '✓' : '—'}</td>
+                      <td className="py-3 flex gap-3 justify-end">
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm(`Delete field "${f.field_label}"?`)) return;
+                            await customFieldAPI.remove(id, f.id);
+                            setFieldDefs(prev => prev.filter(x => x.id !== f.id));
+                          }}
+                          className="text-red-500 hover:text-red-700 text-xs"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+
+            {/* Add Field Modal */}
+            {showFieldModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div className="bg-white rounded-lg max-w-md w-full p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Add Custom Field</h3>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setSavingField(true);
+                    try {
+                      const payload = {
+                        field_key: fieldForm.field_key.trim().toLowerCase().replace(/\s+/g, '_'),
+                        field_label: fieldForm.field_label.trim(),
+                        field_type: fieldForm.field_type,
+                        options: fieldForm.field_type === 'dropdown'
+                          ? fieldForm.options.split(',').map(s => s.trim()).filter(Boolean)
+                          : [],
+                        required: fieldForm.required,
+                        position: fieldDefs.length,
+                      };
+                      const res = await customFieldAPI.create(id, payload);
+                      setFieldDefs(prev => [...prev, res.data.data.field]);
+                      setShowFieldModal(false);
+                    } catch (err) {
+                      alert(err.response?.data?.message || 'Failed to create field');
+                    } finally { setSavingField(false); }
+                  }} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Label *</label>
+                      <input required type="text" value={fieldForm.field_label}
+                        onChange={e => setFieldForm(f => ({ ...f, field_label: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="e.g. Budget" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Key *</label>
+                      <input required type="text" value={fieldForm.field_key}
+                        onChange={e => setFieldForm(f => ({ ...f, field_key: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono" placeholder="e.g. budget (auto-formatted)" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                      <select value={fieldForm.field_type} onChange={e => setFieldForm(f => ({ ...f, field_type: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        {['text','number','date','dropdown','checkbox','url','email','phone'].map(t => (
+                          <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {fieldForm.field_type === 'dropdown' && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Options (comma-separated)</label>
+                        <input type="text" value={fieldForm.options}
+                          onChange={e => setFieldForm(f => ({ ...f, options: e.target.value }))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" placeholder="Option A, Option B, Option C" />
+                      </div>
+                    )}
+                    <label className="flex items-center gap-2 text-sm">
+                      <input type="checkbox" checked={fieldForm.required}
+                        onChange={e => setFieldForm(f => ({ ...f, required: e.target.checked }))} />
+                      Required field
+                    </label>
+                    <div className="flex gap-3 justify-end pt-2">
+                      <button type="button" onClick={() => setShowFieldModal(false)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm">Cancel</button>
+                      <button type="submit" disabled={savingField}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm disabled:bg-gray-400">
+                        {savingField ? 'Adding…' : 'Add Field'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Integrations Tab */}
+        {activeTab === 'integrations' && (
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Integrations</h2>
+            <p className="text-gray-500 text-sm mb-6">Connect third-party services to enhance your CRM data.</p>
+
+            <div className="border border-gray-200 rounded-lg p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-lg">🎯</div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Hunter.io</h3>
+                  <p className="text-xs text-gray-500">Automatically find social profiles and emails during contact enrichment</p>
+                </div>
+              </div>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                  <div className="relative">
+                    <input
+                      type={showHunterKey ? 'text' : 'password'}
+                      value={hunterKey}
+                      onChange={(e) => setHunterKey(e.target.value)}
+                      placeholder="Enter Hunter.io API key"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900 pr-16"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowHunterKey(!showHunterKey)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 hover:text-gray-600"
+                    >
+                      {showHunterKey ? 'Hide' : 'Show'}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={async () => {
+                    setSavingHunterKey(true);
+                    try {
+                      await brandAPI.updateBrand(id, { hunter_api_key: hunterKey });
+                      setSuccessMessage('Hunter.io API key saved!');
+                      setTimeout(() => setSuccessMessage(''), 3000);
+                    } catch (err) {
+                      setError(err.response?.data?.message || 'Failed to save key');
+                    } finally { setSavingHunterKey(false); }
+                  }}
+                  disabled={savingHunterKey}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 text-sm whitespace-nowrap"
+                >
+                  {savingHunterKey ? 'Saving…' : 'Save Key'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">Get your API key at <a href="https://hunter.io" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">hunter.io</a> — free plan includes 25 searches/month.</p>
+            </div>
           </div>
         )}
 

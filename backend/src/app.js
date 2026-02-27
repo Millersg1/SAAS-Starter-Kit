@@ -120,6 +120,9 @@ import voipRoutes from './routes/voipRoutes.js';
 import workflowRoutes from './routes/workflowRoutes.js';
 import googleCalendarRoutes from './routes/googleCalendarRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
+import enrichmentRoutes from './routes/enrichmentRoutes.js';
+import customFieldRoutes from './routes/customFieldRoutes.js';
+import segmentRoutes from './routes/segmentRoutes.js';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -162,6 +165,9 @@ app.use('/api/voip', voipRoutes);
 app.use('/api/workflows', workflowRoutes);
 app.use('/api/google-calendar', googleCalendarRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/enrichment', enrichmentRoutes);
+app.use('/api/custom-fields', customFieldRoutes);
+app.use('/api/segments', segmentRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

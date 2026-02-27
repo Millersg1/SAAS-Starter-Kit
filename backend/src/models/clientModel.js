@@ -148,7 +148,9 @@ export const updateClient = async (clientId, updateData) => {
     'name', 'email', 'phone', 'company', 'address', 'city', 'state', 'country',
     'postal_code', 'portal_access', 'status', 'client_type', 'industry', 'website',
     'tax_id', 'assigned_to', 'notes', 'tags', 'custom_fields', 'photo_url',
-    'lead_source', 'lead_source_detail'
+    'lead_source', 'lead_source_detail',
+    'linkedin_url', 'twitter_url', 'facebook_url', 'instagram_url',
+    'company_logo_url', 'enriched_at'
   ];
 
   const updates = [];

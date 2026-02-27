@@ -118,7 +118,7 @@ export const getBrandBySlug = async (slug) => {
  * @returns {Promise<Object>} Updated brand
  */
 export const updateBrand = async (brandId, updateData) => {
-  const { name, description, logo_url, website, primary_color, secondary_color, settings, custom_domain } = updateData;
+  const { name, description, logo_url, website, primary_color, secondary_color, settings, custom_domain, hunter_api_key } = updateData;
 
   const result = await query(
     `UPDATE brands
@@ -129,12 +129,13 @@ export const updateBrand = async (brandId, updateData) => {
          primary_color = COALESCE($5, primary_color),
          secondary_color = COALESCE($6, secondary_color),
          settings = COALESCE($7, settings),
-         custom_domain = COALESCE($8, custom_domain)
+         custom_domain = COALESCE($8, custom_domain),
+         hunter_api_key = COALESCE($10, hunter_api_key)
      WHERE id = $9 AND is_active = TRUE
      RETURNING id, name, slug, description, logo_url, website, primary_color,
-               secondary_color, owner_id, settings, custom_domain, is_active, created_at, updated_at`,
+               secondary_color, owner_id, settings, custom_domain, hunter_api_key, is_active, created_at, updated_at`,
     [name, description, logo_url, website, primary_color, secondary_color,
-     settings ? JSON.stringify(settings) : null, custom_domain || null, brandId]
+     settings ? JSON.stringify(settings) : null, custom_domain || null, brandId, hunter_api_key ?? null]
   );
   
   return result.rows[0];

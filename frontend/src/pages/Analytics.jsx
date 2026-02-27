@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ComposedChart, Area, Line, ReferenceLine,
 } from 'recharts';
 import Layout from '../components/Layout';
 import { revenueAnalyticsAPI, brandAPI } from '../services/api';
@@ -21,6 +22,7 @@ export default function Analytics() {
   const [revenue, setRevenue] = useState(null);
   const [conversion, setConversion] = useState(null);
   const [pipeline, setPipeline] = useState(null);
+  const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,22 +39,44 @@ export default function Analytics() {
       revenueAnalyticsAPI.getRevenue(brandId),
       revenueAnalyticsAPI.getConversion(brandId),
       revenueAnalyticsAPI.getPipeline(brandId),
-    ]).then(([r, c, p]) => {
+      revenueAnalyticsAPI.getForecast(brandId),
+    ]).then(([r, c, p, f]) => {
       setRevenue(r.data.data);
       setConversion(c.data.data);
       setPipeline(p.data.data);
+      setForecast(f.data.data);
     }).catch(console.error).finally(() => setLoading(false));
   }, [brandId]);
 
   const pipelineChartData = pipeline
     ? Object.entries(pipeline.byStage || {})
-        .filter(([k]) => k !== 'lost')
+        .filter(([k]) => !k.toLowerCase().includes('lost'))
         .map(([stage, data]) => ({
-          stage: stage.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          stage: stage.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
           deals: data.deal_count,
           value: parseFloat(data.total_value),
         }))
     : [];
+
+  // Build combined forecast chart data: 12 historical + 6 projected
+  const forecastChartData = forecast ? [
+    ...(forecast.historical || []).map((h, i) => ({
+      month: h.month,
+      actual: h.revenue || null,
+      projected: null,
+      pipeline: null,
+      isLast: i === (forecast.historical.length - 1),
+    })),
+    ...(forecast.projected || []).map(p => ({
+      month: p.month,
+      actual: null,
+      projected: p.revenue || null,
+      pipeline: p.pipeline || null,
+      isLast: false,
+    })),
+  ] : [];
+
+  const todayLabel = forecastChartData.find(d => d.isLast)?.month;
 
   return (
     <Layout>
@@ -90,7 +114,6 @@ export default function Analytics() {
                   sub={`Avg ${conversion?.avgDaysToClose ?? 0} days to close`} />
               </div>
 
-              {/* Monthly Revenue Bar Chart */}
               {revenue?.monthly?.length > 0 ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                   <h3 className="text-sm font-semibold text-gray-700 mb-4">Monthly Revenue (Last 12 Months)</h3>
@@ -107,6 +130,75 @@ export default function Analytics() {
               ) : (
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400 text-sm">
                   No payment data yet. Revenue will appear once payments are recorded.
+                </div>
+              )}
+            </section>
+
+            {/* Revenue Forecast */}
+            <section>
+              <h2 className="text-lg font-semibold text-gray-700 mb-4">Revenue Forecast</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <StatCard label="Current MRR" value={formatCurrency(forecast?.currentMRR)} color="text-blue-600" />
+                <StatCard label="Projected MRR (6mo avg)" value={formatCurrency(forecast?.projectedMRR)} color="text-emerald-600" />
+                <StatCard label="Projected ARR" value={formatCurrency((forecast?.projectedMRR || 0) * 12)} color="text-purple-600" />
+                <StatCard
+                  label="Growth Rate"
+                  value={`${forecast?.growthRate ?? 0}%`}
+                  sub="3-month moving avg"
+                  color={(forecast?.growthRate || 0) >= 0 ? 'text-green-600' : 'text-red-500'}
+                />
+              </div>
+              {forecastChartData.length > 0 ? (
+                <div className="bg-white rounded-xl border border-gray-200 p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-4">12-Month History + 6-Month Projection</h3>
+                  <ResponsiveContainer width="100%" height={280}>
+                    <ComposedChart data={forecastChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={1} />
+                      <YAxis tickFormatter={v => `$${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <Tooltip
+                        formatter={(v, name) => [
+                          formatCurrency(v),
+                          name === 'actual' ? 'Actual Revenue' : name === 'projected' ? 'Projected Revenue' : 'Pipeline Contribution',
+                        ]}
+                      />
+                      {todayLabel && (
+                        <ReferenceLine
+                          x={todayLabel}
+                          stroke="#9ca3af"
+                          strokeDasharray="4 4"
+                          label={{ value: 'Today', fontSize: 11, fill: '#6b7280', position: 'top' }}
+                        />
+                      )}
+                      <Area
+                        type="monotone"
+                        dataKey="actual"
+                        fill="#dbeafe"
+                        stroke="#3b82f6"
+                        strokeWidth={2}
+                        name="actual"
+                        connectNulls={false}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="projected"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        name="projected"
+                        connectNulls={false}
+                      />
+                      <Bar dataKey="pipeline" fill="#fbbf24" opacity={0.7} name="pipeline" barSize={8} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                  <p className="text-xs text-gray-400 mt-2 text-center">
+                    Blue area = Actual · Green dashed = Projected · Yellow bars = Pipeline contribution
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400 text-sm">
+                  Forecast will appear once payment history is available.
                 </div>
               )}
             </section>

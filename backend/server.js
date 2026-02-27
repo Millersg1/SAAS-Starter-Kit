@@ -292,6 +292,80 @@ const startServer = async () => {
         ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS recording_url TEXT;
         ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS transcript TEXT;
         ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS transcription_status VARCHAR(20) DEFAULT 'none';
+
+        -- Feature 5+7: Social profiles + contact enrichment
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(500);
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS twitter_url VARCHAR(500);
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS facebook_url VARCHAR(500);
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS instagram_url VARCHAR(500);
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS company_logo_url VARCHAR(500);
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS enriched_at TIMESTAMP;
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS hunter_api_key VARCHAR(255);
+
+        -- Feature 1: Typed Custom Field Definitions
+        CREATE TABLE IF NOT EXISTS custom_field_definitions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          entity_type VARCHAR(20) DEFAULT 'client',
+          field_key VARCHAR(50) NOT NULL,
+          field_label VARCHAR(100) NOT NULL,
+          field_type VARCHAR(20) DEFAULT 'text'
+            CHECK (field_type IN ('text','number','date','dropdown','checkbox','url','email','phone')),
+          options JSONB DEFAULT '[]',
+          required BOOLEAN DEFAULT FALSE,
+          position INTEGER DEFAULT 0,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(brand_id, entity_type, field_key)
+        );
+        CREATE INDEX IF NOT EXISTS idx_custom_field_defs_brand ON custom_field_definitions(brand_id);
+
+        -- Feature 2: Multiple Pipelines
+        CREATE TABLE IF NOT EXISTS pipelines (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(100) NOT NULL,
+          description TEXT,
+          stages JSONB NOT NULL DEFAULT '["Lead","Qualified","Proposal Sent","Negotiation","Won","Lost"]',
+          is_default BOOLEAN DEFAULT FALSE,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_pipelines_brand ON pipelines(brand_id);
+        ALTER TABLE pipeline_deals ADD COLUMN IF NOT EXISTS pipeline_id UUID REFERENCES pipelines(id) ON DELETE SET NULL;
+        CREATE INDEX IF NOT EXISTS idx_pipeline_deals_pipeline ON pipeline_deals(pipeline_id);
+
+        -- Feature 3: Client Segments
+        CREATE TABLE IF NOT EXISTS client_segments (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(100) NOT NULL,
+          description TEXT,
+          filter_config JSONB NOT NULL DEFAULT '[]',
+          client_count INTEGER DEFAULT 0,
+          last_evaluated_at TIMESTAMP,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_client_segments_brand ON client_segments(brand_id);
+
+        -- Feature 6: A/B Campaign Testing
+        CREATE TABLE IF NOT EXISTS campaign_variants (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          campaign_id UUID NOT NULL REFERENCES email_campaigns(id) ON DELETE CASCADE,
+          variant_name CHAR(1) NOT NULL DEFAULT 'A',
+          subject VARCHAR(500) NOT NULL,
+          html_content TEXT,
+          text_content TEXT,
+          recipient_split INTEGER DEFAULT 50,
+          sent_count INTEGER DEFAULT 0,
+          open_count INTEGER DEFAULT 0,
+          click_count INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_campaign_variants_campaign ON campaign_variants(campaign_id);
+        ALTER TABLE campaign_recipients ADD COLUMN IF NOT EXISTS variant_name CHAR(1) DEFAULT 'A';
       `);
       console.log('✅ Schema migrations applied - server.js:280');
     } catch (migErr) {
