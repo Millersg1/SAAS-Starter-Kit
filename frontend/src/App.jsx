@@ -55,7 +55,25 @@ const Campaigns          = lazy(() => import('./pages/Campaigns'));
 const CampaignDetails    = lazy(() => import('./pages/CampaignDetails'));
 const EmailConnections   = lazy(() => import('./pages/EmailConnections'));
 const SmsInbox           = lazy(() => import('./pages/SmsInbox'));
+const SmsBroadcast       = lazy(() => import('./pages/SmsBroadcast'));
 const Automations        = lazy(() => import('./pages/Automations'));
+const WorkflowBuilder    = lazy(() => import('./pages/WorkflowBuilder'));
+const CMS                    = lazy(() => import('./pages/CMS'));
+const CMSEditor              = lazy(() => import('./pages/CMSEditor'));
+const Social                 = lazy(() => import('./pages/Social'));
+const SocialAnalytics        = lazy(() => import('./pages/SocialAnalytics'));
+const PublicContentReview    = lazy(() => import('./pages/PublicContentReview'));
+const BrandVoice             = lazy(() => import('./pages/BrandVoice'));
+const Reputation             = lazy(() => import('./pages/Reputation'));
+const ServicePackages        = lazy(() => import('./pages/ServicePackages'));
+const ClientReports          = lazy(() => import('./pages/ClientReports'));
+const Workload               = lazy(() => import('./pages/Workload'));
+const Funnels                = lazy(() => import('./pages/Funnels'));
+const FunnelBuilder          = lazy(() => import('./pages/FunnelBuilder'));
+const PublicFunnelPage       = lazy(() => import('./pages/PublicFunnelPage'));
+const EmailSequences         = lazy(() => import('./pages/EmailSequences'));
+const EmailSequenceEditor    = lazy(() => import('./pages/EmailSequenceEditor'));
+const ChatWidget             = lazy(() => import('./pages/ChatWidget'));
 
 // Policy pages — rarely visited, no reason to be in main bundle
 const PrivacyPolicy           = lazy(() => import('./pages/PrivacyPolicy'));
@@ -163,12 +181,38 @@ function App() {
               <Route path="/campaigns/:campaignId" element={<ProtectedRoute><CampaignDetails /></ProtectedRoute>} />
               <Route path="/email-connections"     element={<ProtectedRoute><EmailConnections /></ProtectedRoute>} />
               <Route path="/sms"                  element={<ProtectedRoute><SmsInbox /></ProtectedRoute>} />
+              <Route path="/sms-broadcasts"       element={<ProtectedRoute><SmsBroadcast /></ProtectedRoute>} />
               <Route path="/automations"          element={<ProtectedRoute><Automations /></ProtectedRoute>} />
+              <Route path="/workflows/:workflowId" element={<ProtectedRoute><WorkflowBuilder /></ProtectedRoute>} />
+
+              {/* Content Management */}
+              <Route path="/cms"                           element={<ProtectedRoute><CMS /></ProtectedRoute>} />
+              <Route path="/cms/editor/:siteId/:pageId"   element={<ProtectedRoute><CMSEditor /></ProtectedRoute>} />
+
+              {/* Social Media */}
+              <Route path="/social"            element={<ProtectedRoute><Social /></ProtectedRoute>} />
+              <Route path="/social/analytics"  element={<ProtectedRoute><SocialAnalytics /></ProtectedRoute>} />
+
+              {/* Brand & Agency tools */}
+              <Route path="/brand-voice"        element={<ProtectedRoute><BrandVoice /></ProtectedRoute>} />
+              <Route path="/packages"           element={<ProtectedRoute><ServicePackages /></ProtectedRoute>} />
+              <Route path="/client-reports"     element={<ProtectedRoute><ClientReports /></ProtectedRoute>} />
+              <Route path="/workload"           element={<ProtectedRoute><Workload /></ProtectedRoute>} />
+              <Route path="/reputation"         element={<ProtectedRoute><Reputation /></ProtectedRoute>} />
+              <Route path="/funnels"            element={<ProtectedRoute><Funnels /></ProtectedRoute>} />
+              <Route path="/funnels/:funnelId"  element={<ProtectedRoute><FunnelBuilder /></ProtectedRoute>} />
+              <Route path="/sequences"          element={<ProtectedRoute><EmailSequences /></ProtectedRoute>} />
+              <Route path="/sequences/:sequenceId" element={<ProtectedRoute><EmailSequenceEditor /></ProtectedRoute>} />
+              <Route path="/chat-widget"        element={<ProtectedRoute><ChatWidget /></ProtectedRoute>} />
 
               {/* ── Public (no auth) ── */}
+              <Route path="/review/cms/:token"    element={<PublicContentReview type="cms" />} />
+              <Route path="/review/social/:token" element={<PublicContentReview type="social" />} />
               <Route path="/pay/:token" element={<PublicInvoice />} />
               <Route path="/book/:slug" element={<PublicBooking />} />
               <Route path="/f/:slug"    element={<PublicLeadForm />} />
+              <Route path="/lp/:funnelSlug"           element={<PublicFunnelPage />} />
+              <Route path="/lp/:funnelSlug/:stepSlug" element={<PublicFunnelPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/cookie-policy" element={<CookiePolicy />} />

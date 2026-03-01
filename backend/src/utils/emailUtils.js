@@ -669,3 +669,46 @@ export const sendLeadNotificationEmail = async (email, name, formName, leadName,
     html: `<div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px;"><h2 style="color:#1d4ed8;">New Lead Submission 🎯</h2><p>Hi ${name},</p><p>New submission from <strong>${formName}</strong>:</p><p><strong>Name:</strong> ${leadName || 'Unknown'}</p><p><strong>Email:</strong> ${leadEmail || 'Not provided'}</p><p><a href="${process.env.FRONTEND_URL}/lead-forms" style="background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:12px;">View Submissions</a></p></div>`,
   });
 };
+
+/**
+ * Send a review request email to a client
+ */
+export const sendReviewRequestEmail = async (clientEmail, clientName, brandName, message, trackingUrl) => {
+  const transporter = createTransporter();
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    to: clientEmail,
+    subject: `How was your experience with ${brandName}?`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff;">
+        <div style="background: #1d4ed8; padding: 32px 24px; text-align: center; border-radius: 8px 8px 0 0;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px;">We Value Your Feedback</h1>
+        </div>
+        <div style="padding: 32px 24px;">
+          <p style="font-size: 16px; color: #374151; line-height: 1.6;">${message || `Hi ${clientName}, thank you for working with ${brandName}! We would love to hear about your experience.`}</p>
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${trackingUrl}"
+               style="background-color: #1d4ed8; color: white; padding: 14px 36px; text-decoration: none;
+                      border-radius: 8px; display: inline-block; font-size: 16px; font-weight: bold;">
+              Leave a Review
+            </a>
+          </div>
+          <p style="font-size: 14px; color: #6b7280; text-align: center;">
+            It only takes a minute and means the world to us.
+          </p>
+        </div>
+        <div style="background: #f9fafb; padding: 16px 24px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0; font-size: 12px; color: #9ca3af;">Sent by ${brandName} via ClientHub</p>
+        </div>
+      </div>
+    `,
+    text: `${message || `Hi ${clientName}, thank you for working with ${brandName}!`}\n\nLeave a review here: ${trackingUrl}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error sending review request email:', error);
+  }
+};

@@ -214,6 +214,13 @@ export const updateProject = async (req, res, next) => {
       });
     }
 
+    // Auto reputation review request on project completion
+    if (updateData.status === 'completed' && existingProject.status !== 'completed' && project.client_id) {
+      import('../utils/reputationTrigger.js')
+        .then(m => m.autoSendReviewRequest(brandId, project.client_id, 'project_completed'))
+        .catch(() => {});
+    }
+
     res.status(200).json({
       status: 'success',
       message: 'Project updated successfully',

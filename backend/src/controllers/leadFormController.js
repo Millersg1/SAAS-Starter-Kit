@@ -2,6 +2,7 @@ import * as leadFormModel from '../models/leadFormModel.js';
 import * as brandModel from '../models/brandModel.js';
 import * as clientModel from '../models/clientModel.js';
 import { sendLeadNotificationEmail } from '../utils/emailUtils.js';
+import { triggerWorkflow } from '../utils/workflowEngine.js';
 import { query } from '../config/database.js';
 
 const auth = async (brandId, userId, res) => {
@@ -88,6 +89,7 @@ export const submitForm = async (req, res, next) => {
         if (ownerRes.rows[0]) sendLeadNotificationEmail(ownerRes.rows[0].email, ownerRes.rows[0].name, form.name, name, email).catch(() => {});
       }
     } catch { /* non-critical */ }
+    triggerWorkflow(form.brand_id, 'lead_submitted', submission.id, 'lead').catch(() => {});
 
     res.status(201).json({ status: 'success', message: form.thank_you_message, data: { id: submission.id } });
   } catch (e) { next(e); }

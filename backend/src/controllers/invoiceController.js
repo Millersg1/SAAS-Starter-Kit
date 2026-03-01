@@ -4,6 +4,7 @@ import * as brandModel from '../models/brandModel.js';
 import * as clientModel from '../models/clientModel.js';
 import { sendInvoiceEmail, sendPaymentConfirmationEmail } from '../utils/emailUtils.js';
 import { deliverWebhook } from '../utils/webhookDelivery.js';
+import { triggerWorkflow } from '../utils/workflowEngine.js';
 import { query } from '../config/database.js';
 
 // ============================================
@@ -572,6 +573,18 @@ export const recordPayment = async (req, res) => {
       } catch (emailErr) {
         console.error('Failed to send payment confirmation email:', emailErr);
       }
+    }
+
+    // Workflow automation trigger
+    if (invoice.client_id) {
+      triggerWorkflow(brandId, 'invoice_paid', invoice.client_id, 'client').catch(() => {});
+    }
+
+    // Auto reputation review request trigger
+    if (invoice.client_id) {
+      import('../utils/reputationTrigger.js')
+        .then(m => m.autoSendReviewRequest(brandId, invoice.client_id, 'invoice_paid'))
+        .catch(() => {});
     }
 
     res.status(201).json({

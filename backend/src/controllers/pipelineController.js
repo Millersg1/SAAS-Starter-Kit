@@ -1,6 +1,7 @@
 import * as pipelineModel from '../models/pipelineModel.js';
 import * as brandModel from '../models/brandModel.js';
 import * as clientActivityModel from '../models/clientActivityModel.js';
+import { triggerWorkflow } from '../utils/workflowEngine.js';
 
 const verifyBrandAccess = async (brandId, userId) => {
   const member = await brandModel.getBrandMember(brandId, userId);
@@ -187,6 +188,9 @@ export const updateDeal = async (req, res, next) => {
         title: `Deal stage changed to ${req.body.stage}`,
         body: `"${deal.title}" moved from ${existing.stage} to ${req.body.stage}`
       });
+      triggerWorkflow(brandId, 'pipeline_stage_changed', deal.client_id, 'client').catch(() => {});
+      if (req.body.stage === 'Won') triggerWorkflow(brandId, 'deal_won', deal.client_id, 'client').catch(() => {});
+      if (req.body.stage === 'Lost') triggerWorkflow(brandId, 'deal_lost', deal.client_id, 'client').catch(() => {});
     }
     res.status(200).json({ status: 'success', message: 'Deal updated', data: { deal } });
   } catch (error) {

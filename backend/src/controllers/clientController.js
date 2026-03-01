@@ -3,6 +3,7 @@ import * as brandModel from '../models/brandModel.js';
 import bcrypt from 'bcryptjs';
 import { sendPortalAccessEmail } from '../utils/emailUtils.js';
 import { deliverWebhook } from '../utils/webhookDelivery.js';
+import { triggerWorkflow } from '../utils/workflowEngine.js';
 import { query } from '../config/database.js';
 
 /**
@@ -74,6 +75,7 @@ export const createClient = async (req, res, next) => {
 
     // Webhook: client.created
     deliverWebhook(brandId, 'client.created', { id: client.id, name: client.name, email: client.email }).catch(() => {});
+    triggerWorkflow(brandId, 'client_created', client.id, 'client').catch(() => {});
 
     res.status(201).json({
       status: 'success',

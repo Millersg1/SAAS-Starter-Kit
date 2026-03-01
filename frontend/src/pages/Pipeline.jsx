@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import { pipelineAPI, brandAPI, clientAPI } from '../services/api';
+import { DndContext, DragOverlay, useDroppable, useDraggable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 
 const DEFAULT_STAGES = ['Lead', 'Qualified', 'Proposal Sent', 'Negotiation', 'Won', 'Lost'];
 
@@ -30,6 +31,34 @@ const getStageStyle = (index) => {
 const EMPTY_FORM = { title: '', client_id: '', value: '', currency: 'USD', stage: '', probability: 20, expected_close_date: '', notes: '', pipeline_id: '' };
 const EMPTY_PIPELINE_FORM = { name: '', description: '', stages: [...DEFAULT_STAGES], is_default: false };
 
+function DroppableColumn({ stageLabel, children, colBg, colBorder }) {
+  const { setNodeRef, isOver } = useDroppable({ id: stageLabel });
+  return (
+    <div
+      ref={setNodeRef}
+      className={`min-h-24 rounded-b-lg border border-t-0 ${colBg} ${colBorder} p-2 space-y-2 transition-colors ${
+        isOver ? 'ring-2 ring-blue-400 ring-inset' : ''
+      }`}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableCard({ deal, children }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: deal.id });
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      style={{ opacity: isDragging ? 0.4 : 1, cursor: 'grab', touchAction: 'none' }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function Pipeline() {
   const [brandId, setBrandId] = useState(null);
   const [deals, setDeals] = useState([]);
@@ -52,6 +81,11 @@ export default function Pipeline() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [stageMenuOpen, setStageMenuOpen] = useState(null);
+  const [activeDeal, setActiveDeal] = useState(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   const selectedPipeline = pipelines.find(p => p.id === selectedPipelineId) || null;
   const pipelineStages = selectedPipeline?.stages || DEFAULT_STAGES;
@@ -169,6 +203,30 @@ export default function Pipeline() {
       pipeline_id: selectedPipelineId,
     });
     await fetchAll();
+  };
+
+  const handleDragStart = ({ active }) => {
+    const deal = deals.find(d => d.id === active.id);
+    setActiveDeal(deal || null);
+  };
+
+  const handleDragEnd = ({ active, over }) => {
+    setActiveDeal(null);
+    if (!over || !active) return;
+    const deal = deals.find(d => d.id === active.id);
+    if (!deal) return;
+    const targetStageLabel = over.id;
+    if (stageKey(targetStageLabel) === stageKey(deal.stage)) return;
+
+    // Optimistic update
+    setDeals(prev => prev.map(d =>
+      d.id === deal.id ? { ...d, stage: stageKey(targetStageLabel) } : d
+    ));
+
+    pipelineAPI.updateDeal(brandId, deal.id, {
+      stage: stageKey(targetStageLabel),
+      pipeline_id: selectedPipelineId,
+    }).catch(() => fetchAll());
   };
 
   // Match deals to stage column using normalized keys
@@ -301,6 +359,7 @@ export default function Pipeline() {
         {loading ? (
           <div className="text-center py-16 text-gray-400">Loading pipeline...</div>
         ) : (
+          <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex gap-4 overflow-x-auto pb-6">
             {pipelineStages.map((stageLabel, stageIndex) => {
               const stageDeals = dealsByStage(stageLabel);
@@ -319,9 +378,10 @@ export default function Pipeline() {
                       <span className="text-xs text-gray-500 font-medium">{formatCurrency(stageData.total_value || 0)}</span>
                     </div>
                   </div>
-                  <div className={`min-h-24 rounded-b-lg border border-t-0 ${colBg} ${colBorder} p-2 space-y-2`}>
+                  <DroppableColumn stageLabel={stageLabel} colBg={colBg} colBorder={colBorder}>
                     {stageDeals.map(deal => (
-                      <div key={deal.id} className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow">
+                      <DraggableCard key={deal.id} deal={deal}>
+                      <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-start justify-between gap-1 mb-1">
                           <p className="text-sm font-medium text-gray-900 leading-tight">{deal.title}</p>
                           <div className="flex gap-1 flex-shrink-0">
@@ -365,15 +425,29 @@ export default function Pipeline() {
                           )}
                         </div>
                       </div>
+                      </DraggableCard>
                     ))}
                     {stageDeals.length === 0 && (
                       <p className="text-xs text-gray-400 text-center py-4">No deals</p>
                     )}
-                  </div>
+                  </DroppableColumn>
                 </div>
               );
             })}
           </div>
+
+          <DragOverlay>
+            {activeDeal ? (
+              <div className="bg-white rounded-lg border-2 border-blue-400 p-3 shadow-xl w-72 rotate-1 cursor-grabbing">
+                <p className="text-sm font-medium text-gray-900">{activeDeal.title}</p>
+                {activeDeal.client_name && (
+                  <p className="text-xs text-gray-500 mt-1">{activeDeal.client_company || activeDeal.client_name}</p>
+                )}
+                <span className="text-sm font-semibold text-gray-800 mt-2 block">{formatCurrency(activeDeal.value)}</span>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
         )}
       </div>
 

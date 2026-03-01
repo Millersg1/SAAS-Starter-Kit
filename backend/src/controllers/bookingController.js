@@ -1,6 +1,7 @@
 import * as bookingModel from '../models/bookingModel.js';
 import * as brandModel from '../models/brandModel.js';
 import { sendBookingConfirmationEmail, sendBookingNotificationEmail } from '../utils/emailUtils.js';
+import { triggerWorkflow } from '../utils/workflowEngine.js';
 
 const auth = async (brandId, userId, res) => {
   const m = await brandModel.getBrandMember(brandId, userId);
@@ -113,6 +114,7 @@ export const createBooking = async (req, res, next) => {
     // Send emails fire-and-forget
     sendBookingConfirmationEmail(client_email, client_name, page.title, start_time, booking.cancel_token).catch(() => {});
     sendBookingNotificationEmail(page.brand_name, page.title, client_name, client_email, start_time).catch(() => {});
+    triggerWorkflow(page.brand_id, 'booking_made', booking.id, 'booking').catch(() => {});
 
     res.status(201).json({ status: 'success', data: { booking } });
   } catch (e) { next(e); }

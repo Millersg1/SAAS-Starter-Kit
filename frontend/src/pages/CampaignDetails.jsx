@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { campaignAPI, clientAPI } from '../services/api';
+import { campaignAPI, clientAPI, segmentAPI } from '../services/api';
 
 const STATUS_COLORS = {
   draft: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',
@@ -26,6 +26,12 @@ export default function CampaignDetails() {
   const [selectedClients, setSelectedClients] = useState([]);
   const [activeTab, setActiveTab] = useState('content');
 
+  // Segment picker
+  const [segmentId, setSegmentId] = useState('');
+  const [segments, setSegments] = useState([]);
+  const [segmentCount, setSegmentCount] = useState(null);
+  const [loadingSegment, setLoadingSegment] = useState(false);
+
   // A/B variant forms
   const [variantForms, setVariantForms] = useState({
     A: { subject: '', html_content: '', text_content: '', send_percentage: 50 },
@@ -44,6 +50,7 @@ export default function CampaignDetails() {
       setCampaign(campData.campaign);
       setRecipients(campData.recipients || []);
       setClients(clientRes.data.data || []);
+      segmentAPI.list(activeBrandId).then(r => setSegments(r.data.data?.segments || []));
 
       const fetchedVariants = campData.variants || [];
       setVariants(fetchedVariants);
@@ -359,6 +366,54 @@ export default function CampaignDetails() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {isDraft && segments.length > 0 && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-4">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Add from Segment</p>
+              <div className="flex items-center gap-2">
+                <select
+                  value={segmentId}
+                  onChange={async (e) => {
+                    setSegmentId(e.target.value);
+                    if (!e.target.value) { setSegmentCount(null); return; }
+                    setLoadingSegment(true);
+                    const r = await segmentAPI.getClients(activeBrandId, e.target.value);
+                    setSegmentCount((r.data.data?.clients || []).length);
+                    setLoadingSegment(false);
+                  }}
+                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">— Select a segment —</option>
+                  {segments.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                {segmentCount !== null && (
+                  <span className="text-xs text-gray-500 whitespace-nowrap">{segmentCount} clients</span>
+                )}
+                <button
+                  onClick={async () => {
+                    if (!segmentId) return;
+                    setLoadingSegment(true);
+                    try {
+                      const r = await segmentAPI.getClients(activeBrandId, segmentId);
+                      const segClients = r.data.data?.clients || [];
+                      const existing = new Set(recipients.map(rc => rc.email));
+                      const toAdd = segClients
+                        .filter(c => c.email && !existing.has(c.email))
+                        .map(c => ({ client_id: c.id, email: c.email, name: c.name }));
+                      if (toAdd.length) {
+                        await campaignAPI.addRecipients(activeBrandId, campaignId, { recipients: toAdd });
+                        await fetchData();
+                      }
+                      setSegmentId(''); setSegmentCount(null);
+                    } finally { setLoadingSegment(false); }
+                  }}
+                  disabled={!segmentId || loadingSegment}
+                  className="px-3 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 whitespace-nowrap"
+                >
+                  {loadingSegment ? '…' : 'Add from Segment'}
+                </button>
+              </div>
             </div>
           )}
           {isDraft && availableClients.length > 0 && (

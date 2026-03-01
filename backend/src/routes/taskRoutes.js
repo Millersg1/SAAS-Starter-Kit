@@ -12,4 +12,7 @@ router.patch('/:brandId/:taskId',          taskController.updateTask);
 router.post('/:brandId/:taskId/complete',  taskController.completeTask);
 router.delete('/:brandId/:taskId',         taskController.deleteTask);
 
+// Team workload dashboard
+router.get('/:brandId/workload/team',      taskController.getWorkload);
+
 export default router;

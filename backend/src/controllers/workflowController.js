@@ -29,7 +29,7 @@ export const createWorkflow = async (req, res, next) => {
     const { brandId } = req.params;
     if (!await auth(brandId, req.user.id, res)) return;
     const workflow = await workflowModel.createWorkflow({ ...req.body, brand_id: brandId, created_by: req.user.id });
-    if (Array.isArray(req.body.steps)) await workflowModel.setSteps(workflow.id, req.body.steps);
+    if (Array.isArray(req.body.steps) && !req.body.workflow_definition) await workflowModel.setSteps(workflow.id, req.body.steps);
     res.status(201).json({ status: 'success', data: { workflow } });
   } catch (e) { next(e); }
 };
@@ -39,7 +39,7 @@ export const updateWorkflow = async (req, res, next) => {
     if (!await auth(req.params.brandId, req.user.id, res)) return;
     const workflow = await workflowModel.updateWorkflow(req.params.workflowId, req.body);
     if (!workflow) return res.status(404).json({ status: 'fail', message: 'Workflow not found' });
-    if (Array.isArray(req.body.steps)) await workflowModel.setSteps(workflow.id, req.body.steps);
+    if (Array.isArray(req.body.steps) && !req.body.workflow_definition) await workflowModel.setSteps(workflow.id, req.body.steps);
     res.json({ status: 'success', data: { workflow } });
   } catch (e) { next(e); }
 };

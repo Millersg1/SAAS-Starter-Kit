@@ -88,6 +88,102 @@ const salesFeatures = [
   },
 ];
 
+const contentFeatures = [
+  {
+    icon: '🌐',
+    title: 'Multi-Site CMS',
+    desc: 'Manage every client\'s website from one dashboard. Create pages, blog posts, and landing pages with a powerful rich-text editor. Full SEO title, meta description, and OG image controls on every page.',
+    badge: 'New',
+  },
+  {
+    icon: '📲',
+    title: 'Social Media Management',
+    desc: 'Schedule and publish posts to LinkedIn, Twitter/X, Facebook, and Instagram. Manage both your agency accounts and your clients\' accounts from a single content calendar.',
+    badge: 'New',
+  },
+  {
+    icon: '✨',
+    title: 'AI Content Generation',
+    desc: 'One-click AI writes full page content, blog posts, and social captions. Platform-aware — LinkedIn gets professional copy, Instagram gets engaging hooks with hashtags, Twitter gets punchy brevity.',
+    badge: 'New',
+  },
+  {
+    icon: '📅',
+    title: 'Visual Content Calendar',
+    desc: 'See every scheduled social post across all platforms and all clients in a single monthly calendar view. Click any day to preview and manage posts in a slide-out drawer.',
+    badge: 'New',
+  },
+  {
+    icon: '🖼️',
+    title: 'Centralized Media Library',
+    desc: 'Drag-and-drop image uploads organized per site. Insert directly into page content or attach to social posts. No more hunting across Google Drive for client assets.',
+    badge: 'New',
+  },
+  {
+    icon: '📊',
+    title: 'Content Performance',
+    desc: 'Track likes, comments, shares, and impressions on every published social post. Know which content performs best for each client and channel.',
+    badge: 'New',
+  },
+];
+
+const agencyFeatures = [
+  {
+    icon: '🎨',
+    title: 'Brand Voice Profiles',
+    desc: 'Define tone, target audience, keywords, and writing style once. Every piece of AI-generated content — pages, blog posts, social captions — automatically reflects your brand personality.',
+    badge: 'New',
+  },
+  {
+    icon: '📦',
+    title: 'Service Package Tracker',
+    desc: 'Set monthly hour, post, and page allowances for each client retainer. Log usage each period and instantly see who\'s over, under, or at capacity — before scope creep costs you.',
+    badge: 'New',
+  },
+  {
+    icon: '📋',
+    title: 'AI Client Reports',
+    desc: 'One click generates a full client report with real data: invoices paid, hours logged, projects completed, social reach, and an AI-written executive summary in your brand voice.',
+    badge: 'New',
+  },
+  {
+    icon: '👥',
+    title: 'Team Workload Dashboard',
+    desc: 'See every team member\'s active tasks, in-progress work, and overdue items at a glance. Spot bottlenecks before they blow deadlines.',
+    badge: 'New',
+  },
+  {
+    icon: '⭐',
+    title: 'Reputation Management',
+    desc: 'Auto-request Google, Facebook, and Yelp reviews after invoice payment or project completion. Track requests, monitor star ratings, and respond to reviews — all in one dashboard.',
+    badge: 'New',
+  },
+  {
+    icon: '🚀',
+    title: 'Funnel & Landing Page Builder',
+    desc: 'Build high-converting opt-in pages, sales funnels, and lead capture pages with a drag-free block editor. 9 section types, live preview, publish with one click, and built-in analytics.',
+    badge: 'New',
+  },
+  {
+    icon: '💬',
+    title: 'AI Chat Widget',
+    desc: 'Embed an AI-powered chat bot on any website. Trained on your brand context — answers questions, captures leads with name + email, and routes all conversations to your inbox.',
+    badge: 'New',
+  },
+  {
+    icon: '📧',
+    title: 'Email Sequences (Drip Campaigns)',
+    desc: 'Build multi-step automated email flows with custom delays. Enroll leads automatically or manually, track open rates per step, and stop sending the moment someone unsubscribes.',
+    badge: 'New',
+  },
+  {
+    icon: '⚡',
+    title: 'Visual Workflow Builder',
+    desc: 'Build multi-branch automation flows on a visual canvas. 11 trigger types, 10+ action types, if/else branching — set it once and let it run forever. No code, no limits.',
+    badge: 'New',
+  },
+];
+
 const steps = [
   {
     number: '01',
@@ -143,6 +239,17 @@ const plans = [
       'Revenue analytics & reporting',
       'Automated email sequences',
       'Lead source tracking',
+      'CMS for up to 3 websites',
+      'Social media scheduling (4 platforms)',
+      'AI content & caption generation',
+      'Brand Voice AI profiles',
+      'Service package retainer tracker',
+      'AI client report generation',
+      'Reputation management & review requests',
+      'Funnel & landing page builder',
+      'AI chat widget (lead capture)',
+      'Email sequences (drip campaigns)',
+      'Visual workflow automation (11 triggers)',
       'Custom portal domain',
       'Recurring invoices',
       'Shareable payment links',
@@ -164,6 +271,10 @@ const plans = [
       'Unlimited team members',
       'Everything in Pro',
       'Multiple brands',
+      'Unlimited CMS websites',
+      'Unlimited social accounts',
+      'AI content generation (unlimited)',
+      'Team workload & capacity dashboard',
       'Audit log & activity tracking',
       'Client portal activity dashboard',
       'Proposal view tracking',
@@ -247,6 +358,18 @@ const faqs = [
     q: 'How do the automated email sequences work?',
     a: 'When you send a proposal, two follow-up emails are scheduled automatically — one at 3 days and one at 7 days. If the client accepts the proposal before the follow-up fires, it\'s automatically cancelled. No manual follow-up needed.',
   },
+  {
+    q: 'How does the CMS work for managing client websites?',
+    a: 'Each brand can manage multiple websites from one dashboard. You create pages, blog posts, and landing pages with a rich-text editor that supports formatting, images, links, and embeds. Every page has a full SEO panel — title, meta description, OG image, and custom slug. Pages can be saved as drafts, published immediately, or scheduled to go live at a future date and time. The underlying content architecture can also be upgraded to a full block editor without any data migration.',
+  },
+  {
+    q: 'Can I manage social media for my clients, not just my agency?',
+    a: 'Yes — that\'s one of the core use cases. You can connect both your agency\'s social accounts and your clients\' accounts. Each account is labeled with the client it belongs to so your team always knows which account they\'re posting from. You can even post to multiple accounts in a single compose action to save time.',
+  },
+  {
+    q: 'Do I need API credentials to use the social media features?',
+    a: 'Not to get started. Without API credentials the app works in "manual assist" mode — it prepares your post content and copies it to your clipboard so you can paste and publish natively. For fully automated scheduling and publishing, you enter your platform developer credentials (available for free from each platform\'s developer console) in your brand settings.',
+  },
 ];
 
 const comparisonRows = [
@@ -262,6 +385,18 @@ const comparisonRows = [
   { feature: 'Multi-brand management', clienthub: true, email: false, honeybook: false },
   { feature: 'Shareable payment links', clienthub: true, email: false, honeybook: false },
   { feature: 'Audit log & activity tracking', clienthub: true, email: false, honeybook: false },
+  { feature: 'Multi-site CMS with SEO controls', clienthub: true, email: false, honeybook: false },
+  { feature: 'Social media scheduling (4 platforms)', clienthub: true, email: false, honeybook: false },
+  { feature: 'AI content & caption generation', clienthub: true, email: false, honeybook: false },
+  { feature: 'Brand Voice AI profiles', clienthub: true, email: false, honeybook: false },
+  { feature: 'Service package retainer tracker', clienthub: true, email: false, honeybook: false },
+  { feature: 'AI client report generation', clienthub: true, email: false, honeybook: false },
+  { feature: 'Team workload dashboard', clienthub: true, email: false, honeybook: false },
+  { feature: 'Reputation & review management', clienthub: true, email: false, honeybook: false },
+  { feature: 'Funnel & landing page builder', clienthub: true, email: false, honeybook: false },
+  { feature: 'AI chat widget (lead capture)', clienthub: true, email: false, honeybook: false },
+  { feature: 'Email drip sequences', clienthub: true, email: true, honeybook: false },
+  { feature: 'Visual workflow automation', clienthub: true, email: false, honeybook: false },
   { feature: 'No per-transaction platform fee', clienthub: false, email: true, honeybook: false },
 ];
 
@@ -287,6 +422,8 @@ export default function Landing() {
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Features</a>
             <a href="#sales-tools" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Sales Tools</a>
+            <a href="#content-tools" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">CMS & Social</a>
+            <a href="#agency-tools" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Agency Ops</a>
             <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">How It Works</a>
             <a href="#pricing" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Pricing</a>
             <a href="#faq" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">FAQ</a>
@@ -334,6 +471,8 @@ export default function Landing() {
           <div className="md:hidden px-6 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-4">
             <a href="#features" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Features</a>
             <a href="#sales-tools" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Sales Tools</a>
+            <a href="#content-tools" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>CMS & Social</a>
+            <a href="#agency-tools" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Agency Ops</a>
             <a href="#how-it-works" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
             <a href="#pricing" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
             <a href="#faq" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
@@ -362,7 +501,7 @@ export default function Landing() {
           <div className="text-center max-w-4xl mx-auto mb-16">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-6">
               <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
-              White-Label Client Portal + CRM for Agencies
+              White-Label Client Portal + CRM + CMS + Social for Agencies
             </div>
 
             <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6 tracking-tight">
@@ -371,8 +510,8 @@ export default function Landing() {
             </h1>
 
             <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl mx-auto">
-              ClientHub gives your agency a branded client portal, built-in CRM pipeline, automated follow-ups,
-              and revenue analytics — everything to win more business and deliver it beautifully.
+              ClientHub gives your agency a branded client portal, built-in CRM pipeline, multi-site CMS,
+              social media scheduling, AI content generation, and revenue analytics — everything to win more business, deliver it beautifully, and grow your clients' presence.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -646,6 +785,103 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── CONTENT & SOCIAL PACK ── */}
+      <section id="content-tools" className="py-24 px-6 bg-purple-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm font-bold mb-4">
+              <span className="w-1.5 h-1.5 bg-purple-600 rounded-full" />
+              Content & Social Pack — Included in Pro & Enterprise
+            </div>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Manage content. Publish everywhere.</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              ClientHub is the only agency platform that combines client management, CRM, <strong>website CMS, and social media scheduling</strong> — all in one place, for you and your clients.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {contentFeatures.map((f) => (
+              <div
+                key={f.title}
+                className="relative bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 border border-purple-100 hover:border-purple-300 hover:shadow-md transition-all group"
+              >
+                <div className="absolute top-4 right-4 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {f.badge}
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl mb-4 group-hover:bg-purple-200 transition-colors">
+                  {f.icon}
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{f.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Content calendar visual */}
+          <div className="mt-16 rounded-2xl border border-purple-100 overflow-hidden shadow-lg">
+            <div className="bg-purple-600 px-6 py-4 text-white flex items-center justify-between">
+              <p className="text-sm font-bold opacity-80 uppercase tracking-widest">Social Content Calendar — Live Preview</p>
+              <div className="flex items-center gap-3 text-xs font-semibold opacity-80">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-300 inline-block" /> LinkedIn</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-300 inline-block" /> Twitter</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Facebook</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-pink-400 inline-block" /> Instagram</span>
+              </div>
+            </div>
+            <div className="bg-white p-6">
+              <div className="grid grid-cols-7 gap-1 text-center mb-2">
+                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+                  <div key={d} className="text-xs font-semibold text-gray-400 py-1">{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {[
+                  { day: 1,  posts: [] },
+                  { day: 2,  posts: ['linkedin', 'twitter'] },
+                  { day: 3,  posts: [] },
+                  { day: 4,  posts: ['instagram'] },
+                  { day: 5,  posts: ['linkedin', 'facebook', 'instagram'] },
+                  { day: 6,  posts: [] },
+                  { day: 7,  posts: [] },
+                  { day: 8,  posts: ['twitter'] },
+                  { day: 9,  posts: ['linkedin'] },
+                  { day: 10, posts: [] },
+                  { day: 11, posts: ['facebook', 'instagram'] },
+                  { day: 12, posts: ['linkedin', 'twitter'] },
+                  { day: 13, posts: [] },
+                  { day: 14, posts: [] },
+                  { day: 15, posts: ['linkedin', 'twitter', 'facebook', 'instagram'], today: true },
+                  { day: 16, posts: ['linkedin'] },
+                  { day: 17, posts: [] },
+                  { day: 18, posts: ['instagram'] },
+                  { day: 19, posts: ['linkedin', 'twitter'] },
+                  { day: 20, posts: [] },
+                  { day: 21, posts: [] },
+                ].map((cell) => {
+                  const colors = { linkedin: 'bg-blue-400', twitter: 'bg-sky-400', facebook: 'bg-blue-600', instagram: 'bg-pink-400' };
+                  return (
+                    <div
+                      key={cell.day}
+                      className={`rounded-lg p-2 min-h-16 border ${cell.today ? 'border-purple-400 bg-purple-50' : 'border-gray-100 hover:border-purple-200'} transition-colors cursor-pointer`}
+                    >
+                      <p className={`text-xs font-bold mb-1.5 ${cell.today ? 'text-purple-700' : 'text-gray-500'}`}>{cell.day}</p>
+                      <div className="flex flex-wrap gap-0.5">
+                        {cell.posts.map((p, i) => (
+                          <div key={i} className={`w-2 h-2 rounded-full ${colors[p]}`} title={p} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="mt-4 text-center">
+                <p className="text-xs text-gray-400">18 posts scheduled this month · across 4 platforms · 3 client accounts</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS ── */}
       <section id="how-it-works" className="py-24 px-6 bg-gray-50">
         <div className="max-w-4xl mx-auto">
@@ -675,6 +911,68 @@ export default function Landing() {
                   <div className="flex-1 hidden md:block" />
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── AGENCY OPERATIONS PACK ── */}
+      <section id="agency-tools" className="py-24 px-6 bg-emerald-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold mb-4">
+              <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
+              Agency Operations — Included in Pro &amp; Enterprise
+            </div>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Run your agency like a machine.</h2>
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              The tools enterprise agencies pay for separately — brand consistency, retainer management, client reporting, and team capacity — all built in.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {agencyFeatures.map((f) => (
+              <div
+                key={f.title}
+                className="relative bg-gradient-to-br from-emerald-50 to-white rounded-2xl p-6 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all group"
+              >
+                <div className="absolute top-4 right-4 bg-emerald-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {f.badge}
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl mb-4 group-hover:bg-emerald-200 transition-colors">
+                  {f.icon}
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{f.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Sample report preview strip */}
+          <div className="mt-16 bg-white rounded-2xl border border-emerald-100 shadow-lg overflow-hidden">
+            <div className="bg-emerald-600 px-6 py-4 flex items-center justify-between">
+              <p className="text-white text-sm font-bold uppercase tracking-widest opacity-80">AI Client Report — Live Preview</p>
+              <span className="text-white text-xs opacity-60">Generated in &lt; 5 seconds</span>
+            </div>
+            <div className="p-6 grid md:grid-cols-4 gap-4 border-b border-gray-100">
+              {[
+                { label: 'Revenue', value: '$12,400', sub: '3 invoices paid', color: 'text-emerald-600' },
+                { label: 'Hours Logged', value: '47.5 hrs', sub: '38 billable', color: 'text-blue-600' },
+                { label: 'Projects', value: '4 active', sub: '2 completed', color: 'text-purple-600' },
+                { label: 'Social Reach', value: '18,240', sub: '↑ 23% vs last month', color: 'text-orange-500' },
+              ].map(stat => (
+                <div key={stat.label} className="text-center p-4 bg-gray-50 rounded-xl">
+                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">{stat.label}</p>
+                  <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+                  <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>
+                </div>
+              ))}
+            </div>
+            <div className="p-6">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">AI Executive Summary</p>
+              <p className="text-sm text-gray-700 leading-relaxed italic">
+                "Acme Corp had a strong month, generating $12,400 in revenue across 3 paid invoices. The team delivered 47.5 hours of work with a 80% billable rate. Social media performance increased 23% month-over-month, driven by 4 LinkedIn posts and 8 Instagram stories. Two projects reached completion this period with all deliverables signed off. Recommended focus for next month: close the remaining outstanding invoice ($3,200) and maintain the social posting cadence that drove the engagement spike."
+              </p>
             </div>
           </div>
         </div>
@@ -993,6 +1291,8 @@ export default function Landing() {
               <ul className="space-y-2 text-sm">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
                 <li><a href="#sales-tools" className="hover:text-white transition-colors">Sales Tools</a></li>
+                <li><a href="#content-tools" className="hover:text-white transition-colors">CMS & Social</a></li>
+                <li><a href="#agency-tools" className="hover:text-white transition-colors">Agency Ops</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>

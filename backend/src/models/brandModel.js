@@ -353,3 +353,21 @@ export const getBrandConnectStatus = async (brandId) => {
   );
   return result.rows[0] || null;
 };
+
+// ── Brand Voice Profile ────────────────────────────────────────────────────────
+
+export const getBrandVoice = async (brandId) => {
+  const result = await query(
+    `SELECT brand_voice FROM brands WHERE id = $1`,
+    [brandId]
+  );
+  return result.rows[0]?.brand_voice || {};
+};
+
+export const updateBrandVoice = async (brandId, voiceData) => {
+  const result = await query(
+    `UPDATE brands SET brand_voice = $1, updated_at = NOW() WHERE id = $2 RETURNING brand_voice`,
+    [JSON.stringify(voiceData), brandId]
+  );
+  return result.rows[0]?.brand_voice || {};
+};

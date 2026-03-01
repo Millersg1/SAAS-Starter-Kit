@@ -27,4 +27,8 @@ router.post('/:brandId/members', validate(addBrandMemberSchema), brandController
 router.patch('/:brandId/members/:memberId', validate(updateBrandMemberSchema), brandController.updateBrandMemberRole);
 router.delete('/:brandId/members/:memberId', brandController.removeBrandMember);
 
+// Brand Voice Profile
+router.get('/:brandId/voice',  brandController.getBrandVoice);
+router.patch('/:brandId/voice', brandController.updateBrandVoice);
+
 export default router;

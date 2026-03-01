@@ -72,6 +72,10 @@ export const brandAPI = {
   addBrandMember: (brandId, data) => api.post(`/brands/${brandId}/members`, data),
   updateBrandMember: (brandId, memberId, data) => api.patch(`/brands/${brandId}/members/${memberId}`, data),
   removeBrandMember: (brandId, memberId) => api.delete(`/brands/${brandId}/members/${memberId}`),
+  // Brand Voice Profile
+  getBrandVoice: (brandId) => api.get(`/brands/${brandId}/voice`),
+  updateBrandVoice: (brandId, data) => api.patch(`/brands/${brandId}/voice`, data),
+  getBrands: () => api.get('/brands'),
 };
 
 // Client API calls
@@ -339,6 +343,7 @@ export const taskAPI = {
   updateTask:    (brandId, id, d)  => api.patch(`/tasks/${brandId}/${id}`, d),
   completeTask:  (brandId, id)     => api.post(`/tasks/${brandId}/${id}/complete`),
   deleteTask:    (brandId, id)     => api.delete(`/tasks/${brandId}/${id}`),
+  getWorkload:   (brandId)         => api.get(`/tasks/${brandId}/workload/team`),
 };
 
 export const revenueAnalyticsAPI = {
@@ -452,6 +457,14 @@ export const smsAPI = {
   sendMessage:      (brandId, data)     => api.post(`/sms/${brandId}/send`, data),
 };
 
+export const smsBroadcastAPI = {
+  list:   (brandId)         => api.get(`/sms/${brandId}/broadcasts`),
+  create: (brandId, data)   => api.post(`/sms/${brandId}/broadcasts`, data),
+  get:    (brandId, id)     => api.get(`/sms/${brandId}/broadcasts/${id}`),
+  remove: (brandId, id)     => api.delete(`/sms/${brandId}/broadcasts/${id}`),
+  send:   (brandId, id)     => api.post(`/sms/${brandId}/broadcasts/${id}/send`),
+};
+
 export const voipAPI = {
   initiateCall: (brandId, data) => api.post(`/voip/${brandId}/call`, data),
 };
@@ -490,6 +503,116 @@ export const googleCalendarAPI = {
   initiateAuth:  (brandId)  => api.post(`/google-calendar/${brandId}/auth`),
   disconnect:    (brandId)  => api.delete(`/google-calendar/${brandId}/connection`),
   syncNow:       (brandId)  => api.post(`/google-calendar/${brandId}/sync`),
+};
+
+export const packagesAPI = {
+  listPackages:   (brandId, params)              => api.get(`/packages/${brandId}/packages`, { params }),
+  createPackage:  (brandId, data)                => api.post(`/packages/${brandId}/packages`, data),
+  getPackage:     (brandId, id)                  => api.get(`/packages/${brandId}/packages/${id}`),
+  updatePackage:  (brandId, id, data)            => api.patch(`/packages/${brandId}/packages/${id}`, data),
+  deletePackage:  (brandId, id)                  => api.delete(`/packages/${brandId}/packages/${id}`),
+  logUsage:       (brandId, id, data)            => api.post(`/packages/${brandId}/packages/${id}/usage`, data),
+  getUsageHistory:(brandId, id, params)          => api.get(`/packages/${brandId}/packages/${id}/usage`, { params }),
+};
+
+export const clientReportAPI = {
+  listReports:   (brandId, params)  => api.get(`/client-reports/${brandId}/reports`, { params }),
+  generateReport:(brandId, data)    => api.post(`/client-reports/${brandId}/reports/generate`, data),
+  getReport:     (brandId, id)      => api.get(`/client-reports/${brandId}/reports/${id}`),
+  deleteReport:  (brandId, id)      => api.delete(`/client-reports/${brandId}/reports/${id}`),
+};
+
+export const reputationAPI = {
+  getSettings:   (brandId)           => api.get(`/reputation/${brandId}/settings`),
+  saveSettings:  (brandId, data)     => api.patch(`/reputation/${brandId}/settings`, data),
+  getStats:      (brandId)           => api.get(`/reputation/${brandId}/stats`),
+  listRequests:  (brandId, params)   => api.get(`/reputation/${brandId}/requests`, { params }),
+  sendRequest:   (brandId, data)     => api.post(`/reputation/${brandId}/requests`, data),
+  markCompleted: (brandId, id)       => api.patch(`/reputation/${brandId}/requests/${id}`),
+  listReviews:   (brandId, params)   => api.get(`/reputation/${brandId}/reviews`, { params }),
+  addReview:     (brandId, data)     => api.post(`/reputation/${brandId}/reviews`, data),
+  updateReview:  (brandId, id, data) => api.patch(`/reputation/${brandId}/reviews/${id}`, data),
+  deleteReview:  (brandId, id)       => api.delete(`/reputation/${brandId}/reviews/${id}`),
+};
+
+export const cmsAPI = {
+  listSites:       (brandId)                    => api.get(`/cms/${brandId}/sites`),
+  createSite:      (brandId, data)              => api.post(`/cms/${brandId}/sites`, data),
+  updateSite:      (brandId, id, data)          => api.patch(`/cms/${brandId}/sites/${id}`, data),
+  deleteSite:      (brandId, id)                => api.delete(`/cms/${brandId}/sites/${id}`),
+  listPages:       (brandId, params)            => api.get(`/cms/${brandId}/pages`, { params }),
+  createPage:      (brandId, data)              => api.post(`/cms/${brandId}/pages`, data),
+  getPage:         (brandId, id)                => api.get(`/cms/${brandId}/pages/${id}`),
+  updatePage:      (brandId, id, data)          => api.patch(`/cms/${brandId}/pages/${id}`, data),
+  deletePage:      (brandId, id)                => api.delete(`/cms/${brandId}/pages/${id}`),
+  listMedia:       (brandId, siteId)            => api.get(`/cms/${brandId}/media`, { params: { site_id: siteId } }),
+  uploadMedia:     (brandId, formData)          => api.post(`/cms/${brandId}/media`, formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  deleteMedia:     (brandId, id)                => api.delete(`/cms/${brandId}/media/${id}`),
+  generateContent: (brandId, data)              => api.post(`/cms/${brandId}/ai-content`, data),
+  // Version history
+  listVersions:    (brandId, pageId)            => api.get(`/cms/${brandId}/pages/${pageId}/versions`),
+  restoreVersion:  (brandId, pageId, versionId) => api.post(`/cms/${brandId}/pages/${pageId}/versions/${versionId}/restore`),
+  // Content review
+  sendForReview:   (brandId, pageId)            => api.post(`/cms/${brandId}/pages/${pageId}/send-for-review`),
+};
+
+export const socialAPI = {
+  listAccounts:      (brandId)             => api.get(`/social/${brandId}/accounts`),
+  connectAccount:    (brandId, data)       => api.post(`/social/${brandId}/accounts`, data),
+  updateAccount:     (brandId, id, data)   => api.patch(`/social/${brandId}/accounts/${id}`, data),
+  disconnectAccount: (brandId, id)         => api.delete(`/social/${brandId}/accounts/${id}`),
+  listPosts:         (brandId, params)     => api.get(`/social/${brandId}/posts`, { params }),
+  createPost:        (brandId, data)       => api.post(`/social/${brandId}/posts`, data),
+  updatePost:        (brandId, id, data)   => api.patch(`/social/${brandId}/posts/${id}`, data),
+  deletePost:        (brandId, id)         => api.delete(`/social/${brandId}/posts/${id}`),
+  publishNow:        (brandId, id)         => api.post(`/social/${brandId}/posts/${id}/publish`),
+  sendForReview:     (brandId, id)         => api.post(`/social/${brandId}/posts/${id}/send-for-review`),
+  getCalendar:       (brandId, from, to)   => api.get(`/social/${brandId}/calendar`, { params: { from, to } }),
+  getAnalytics:      (brandId, params)     => api.get(`/social/${brandId}/analytics`, { params }),
+  generateCaption:   (brandId, data)       => api.post(`/social/${brandId}/ai-caption`, data),
+};
+
+export const funnelAPI = {
+  list:          (brandId)                   => api.get(`/funnels/${brandId}`),
+  create:        (brandId, data)             => api.post(`/funnels/${brandId}`, data),
+  get:           (brandId, id)               => api.get(`/funnels/${brandId}/${id}`),
+  update:        (brandId, id, data)         => api.patch(`/funnels/${brandId}/${id}`, data),
+  delete:        (brandId, id)               => api.delete(`/funnels/${brandId}/${id}`),
+  getStats:      (brandId, id)               => api.get(`/funnels/${brandId}/${id}/stats`),
+  reorderSteps:  (brandId, id, ids)          => api.patch(`/funnels/${brandId}/${id}/reorder`, { ids }),
+  createStep:    (brandId, fid, data)        => api.post(`/funnels/${brandId}/${fid}/steps`, data),
+  updateStep:    (brandId, fid, sid, data)   => api.patch(`/funnels/${brandId}/${fid}/steps/${sid}`, data),
+  deleteStep:    (brandId, fid, sid)         => api.delete(`/funnels/${brandId}/${fid}/steps/${sid}`),
+  duplicateStep: (brandId, fid, sid)         => api.post(`/funnels/${brandId}/${fid}/steps/${sid}/duplicate`),
+  publicView:    (fSlug, sSlug)              => api.get(sSlug ? `/funnels/view/${fSlug}/${sSlug}` : `/funnels/view/${fSlug}`),
+  publicSubmit:  (stepId, data)              => api.post(`/funnels/submit/${stepId}`, data),
+};
+
+export const dripAPI = {
+  list:           (brandId)                    => api.get(`/drip/${brandId}`),
+  create:         (brandId, data)              => api.post(`/drip/${brandId}`, data),
+  get:            (brandId, id)                => api.get(`/drip/${brandId}/${id}`),
+  update:         (brandId, id, data)          => api.patch(`/drip/${brandId}/${id}`, data),
+  delete:         (brandId, id)                => api.delete(`/drip/${brandId}/${id}`),
+  getStats:       (brandId, id)                => api.get(`/drip/${brandId}/${id}/stats`),
+  createStep:     (brandId, id, data)          => api.post(`/drip/${brandId}/${id}/steps`, data),
+  updateStep:     (brandId, id, sid, data)     => api.patch(`/drip/${brandId}/${id}/steps/${sid}`, data),
+  deleteStep:     (brandId, id, sid)           => api.delete(`/drip/${brandId}/${id}/steps/${sid}`),
+  reorderSteps:   (brandId, id, ids)           => api.patch(`/drip/${brandId}/${id}/steps/reorder`, { ids }),
+  getEnrollments: (brandId, id, params)        => api.get(`/drip/${brandId}/${id}/enrollments`, { params }),
+  enroll:         (brandId, id, data)          => api.post(`/drip/${brandId}/${id}/enrollments`, data),
+  unenroll:       (brandId, id, eid)           => api.delete(`/drip/${brandId}/${id}/enrollments/${eid}`),
+};
+
+export const chatWidgetAPI = {
+  getSettings:    (brandId)           => api.get(`/chat-widget/${brandId}/settings`),
+  saveSettings:   (brandId, data)     => api.patch(`/chat-widget/${brandId}/settings`, data),
+  getSessions:    (brandId, params)   => api.get(`/chat-widget/${brandId}/sessions`, { params }),
+  getSession:     (brandId, id)       => api.get(`/chat-widget/${brandId}/sessions/${id}`),
+  closeSession:   (brandId, id)       => api.patch(`/chat-widget/${brandId}/sessions/${id}/close`),
+  convertSession: (brandId, id)       => api.post(`/chat-widget/${brandId}/sessions/${id}/convert`),
+  deleteSession:  (brandId, id)       => api.delete(`/chat-widget/${brandId}/sessions/${id}`),
+  replyAsAgent:   (brandId, id, data) => api.post(`/chat-widget/${brandId}/sessions/${id}/reply`, data),
 };
 
 export default api;

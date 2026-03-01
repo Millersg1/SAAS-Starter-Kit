@@ -162,3 +162,39 @@ export const getDueTodayTasks = async () => {
 export const markReminderSent = async (taskId) => {
   await query(`UPDATE tasks SET reminder_sent = TRUE WHERE id = $1`, [taskId]);
 };
+
+// ── Team Workload ─────────────────────────────────────────────────────────────
+
+export const getTeamWorkload = async (brandId) => {
+  // Active tasks grouped by assigned user
+  const result = await query(
+    `SELECT
+       u.id AS user_id,
+       u.name AS user_name,
+       u.email AS user_email,
+       u.avatar_url,
+       COUNT(t.id) AS total_tasks,
+       COUNT(t.id) FILTER (WHERE t.status = 'pending')     AS pending_count,
+       COUNT(t.id) FILTER (WHERE t.status = 'in_progress') AS in_progress_count,
+       COUNT(t.id) FILTER (WHERE t.status = 'completed')   AS completed_count,
+       COUNT(t.id) FILTER (WHERE t.due_date < CURRENT_DATE AND t.status NOT IN ('completed','cancelled')) AS overdue_count,
+       COUNT(t.id) FILTER (WHERE t.due_date = CURRENT_DATE AND t.status NOT IN ('completed','cancelled')) AS due_today_count,
+       json_agg(
+         json_build_object(
+           'id', t.id, 'title', t.title, 'status', t.status,
+           'priority', t.priority, 'due_date', t.due_date,
+           'client_name', c.name, 'project_name', p.name
+         ) ORDER BY t.priority DESC, t.due_date ASC NULLS LAST
+       ) FILTER (WHERE t.status NOT IN ('completed','cancelled')) AS active_tasks
+     FROM brand_members bm
+     JOIN users u ON bm.user_id = u.id
+     LEFT JOIN tasks t ON t.brand_id = bm.brand_id AND t.assigned_to = u.id AND t.is_active = TRUE
+     LEFT JOIN clients c ON t.client_id = c.id
+     LEFT JOIN projects p ON t.project_id = p.id
+     WHERE bm.brand_id = $1 AND bm.status = 'active'
+     GROUP BY u.id, u.name, u.email, u.avatar_url
+     ORDER BY (COUNT(t.id) FILTER (WHERE t.status NOT IN ('completed','cancelled'))) DESC`,
+    [brandId]
+  );
+  return result.rows;
+};

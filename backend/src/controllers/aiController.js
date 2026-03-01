@@ -1,6 +1,20 @@
-import { getBrandMember } from '../models/brandModel.js';
+import { getBrandMember, getBrandVoice } from '../models/brandModel.js';
 import { getClientById } from '../models/clientModel.js';
 import { AppError, catchAsync } from '../middleware/errorHandler.js';
+
+// Build a brand voice context string to inject into prompts
+const buildVoiceContext = (voice) => {
+  if (!voice || Object.keys(voice).length === 0) return '';
+  const parts = [];
+  if (voice.tone)               parts.push(`Tone: ${voice.tone}`);
+  if (voice.target_audience)    parts.push(`Target audience: ${voice.target_audience}`);
+  if (voice.industry)           parts.push(`Industry: ${voice.industry}`);
+  if (voice.brand_keywords)     parts.push(`Use these brand keywords naturally: ${voice.brand_keywords}`);
+  if (voice.avoid_words)        parts.push(`NEVER use these words: ${voice.avoid_words}`);
+  if (voice.writing_style_notes) parts.push(`Writing style: ${voice.writing_style_notes}`);
+  if (voice.sample_copy)        parts.push(`Brand voice example: "${voice.sample_copy}"`);
+  return parts.length ? `\n\nBrand Voice Guidelines:\n${parts.join('\n')}` : '';
+};
 
 // Lazy-load the SDK so the server starts even if @anthropic-ai/sdk is not installed
 let _anthropic = null;
@@ -141,4 +155,109 @@ Rules:
   }
 
   res.json({ status: 'success', data: { items: parsed.items || [], notes: parsed.notes || '', terms: parsed.terms || '' } });
+});
+
+/**
+ * POST /api/ai/:brandId/cms-content
+ * Body: { title, keywords?, pageType?, tone? }
+ * Returns: { content: '<p>HTML</p>', seoTitle, seoDescription }
+ */
+export const generateCmsContent = catchAsync(async (req, res, next) => {
+  const { brandId } = req.params;
+  const member = await getBrandMember(brandId, req.user.id);
+  if (!member) return next(new AppError('Access denied', 403));
+
+  const aiClient = await getAnthropicClient();
+  if (!aiClient) return next(new AppError('AI service not configured', 503));
+
+  const { title, keywords, pageType = 'page', tone = 'professional' } = req.body;
+  if (!title) return next(new AppError('Title is required', 400));
+
+  const brandVoice = await getBrandVoice(brandId).catch(() => ({}));
+  const voiceCtx = buildVoiceContext(brandVoice);
+
+  const prompt = `You are a professional content writer. Write a ${pageType} titled "${title}"${keywords ? ` about: ${keywords}` : ''}. Tone: ${tone}.${voiceCtx}
+
+Respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "content": "<p>HTML body using only h2, h3, p, ul, li, strong, em tags. At least 300 words. No html/body wrapper.</p>",
+  "seoTitle": "SEO optimized title under 60 characters",
+  "seoDescription": "Compelling meta description under 155 characters"
+}`;
+
+  const message = await aiClient.messages.create({
+    model: 'claude-haiku-4-5',
+    max_tokens: 2000,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = message.content[0]?.text?.trim() || '{}';
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return next(new AppError('AI returned an unreadable response. Please try again.', 502));
+    parsed = JSON.parse(match[0]);
+  }
+
+  res.json({ status: 'success', data: { content: parsed.content || '', seoTitle: parsed.seoTitle || '', seoDescription: parsed.seoDescription || '' } });
+});
+
+/**
+ * POST /api/ai/:brandId/social-caption
+ * Body: { topic, platform, tone?, brandName? }
+ * Returns: { caption, hashtags: ['#tag1', ...] }
+ */
+export const generateSocialCaption = catchAsync(async (req, res, next) => {
+  const { brandId } = req.params;
+  const member = await getBrandMember(brandId, req.user.id);
+  if (!member) return next(new AppError('Access denied', 403));
+
+  const aiClient = await getAnthropicClient();
+  if (!aiClient) return next(new AppError('AI service not configured', 503));
+
+  const { topic, platform = 'linkedin', tone = 'professional', brandName } = req.body;
+  if (!topic) return next(new AppError('Topic is required', 400));
+
+  const brandVoice = await getBrandVoice(brandId).catch(() => ({}));
+  const voiceCtx = buildVoiceContext(brandVoice);
+
+  const platformGuide = {
+    twitter:   'Under 280 characters total. Punchy, direct, no hashtags in body — list 2-3 hashtags separately.',
+    linkedin:  'Professional tone, 150-300 characters. Value-driven. List 3-5 relevant hashtags separately.',
+    facebook:  'Conversational and engaging, 100-250 characters. Ask a question if possible. List 3-4 hashtags separately.',
+    instagram: 'Vibrant and visual, 100-200 characters. Include a call-to-action. List 5-8 hashtags separately.',
+  };
+
+  const guide = platformGuide[platform] || platformGuide.linkedin;
+  const brandCtx = brandName ? ` Brand voice: ${brandName}.` : '';
+
+  const prompt = `You are a social media expert.${brandCtx} Write a ${platform} post about: "${topic}". Tone: ${tone}. ${guide}${voiceCtx}
+
+Respond ONLY with valid JSON, no markdown, no explanation:
+{
+  "caption": "The post text without hashtags",
+  "hashtags": ["#tag1", "#tag2"]
+}`;
+
+  const message = await aiClient.messages.create({
+    model: 'claude-haiku-4-5',
+    max_tokens: 500,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = message.content[0]?.text?.trim() || '{}';
+
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return next(new AppError('AI returned an unreadable response. Please try again.', 502));
+    parsed = JSON.parse(match[0]);
+  }
+
+  res.json({ status: 'success', data: { caption: parsed.caption || '', hashtags: parsed.hashtags || [] } });
 });

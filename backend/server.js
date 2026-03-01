@@ -8,6 +8,7 @@ import { startWeeklyReportCron } from './src/utils/weeklyReportCron.js';
 import { startEmailSyncCron } from './src/utils/emailSyncCron.js';
 import { startWorkflowCron } from './src/utils/workflowCron.js';
 import { startGoogleCalendarCron } from './src/utils/googleCalendarCron.js';
+import { startDripCron } from './src/utils/dripCron.js';
 import { setupWebSocket } from './src/utils/websocket.js';
 import dotenv from 'dotenv';
 
@@ -276,6 +277,11 @@ const startServer = async () => {
         CREATE INDEX IF NOT EXISTS idx_automation_enrollments_next ON automation_enrollments(next_step_at) WHERE status='active';
         CREATE INDEX IF NOT EXISTS idx_automation_workflows_brand ON automation_workflows(brand_id);
 
+        -- Visual Workflow Builder
+        ALTER TABLE automation_workflows ADD COLUMN IF NOT EXISTS workflow_definition JSONB DEFAULT NULL;
+        ALTER TABLE automation_enrollments ADD COLUMN IF NOT EXISTS current_node_id VARCHAR(50) DEFAULT NULL;
+        CREATE INDEX IF NOT EXISTS idx_automation_enrollments_node ON automation_enrollments(current_node_id) WHERE status='active';
+
         -- Google Calendar Sync
         CREATE TABLE IF NOT EXISTS google_calendar_connections (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -366,6 +372,443 @@ const startServer = async () => {
         );
         CREATE INDEX IF NOT EXISTS idx_campaign_variants_campaign ON campaign_variants(campaign_id);
         ALTER TABLE campaign_recipients ADD COLUMN IF NOT EXISTS variant_name CHAR(1) DEFAULT 'A';
+
+        -- ── CMS ──────────────────────────────────────────────────────────────
+        CREATE TABLE IF NOT EXISTS cms_sites (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(200) NOT NULL,
+          domain VARCHAR(500),
+          description TEXT,
+          default_seo_title VARCHAR(200),
+          default_seo_description TEXT,
+          og_image_url VARCHAR(500),
+          google_analytics_id VARCHAR(100),
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_cms_sites_brand ON cms_sites(brand_id);
+
+        CREATE TABLE IF NOT EXISTS cms_pages (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          site_id UUID NOT NULL REFERENCES cms_sites(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          title VARCHAR(500) NOT NULL,
+          slug VARCHAR(500) NOT NULL,
+          content TEXT,
+          excerpt TEXT,
+          featured_image_url VARCHAR(500),
+          page_type VARCHAR(20) DEFAULT 'page' CHECK (page_type IN ('page','post','landing')),
+          status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft','published','scheduled','archived')),
+          published_at TIMESTAMP,
+          scheduled_at TIMESTAMP,
+          seo_title VARCHAR(200),
+          seo_description TEXT,
+          seo_keywords VARCHAR(500),
+          og_image_url VARCHAR(500),
+          category VARCHAR(100),
+          tags JSONB DEFAULT '[]',
+          author_id UUID REFERENCES users(id) ON DELETE SET NULL,
+          view_count INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(site_id, slug)
+        );
+        CREATE INDEX IF NOT EXISTS idx_cms_pages_site ON cms_pages(site_id);
+        CREATE INDEX IF NOT EXISTS idx_cms_pages_brand ON cms_pages(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_cms_pages_status ON cms_pages(status);
+
+        CREATE TABLE IF NOT EXISTS cms_media (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          site_id UUID REFERENCES cms_sites(id) ON DELETE SET NULL,
+          filename VARCHAR(500) NOT NULL,
+          original_name VARCHAR(500),
+          file_url VARCHAR(1000) NOT NULL,
+          file_type VARCHAR(20) DEFAULT 'image' CHECK (file_type IN ('image','video','document','other')),
+          mime_type VARCHAR(100),
+          file_size INTEGER,
+          alt_text VARCHAR(500),
+          caption TEXT,
+          uploaded_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_cms_media_brand ON cms_media(brand_id);
+
+        -- ── Social Media ──────────────────────────────────────────────────────
+        CREATE TABLE IF NOT EXISTS social_accounts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+          platform VARCHAR(20) NOT NULL CHECK (platform IN ('linkedin','twitter','facebook','instagram')),
+          account_name VARCHAR(200),
+          account_handle VARCHAR(200),
+          platform_account_id VARCHAR(500),
+          profile_image_url VARCHAR(500),
+          access_token TEXT,
+          refresh_token TEXT,
+          token_expires_at TIMESTAMP,
+          scope TEXT,
+          is_active BOOLEAN DEFAULT TRUE,
+          connected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_sync_at TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_social_accounts_brand ON social_accounts(brand_id);
+
+        CREATE TABLE IF NOT EXISTS social_posts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          social_account_id UUID REFERENCES social_accounts(id) ON DELETE SET NULL,
+          platform VARCHAR(20) NOT NULL,
+          content TEXT NOT NULL,
+          media_urls JSONB DEFAULT '[]',
+          link_url VARCHAR(1000),
+          post_type VARCHAR(20) DEFAULT 'post' CHECK (post_type IN ('post','story','thread')),
+          status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft','scheduled','published','failed')),
+          scheduled_at TIMESTAMP,
+          published_at TIMESTAMP,
+          platform_post_id VARCHAR(500),
+          error_message TEXT,
+          like_count INTEGER DEFAULT 0,
+          comment_count INTEGER DEFAULT 0,
+          share_count INTEGER DEFAULT 0,
+          impression_count INTEGER DEFAULT 0,
+          group_id UUID,
+          created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_social_posts_brand ON social_posts(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_social_posts_account ON social_posts(social_account_id);
+        CREATE INDEX IF NOT EXISTS idx_social_posts_scheduled ON social_posts(scheduled_at) WHERE status = 'scheduled';
+
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS social_api_keys JSONB DEFAULT '{}';
+
+        -- ── Content Approval columns ─────────────────────────────────────────
+        ALTER TABLE cms_pages ADD COLUMN IF NOT EXISTS review_status VARCHAR(20) DEFAULT 'none' CHECK (review_status IN ('none','pending_review','approved','changes_requested'));
+        ALTER TABLE cms_pages ADD COLUMN IF NOT EXISTS review_token UUID DEFAULT gen_random_uuid();
+        ALTER TABLE cms_pages ADD COLUMN IF NOT EXISTS review_notes TEXT;
+        ALTER TABLE cms_pages ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
+        ALTER TABLE cms_pages ADD COLUMN IF NOT EXISTS reviewer_name VARCHAR(200);
+        CREATE INDEX IF NOT EXISTS idx_cms_pages_review_token ON cms_pages(review_token);
+
+        ALTER TABLE social_posts ADD COLUMN IF NOT EXISTS review_status VARCHAR(20) DEFAULT 'none' CHECK (review_status IN ('none','pending_review','approved','changes_requested'));
+        ALTER TABLE social_posts ADD COLUMN IF NOT EXISTS review_token UUID DEFAULT gen_random_uuid();
+        ALTER TABLE social_posts ADD COLUMN IF NOT EXISTS review_notes TEXT;
+        ALTER TABLE social_posts ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMP;
+        ALTER TABLE social_posts ADD COLUMN IF NOT EXISTS reviewer_name VARCHAR(200);
+        CREATE INDEX IF NOT EXISTS idx_social_posts_review_token ON social_posts(review_token);
+
+        -- ── CMS Page Version History ──────────────────────────────────────────
+        CREATE TABLE IF NOT EXISTS cms_page_versions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          page_id UUID NOT NULL REFERENCES cms_pages(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          version_number INTEGER NOT NULL DEFAULT 1,
+          title VARCHAR(500),
+          content TEXT,
+          excerpt TEXT,
+          seo_title VARCHAR(200),
+          seo_description TEXT,
+          seo_keywords VARCHAR(500),
+          status VARCHAR(20),
+          saved_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          saved_by_name VARCHAR(200),
+          snapshot_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_cms_page_versions_page ON cms_page_versions(page_id);
+        CREATE INDEX IF NOT EXISTS idx_cms_page_versions_brand ON cms_page_versions(brand_id);
+
+        -- ── Brand Voice Profile ───────────────────────────────────────────────
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS brand_voice JSONB DEFAULT '{}';
+
+        -- ── Service Packages / Retainer Tracker ──────────────────────────────
+        CREATE TABLE IF NOT EXISTS service_packages (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+          name VARCHAR(200) NOT NULL,
+          description TEXT,
+          monthly_hours NUMERIC(10,2) DEFAULT 0,
+          monthly_posts INTEGER DEFAULT 0,
+          monthly_pages INTEGER DEFAULT 0,
+          price NUMERIC(10,2) DEFAULT 0,
+          billing_cycle VARCHAR(20) DEFAULT 'monthly' CHECK (billing_cycle IN ('monthly','quarterly','annual','one-time')),
+          start_date DATE,
+          end_date DATE,
+          status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active','paused','ended')),
+          services JSONB DEFAULT '[]',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_service_packages_brand ON service_packages(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_service_packages_client ON service_packages(client_id);
+
+        CREATE TABLE IF NOT EXISTS package_usage (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          package_id UUID NOT NULL REFERENCES service_packages(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          period_start DATE NOT NULL,
+          period_end DATE NOT NULL,
+          hours_used NUMERIC(10,2) DEFAULT 0,
+          posts_published INTEGER DEFAULT 0,
+          pages_published INTEGER DEFAULT 0,
+          notes TEXT,
+          logged_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_package_usage_package ON package_usage(package_id);
+
+        -- ── Client Reports ─────────────────────────────────────────────────────
+        CREATE TABLE IF NOT EXISTS client_reports (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          client_id UUID REFERENCES clients(id) ON DELETE CASCADE,
+          title VARCHAR(300) NOT NULL,
+          period_start DATE NOT NULL,
+          period_end DATE NOT NULL,
+          summary_text TEXT,
+          metrics JSONB DEFAULT '{}',
+          created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_client_reports_brand ON client_reports(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_client_reports_client ON client_reports(client_id);
+
+        -- ── Reputation Management ────────────────────────────────────────────────────
+
+        CREATE TABLE IF NOT EXISTS reputation_platforms (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          platform VARCHAR(20) NOT NULL CHECK (platform IN ('google','facebook','yelp','custom')),
+          label VARCHAR(100),
+          review_url VARCHAR(1000),
+          is_active BOOLEAN DEFAULT TRUE,
+          UNIQUE(brand_id, platform)
+        );
+
+        CREATE TABLE IF NOT EXISTS reputation_requests (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+          channel VARCHAR(10) NOT NULL CHECK (channel IN ('email','sms')),
+          platform VARCHAR(20) DEFAULT 'google',
+          review_url VARCHAR(1000),
+          tracking_token VARCHAR(100) UNIQUE,
+          status VARCHAR(20) DEFAULT 'sent' CHECK (status IN ('sent','clicked','completed')),
+          message TEXT,
+          sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          clicked_at TIMESTAMP,
+          trigger_source VARCHAR(30) DEFAULT 'manual'
+            CHECK (trigger_source IN ('manual','invoice_paid','project_completed'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_reputation_requests_brand ON reputation_requests(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_reputation_requests_token ON reputation_requests(tracking_token);
+
+        CREATE TABLE IF NOT EXISTS reputation_reviews (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          platform VARCHAR(20) DEFAULT 'google'
+            CHECK (platform IN ('google','facebook','yelp','custom')),
+          reviewer_name VARCHAR(200),
+          rating INTEGER CHECK (rating BETWEEN 1 AND 5),
+          review_text TEXT,
+          review_date DATE,
+          platform_review_id VARCHAR(500),
+          response_text TEXT,
+          responded_at TIMESTAMP,
+          source_url VARCHAR(1000),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_reputation_reviews_brand ON reputation_reviews(brand_id);
+
+        ALTER TABLE brands ADD COLUMN IF NOT EXISTS reputation_settings JSONB DEFAULT '{"auto_after_invoice":false,"auto_after_project":false,"trigger_delay_days":1,"default_platform":"google","default_email_message":"Hi {client_name}, thank you for working with {brand_name}! We would love your feedback.","default_sms_message":"Hi {client_name}, thanks for working with {brand_name}! Mind leaving us a review? {review_url}"}';
+
+        -- ── Funnel & Landing Page Builder ────────────────────────────────────────────
+
+        CREATE TABLE IF NOT EXISTS funnels (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(200) NOT NULL,
+          slug VARCHAR(200) NOT NULL,
+          status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft','published','archived')),
+          goal VARCHAR(50) DEFAULT 'leads' CHECK (goal IN ('leads','sales','booking','awareness')),
+          seo_title VARCHAR(200),
+          seo_description TEXT,
+          og_image_url VARCHAR(500),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(brand_id, slug)
+        );
+        CREATE INDEX IF NOT EXISTS idx_funnels_brand ON funnels(brand_id);
+
+        CREATE TABLE IF NOT EXISTS funnel_steps (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          funnel_id UUID NOT NULL REFERENCES funnels(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(200) NOT NULL,
+          slug VARCHAR(200) NOT NULL,
+          step_order INTEGER NOT NULL DEFAULT 1,
+          blocks JSONB DEFAULT '[]',
+          next_step_id UUID REFERENCES funnel_steps(id) ON DELETE SET NULL,
+          seo_title VARCHAR(200),
+          seo_description TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(funnel_id, slug)
+        );
+        CREATE INDEX IF NOT EXISTS idx_funnel_steps_funnel ON funnel_steps(funnel_id);
+
+        CREATE TABLE IF NOT EXISTS funnel_analytics (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          funnel_id UUID NOT NULL REFERENCES funnels(id) ON DELETE CASCADE,
+          step_id UUID REFERENCES funnel_steps(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          event_type VARCHAR(20) NOT NULL CHECK (event_type IN ('view','conversion')),
+          visitor_id VARCHAR(100),
+          referrer VARCHAR(1000),
+          utm_source VARCHAR(100),
+          utm_medium VARCHAR(100),
+          utm_campaign VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_funnel_analytics_funnel ON funnel_analytics(funnel_id);
+        CREATE INDEX IF NOT EXISTS idx_funnel_analytics_step ON funnel_analytics(step_id);
+
+        -- ── AI Chat Widget ─────────────────────────────────────────────────────
+
+        CREATE TABLE IF NOT EXISTS chat_widget_settings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          is_enabled BOOLEAN DEFAULT TRUE,
+          widget_name VARCHAR(100) DEFAULT 'Chat with us',
+          greeting_message TEXT DEFAULT 'Hi! How can I help you today?',
+          primary_color VARCHAR(7) DEFAULT '#2563eb',
+          position VARCHAR(10) DEFAULT 'right' CHECK (position IN ('left','right')),
+          collect_email BOOLEAN DEFAULT TRUE,
+          ai_enabled BOOLEAN DEFAULT TRUE,
+          ai_context TEXT,
+          offline_message TEXT DEFAULT 'We''re offline right now. Leave a message!',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(brand_id)
+        );
+
+        CREATE TABLE IF NOT EXISTS chat_sessions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          visitor_id VARCHAR(100),
+          visitor_name VARCHAR(200),
+          visitor_email VARCHAR(200),
+          page_url VARCHAR(1000),
+          status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open','closed','converted')),
+          converted_to_client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+          started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          session_id UUID NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          role VARCHAR(10) NOT NULL CHECK (role IN ('visitor','assistant','agent')),
+          content TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_chat_sessions_brand ON chat_sessions(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id);
+
+        -- ── Email Sequences (Drip Campaigns) ──────────────────────────────────
+
+        CREATE TABLE IF NOT EXISTS drip_sequences (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(200) NOT NULL,
+          description TEXT,
+          status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active','paused','archived')),
+          created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS drip_steps (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          sequence_id UUID NOT NULL REFERENCES drip_sequences(id) ON DELETE CASCADE,
+          position INTEGER NOT NULL DEFAULT 1,
+          subject VARCHAR(500) NOT NULL,
+          html_content TEXT NOT NULL,
+          delay_days INTEGER NOT NULL DEFAULT 0,
+          delay_hours INTEGER NOT NULL DEFAULT 0,
+          from_name VARCHAR(200),
+          from_email VARCHAR(200),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS drip_enrollments (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          sequence_id UUID NOT NULL REFERENCES drip_sequences(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          contact_email VARCHAR(200) NOT NULL,
+          contact_name VARCHAR(200),
+          client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+          status VARCHAR(20) DEFAULT 'active' CHECK (status IN ('active','completed','unsubscribed','paused')),
+          current_step INTEGER DEFAULT 0,
+          next_send_at TIMESTAMP,
+          enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          completed_at TIMESTAMP,
+          UNIQUE(sequence_id, contact_email)
+        );
+
+        CREATE TABLE IF NOT EXISTS drip_sends (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          enrollment_id UUID NOT NULL REFERENCES drip_enrollments(id) ON DELETE CASCADE,
+          step_id UUID NOT NULL REFERENCES drip_steps(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          to_email VARCHAR(200) NOT NULL,
+          subject VARCHAR(500),
+          status VARCHAR(20) DEFAULT 'sent' CHECK (status IN ('sent','failed','opened','clicked')),
+          sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          opened_at TIMESTAMP,
+          clicked_at TIMESTAMP,
+          open_count INTEGER DEFAULT 0,
+          click_count INTEGER DEFAULT 0
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_drip_sequences_brand ON drip_sequences(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_drip_steps_sequence ON drip_steps(sequence_id);
+        CREATE INDEX IF NOT EXISTS idx_drip_enrollments_due ON drip_enrollments(next_send_at) WHERE status='active';
+        CREATE INDEX IF NOT EXISTS idx_drip_enrollments_seq ON drip_enrollments(sequence_id);
+        CREATE INDEX IF NOT EXISTS idx_drip_sends_enrollment ON drip_sends(enrollment_id);
+
+        CREATE TABLE IF NOT EXISTS sms_broadcasts (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          segment_id UUID REFERENCES segments(id) ON DELETE SET NULL,
+          status VARCHAR(20) DEFAULT 'draft',
+          total_recipients INTEGER DEFAULT 0,
+          sent_count INTEGER DEFAULT 0,
+          failed_count INTEGER DEFAULT 0,
+          created_by UUID REFERENCES users(id) ON DELETE SET NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          sent_at TIMESTAMPTZ
+        );
+        CREATE TABLE IF NOT EXISTS sms_broadcast_recipients (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          broadcast_id UUID REFERENCES sms_broadcasts(id) ON DELETE CASCADE,
+          client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+          phone VARCHAR(50) NOT NULL,
+          name VARCHAR(255),
+          status VARCHAR(20) DEFAULT 'pending',
+          error_message TEXT,
+          sent_at TIMESTAMPTZ
+        );
+        CREATE INDEX IF NOT EXISTS idx_sms_broadcast_recipients ON sms_broadcast_recipients(broadcast_id);
       `);
       console.log('✅ Schema migrations applied - server.js:280');
     } catch (migErr) {
@@ -395,6 +838,31 @@ const startServer = async () => {
 
     // Start Google Calendar sync cron (every 30 minutes)
     startGoogleCalendarCron();
+
+    // Start drip sequence cron (every 5 minutes)
+    startDripCron();
+
+    // Publish CMS scheduled pages (every 60 seconds)
+    const { publishScheduledPages } = await import('./src/models/cmsModel.js');
+    setInterval(async () => {
+      try { await publishScheduledPages(); } catch(e) { /* non-critical */ }
+    }, 60_000);
+
+    // Publish scheduled social posts (every 60 seconds)
+    const { getScheduledDuePosts, markPublished, markFailed } = await import('./src/models/socialModel.js');
+    const { publishPost } = await import('./src/controllers/socialController.js');
+    setInterval(async () => {
+      try {
+        const posts = await getScheduledDuePosts();
+        for (const post of posts) {
+          try {
+            await publishPost(post);
+          } catch(e) {
+            await markFailed(post.id, e.message);
+          }
+        }
+      } catch(e) { /* non-critical */ }
+    }, 60_000);
 
     // Start Express server
     const server = app.listen(PORT, () => {

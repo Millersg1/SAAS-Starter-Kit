@@ -163,3 +163,13 @@ export const deleteTask = async (req, res, next) => {
     next(error);
   }
 };
+
+export const getWorkload = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    const member = await brandModel.getBrandMember(brandId, req.user.id);
+    if (!member) return res.status(403).json({ status: 'error', message: 'Access denied' });
+    const workload = await taskModel.getTeamWorkload(brandId);
+    res.json({ status: 'success', data: workload });
+  } catch (error) { next(error); }
+};

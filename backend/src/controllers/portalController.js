@@ -12,6 +12,7 @@ import { getClientProposals, updateProposal, recordView } from '../models/propos
 import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { createProject } from '../models/projectModel.js';
 import { createActivity } from '../models/clientActivityModel.js';
+import { triggerWorkflow } from '../utils/workflowEngine.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const PORTAL_TOKEN_EXPIRE = process.env.PORTAL_TOKEN_EXPIRE || '7d';
@@ -406,6 +407,8 @@ export const acceptProposal = catchAsync(async (req, res, next) => {
   } catch (automationErr) {
     console.error('Onboarding automation error (non-fatal):', automationErr.message);
   }
+
+  triggerWorkflow(proposal.brand_id, 'proposal_accepted', proposal.client_id, 'client').catch(() => {});
 
   res.status(200).json({ status: 'success', data: { proposal: updated } });
 });

@@ -383,3 +383,25 @@ export const removeBrandMember = async (req, res, next) => {
     next(error);
   }
 };
+
+// ── Brand Voice Profile ────────────────────────────────────────────────────────
+
+export const getBrandVoice = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    const member = await brandModel.getBrandMember(brandId, req.user.id);
+    if (!member) return res.status(403).json({ status: 'error', message: 'Access denied' });
+    const voice = await brandModel.getBrandVoice(brandId);
+    res.json({ status: 'success', data: voice });
+  } catch (error) { next(error); }
+};
+
+export const updateBrandVoice = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    const member = await brandModel.getBrandMember(brandId, req.user.id);
+    if (!member) return res.status(403).json({ status: 'error', message: 'Access denied' });
+    const voice = await brandModel.updateBrandVoice(brandId, req.body);
+    res.json({ status: 'success', data: voice });
+  } catch (error) { next(error); }
+};

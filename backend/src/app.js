@@ -123,6 +123,14 @@ import exportRoutes from './routes/exportRoutes.js';
 import enrichmentRoutes from './routes/enrichmentRoutes.js';
 import customFieldRoutes from './routes/customFieldRoutes.js';
 import segmentRoutes from './routes/segmentRoutes.js';
+import cmsRoutes from './routes/cmsRoutes.js';
+import socialRoutes from './routes/socialRoutes.js';
+import servicePackageRoutes from './routes/servicePackageRoutes.js';
+import clientReportRoutes from './routes/clientReportRoutes.js';
+import reputationRoutes from './routes/reputationRoutes.js';
+import funnelRoutes from './routes/funnelRoutes.js';
+import dripSequenceRoutes from './routes/dripSequenceRoutes.js';
+import chatWidgetRoutes from './routes/chatWidgetRoutes.js';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -168,6 +176,14 @@ app.use('/api/export', exportRoutes);
 app.use('/api/enrichment', enrichmentRoutes);
 app.use('/api/custom-fields', customFieldRoutes);
 app.use('/api/segments', segmentRoutes);
+app.use('/api/cms', cmsRoutes);
+app.use('/api/social', socialRoutes);
+app.use('/api/packages', servicePackageRoutes);
+app.use('/api/client-reports', clientReportRoutes);
+app.use('/api/reputation', reputationRoutes);
+app.use('/api/funnels', funnelRoutes);
+app.use('/api/drip', dripSequenceRoutes);
+app.use('/api/chat-widget', chatWidgetRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {
