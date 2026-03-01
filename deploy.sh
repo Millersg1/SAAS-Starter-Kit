@@ -89,8 +89,7 @@ deploy_backend() {
     set -e
     cd $BACKEND_REMOTE_DIR
     echo '    → Installing npm dependencies...'
-    NODE_OPTIONS='--jitless' npm install --production
-    chown -R $USER:$USER node_modules 2>/dev/null || true
+    NODE_OPTIONS='--jitless' npm install --production 2>/dev/null || echo '    ⚠ npm install skipped (run as root if new packages were added)'
     echo '    → Restarting application with PM2...'
     pm2 restart clienthub-api --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --env production
   "
