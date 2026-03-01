@@ -132,6 +132,8 @@ import funnelRoutes from './routes/funnelRoutes.js';
 import dripSequenceRoutes from './routes/dripSequenceRoutes.js';
 import chatWidgetRoutes from './routes/chatWidgetRoutes.js';
 import surveyRoutes from './routes/surveyRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
+import outlookCalendarRoutes from './routes/outlookCalendarRoutes.js';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -186,6 +188,8 @@ app.use('/api/funnels', funnelRoutes);
 app.use('/api/drip', dripSequenceRoutes);
 app.use('/api/chat-widget', chatWidgetRoutes);
 app.use('/api/surveys', surveyRoutes);
+app.use('/api/emails', emailRoutes);
+app.use('/api/outlook-calendar', outlookCalendarRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

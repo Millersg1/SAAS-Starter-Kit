@@ -117,14 +117,16 @@ export const getReportById = async (id, brandId) => {
 
 export const createReport = async (data) => {
   const result = await query(
-    `INSERT INTO client_reports (brand_id, client_id, title, period_start, period_end, summary_text, metrics, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    `INSERT INTO client_reports (brand_id, client_id, title, period_start, period_end, summary_text, metrics, created_by, template_id, sections)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
     [
       data.brand_id, data.client_id || null, data.title,
       data.period_start, data.period_end,
       data.summary_text || null,
       JSON.stringify(data.metrics || {}),
-      data.created_by || null
+      data.created_by || null,
+      data.template_id || null,
+      JSON.stringify(data.sections || []),
     ]
   );
   return result.rows[0];
@@ -132,4 +134,85 @@ export const createReport = async (data) => {
 
 export const deleteReport = async (id, brandId) => {
   await query(`DELETE FROM client_reports WHERE id = $1 AND brand_id = $2`, [id, brandId]);
+};
+
+// ── Additional aggregation for Report Builder ──────────────────────────────
+
+export const aggregatePipelineDeals = async (brandId, clientId, periodStart, periodEnd) => {
+  const result = await query(
+    `SELECT
+       COUNT(*) AS total_deals,
+       COUNT(*) FILTER (WHERE stage = 'closed_won')  AS won_deals,
+       COUNT(*) FILTER (WHERE stage = 'closed_lost') AS lost_deals,
+       COALESCE(SUM(value) FILTER (WHERE stage = 'closed_won'), 0)  AS won_value,
+       COALESCE(SUM(value) FILTER (WHERE stage = 'closed_lost'), 0) AS lost_value,
+       COALESCE(SUM(value * COALESCE(probability,50) / 100.0), 0)   AS weighted_pipeline
+     FROM pipeline_deals
+     WHERE brand_id = $1
+       ${clientId ? 'AND client_id = $2' : ''}
+       AND created_at BETWEEN ${clientId ? '$3' : '$2'} AND ${clientId ? '$4' : '$3'}`,
+    clientId ? [brandId, clientId, periodStart, periodEnd] : [brandId, periodStart, periodEnd]
+  );
+  return result.rows[0] || {};
+};
+
+export const aggregateSurveyScores = async (brandId, periodStart, periodEnd) => {
+  const result = await query(
+    `SELECT
+       COUNT(*) AS total_responses,
+       ROUND(AVG(score)::numeric, 1) AS avg_score,
+       COUNT(*) FILTER (WHERE s.type = 'nps' AND sr.score >= 9) AS promoters,
+       COUNT(*) FILTER (WHERE s.type = 'nps' AND sr.score <= 6) AS detractors,
+       COUNT(*) FILTER (WHERE s.type = 'nps') AS nps_total,
+       ROUND(AVG(sr.score) FILTER (WHERE s.type = 'csat')::numeric, 1) AS avg_csat
+     FROM survey_responses sr
+     JOIN surveys s ON sr.survey_id = s.id
+     WHERE s.brand_id = $1
+       AND sr.responded_at BETWEEN $2 AND $3`,
+    [brandId, periodStart, periodEnd]
+  );
+  const row = result.rows[0] || {};
+  const npsScore = row.nps_total > 0
+    ? Math.round(((row.promoters - row.detractors) / row.nps_total) * 100)
+    : null;
+  return { ...row, nps_score: npsScore };
+};
+
+export const getHealthScoreSnapshot = async (brandId, clientId) => {
+  const result = await query(
+    `SELECT score, score_breakdown, calculated_at
+     FROM client_health_scores
+     WHERE brand_id = $1 AND client_id = $2
+     ORDER BY calculated_at DESC LIMIT 1`,
+    [brandId, clientId]
+  );
+  return result.rows[0] || null;
+};
+
+// ── Report Templates CRUD ──────────────────────────────────────────────────
+
+export const getTemplates = async (brandId) => {
+  const result = await query(
+    `SELECT * FROM report_templates
+     WHERE brand_id = $1 OR is_system = TRUE
+     ORDER BY is_system DESC, name ASC`,
+    [brandId]
+  );
+  return result.rows;
+};
+
+export const createTemplate = async (data) => {
+  const result = await query(
+    `INSERT INTO report_templates (brand_id, name, description, sections)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [data.brand_id, data.name, data.description || null, JSON.stringify(data.sections)]
+  );
+  return result.rows[0];
+};
+
+export const deleteTemplate = async (id, brandId) => {
+  await query(
+    `DELETE FROM report_templates WHERE id = $1 AND brand_id = $2 AND is_system = FALSE`,
+    [id, brandId]
+  );
 };

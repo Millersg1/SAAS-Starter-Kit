@@ -19,6 +19,9 @@ const getAI = async () => {
   } catch { return null; }
 };
 
+// All available report sections
+const ALL_SECTIONS = ['revenue', 'pipeline', 'projects', 'time', 'tickets', 'surveys', 'health_score'];
+
 export const listReports = async (req, res) => {
   try {
     const { brandId } = req.params;
@@ -43,17 +46,58 @@ export const generateReport = async (req, res) => {
     const { brandId } = req.params;
     await requireMember(brandId, req.user.id);
 
-    const { client_id, period_start, period_end, title } = req.body;
+    const { client_id, period_start, period_end, title, sections: reqSections, template_id } = req.body;
     if (!period_start || !period_end) {
       return res.status(400).json({ success: false, message: 'period_start and period_end are required' });
     }
 
-    // Aggregate real data from the database
-    const metrics = await reportModel.aggregateClientMetrics(
-      brandId, client_id, new Date(period_start), new Date(period_end)
-    );
+    // Determine which sections to include
+    let sections = reqSections && reqSections.length > 0
+      ? reqSections.filter(s => ALL_SECTIONS.includes(s))
+      : ALL_SECTIONS;
 
-    // Fetch context for better AI narrative
+    // If template_id provided, load its sections
+    if (template_id && (!reqSections || reqSections.length === 0)) {
+      try {
+        const templates = await reportModel.getTemplates(brandId);
+        const tpl = templates.find(t => t.id === template_id);
+        if (tpl && tpl.sections && tpl.sections.length > 0) {
+          sections = tpl.sections;
+        }
+      } catch { /* use default */ }
+    }
+
+    const ps = new Date(period_start);
+    const pe = new Date(period_end);
+
+    // Call aggregateClientMetrics once if any base section is needed
+    let baseMetrics = null;
+    if (sections.some(s => ['revenue', 'time', 'projects', 'tickets'].includes(s))) {
+      baseMetrics = await reportModel.aggregateClientMetrics(brandId, client_id, ps, pe);
+    }
+
+    const metrics = {};
+    if (sections.includes('revenue') && baseMetrics) metrics.invoices = baseMetrics.invoices;
+    if (sections.includes('time') && baseMetrics) metrics.timeEntries = baseMetrics.timeEntries;
+    if (sections.includes('projects') && baseMetrics) metrics.projects = baseMetrics.projects;
+    if (sections.includes('tickets') && baseMetrics) metrics.tickets = baseMetrics.tickets;
+    if (baseMetrics) {
+      metrics.socialPosts = baseMetrics.socialPosts;
+      metrics.cmsPages = baseMetrics.cmsPages;
+    }
+
+    // Run remaining queries in parallel
+    const [pipeline, surveys, healthScore] = await Promise.all([
+      sections.includes('pipeline') ? reportModel.aggregatePipelineDeals(brandId, client_id, ps, pe) : null,
+      sections.includes('surveys') ? reportModel.aggregateSurveyScores(brandId, ps, pe) : null,
+      sections.includes('health_score') && client_id ? reportModel.getHealthScoreSnapshot(brandId, client_id) : null,
+    ]);
+
+    if (pipeline) metrics.pipeline = pipeline;
+    if (surveys) metrics.surveys = surveys;
+    if (healthScore) metrics.healthScore = healthScore;
+
+    // Fetch context for AI narrative
     const [brand, client] = await Promise.all([
       getBrandById(brandId).catch(() => null),
       client_id ? getClientById(client_id).catch(() => null) : null,
@@ -70,6 +114,7 @@ export const generateReport = async (req, res) => {
       const prompt = `You are writing a monthly client report for ${brand?.name || 'an agency'}.
 Client: ${client?.name || 'Valued Client'}
 Report period: ${period_start} to ${period_end}
+Sections included: ${sections.join(', ')}
 ${toneGuide}
 
 Here are the metrics for this period:
@@ -109,6 +154,8 @@ Return ONLY valid JSON:
       summary_text: summaryText,
       metrics,
       created_by: req.user.id,
+      template_id: template_id || null,
+      sections,
     });
 
     res.status(201).json({ success: true, data: report });
@@ -121,5 +168,38 @@ export const deleteReport = async (req, res) => {
     await requireMember(brandId, req.user.id);
     await reportModel.deleteReport(reportId, brandId);
     res.json({ success: true, message: 'Report deleted' });
+  } catch (err) { res.status(err.status || 500).json({ success: false, message: err.message }); }
+};
+
+// ── Templates ──────────────────────────────────────────────────────────────
+
+export const listTemplates = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    await requireMember(brandId, req.user.id);
+    const templates = await reportModel.getTemplates(brandId);
+    res.json({ success: true, data: templates });
+  } catch (err) { res.status(err.status || 500).json({ success: false, message: err.message }); }
+};
+
+export const createTemplate = async (req, res) => {
+  try {
+    const { brandId } = req.params;
+    await requireMember(brandId, req.user.id);
+    const { name, description, sections } = req.body;
+    if (!name || !sections || !sections.length) {
+      return res.status(400).json({ success: false, message: 'name and sections are required' });
+    }
+    const template = await reportModel.createTemplate({ brand_id: brandId, name, description, sections });
+    res.status(201).json({ success: true, data: template });
+  } catch (err) { res.status(err.status || 500).json({ success: false, message: err.message }); }
+};
+
+export const deleteTemplate = async (req, res) => {
+  try {
+    const { brandId, templateId } = req.params;
+    await requireMember(brandId, req.user.id);
+    await reportModel.deleteTemplate(templateId, brandId);
+    res.json({ success: true, message: 'Template deleted' });
   } catch (err) { res.status(err.status || 500).json({ success: false, message: err.message }); }
 };

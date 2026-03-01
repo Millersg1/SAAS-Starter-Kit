@@ -3,11 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import { emailConnectionAPI } from '../services/api';
 
 const PROVIDER_PRESETS = {
-  gmail: { label: 'Gmail', imap_host: 'imap.gmail.com', imap_port: 993, icon: '📧' },
-  outlook: { label: 'Outlook / Hotmail', imap_host: 'outlook.office365.com', imap_port: 993, icon: '📨' },
-  yahoo: { label: 'Yahoo Mail', imap_host: 'imap.mail.yahoo.com', imap_port: 993, icon: '📬' },
-  icloud: { label: 'iCloud Mail', imap_host: 'imap.mail.me.com', imap_port: 993, icon: '🍎' },
-  custom: { label: 'Custom IMAP', imap_host: '', imap_port: 993, icon: '⚙️' },
+  gmail: { label: 'Gmail', imap_host: 'imap.gmail.com', imap_port: 993, smtp_host: 'smtp.gmail.com', smtp_port: 587, icon: '📧' },
+  outlook: { label: 'Outlook / Hotmail', imap_host: 'outlook.office365.com', imap_port: 993, smtp_host: 'smtp.office365.com', smtp_port: 587, icon: '📨' },
+  yahoo: { label: 'Yahoo Mail', imap_host: 'imap.mail.yahoo.com', imap_port: 993, smtp_host: 'smtp.mail.yahoo.com', smtp_port: 587, icon: '📬' },
+  icloud: { label: 'iCloud Mail', imap_host: 'imap.mail.me.com', imap_port: 993, smtp_host: 'smtp.mail.me.com', smtp_port: 587, icon: '🍎' },
+  custom: { label: 'Custom', imap_host: '', imap_port: 993, smtp_host: '', smtp_port: 587, icon: '⚙️' },
 };
 
 export default function EmailConnections() {
@@ -20,7 +20,7 @@ export default function EmailConnections() {
   const [syncing, setSyncing] = useState('');
   const [error, setError] = useState('');
   const [testResult, setTestResult] = useState({});
-  const [form, setForm] = useState({ provider: 'gmail', email_address: '', imap_host: 'imap.gmail.com', imap_port: 993, imap_user: '', imap_password: '' });
+  const [form, setForm] = useState({ provider: 'gmail', email_address: '', imap_host: 'imap.gmail.com', imap_port: 993, imap_user: '', imap_password: '', smtp_host: 'smtp.gmail.com', smtp_port: 587, smtp_user: '', smtp_password: '' });
 
   const fetchConnections = useCallback(async () => {
     if (!activeBrandId) return;
@@ -35,7 +35,7 @@ export default function EmailConnections() {
 
   const selectProvider = (provider) => {
     const preset = PROVIDER_PRESETS[provider];
-    setForm(f => ({ ...f, provider, imap_host: preset.imap_host, imap_port: preset.imap_port, imap_user: f.email_address }));
+    setForm(f => ({ ...f, provider, imap_host: preset.imap_host, imap_port: preset.imap_port, smtp_host: preset.smtp_host, smtp_port: preset.smtp_port, imap_user: f.email_address, smtp_user: f.email_address }));
   };
 
   const handleSave = async () => {
@@ -44,7 +44,7 @@ export default function EmailConnections() {
     try {
       await emailConnectionAPI.createConnection(activeBrandId, form);
       setShowModal(false);
-      setForm({ provider: 'gmail', email_address: '', imap_host: 'imap.gmail.com', imap_port: 993, imap_user: '', imap_password: '' });
+      setForm({ provider: 'gmail', email_address: '', imap_host: 'imap.gmail.com', imap_port: 993, imap_user: '', imap_password: '', smtp_host: 'smtp.gmail.com', smtp_port: 587, smtp_user: '', smtp_password: '' });
       fetchConnections();
     } catch (e) { setError(e.response?.data?.message || 'Failed to add connection.'); } finally { setSaving(false); }
   };
@@ -153,8 +153,9 @@ export default function EmailConnections() {
                 </div>
               </div>
 
-              <input value={form.email_address} onChange={e => setForm(f => ({ ...f, email_address: e.target.value, imap_user: e.target.value }))} placeholder="Email address *" type="email" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white" />
-              <input value={form.imap_password} onChange={e => setForm(f => ({ ...f, imap_password: e.target.value }))} placeholder="Password / App Password *" type="password" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white" />
+              <input value={form.email_address} onChange={e => setForm(f => ({ ...f, email_address: e.target.value, imap_user: e.target.value, smtp_user: e.target.value }))} placeholder="Email address *" type="email" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white" />
+              <input value={form.imap_password} onChange={e => setForm(f => ({ ...f, imap_password: e.target.value, smtp_password: e.target.value }))} placeholder="Password / App Password *" type="password" className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white" />
+              <p className="text-xs text-gray-400 -mt-2">Same password is used for IMAP (receiving) and SMTP (sending).</p>
 
               {form.provider === 'custom' && (
                 <div className="grid grid-cols-3 gap-2">

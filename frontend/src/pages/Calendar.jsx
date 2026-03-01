@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { calendarAPI, googleCalendarAPI } from '../services/api';
+import { calendarAPI, googleCalendarAPI, outlookCalendarAPI } from '../services/api';
 
 const EVENT_TYPES = {
   meeting: { label: 'Meeting', color: 'bg-blue-500' },
@@ -42,6 +42,8 @@ export default function Calendar() {
   });
   const [googleConn, setGoogleConn] = useState(null);
   const [gcSyncing, setGcSyncing] = useState(false);
+  const [outlookConn, setOutlookConn] = useState(null);
+  const [ocSyncing, setOcSyncing] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     if (!activeBrandId) return;
@@ -56,19 +58,22 @@ export default function Calendar() {
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
-  // Load Google Calendar connection
+  // Load calendar connections
   useEffect(() => {
     if (!activeBrandId) return;
-    googleCalendarAPI.getConnection(activeBrandId)
-      .then(r => setGoogleConn(r.data.data))
-      .catch(() => {});
+    googleCalendarAPI.getConnection(activeBrandId).then(r => setGoogleConn(r.data.data)).catch(() => {});
+    outlookCalendarAPI.getConnection(activeBrandId).then(r => setOutlookConn(r.data.data)).catch(() => {});
   }, [activeBrandId]);
 
-  // Handle OAuth return redirect (?google=connected or ?error=...)
+  // Handle OAuth return redirect
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('google') === 'connected') {
       googleCalendarAPI.getConnection(activeBrandId).then(r => setGoogleConn(r.data.data)).catch(() => {});
+      window.history.replaceState({}, '', '/calendar');
+    }
+    if (params.get('outlook') === 'connected') {
+      outlookCalendarAPI.getConnection(activeBrandId).then(r => setOutlookConn(r.data.data)).catch(() => {});
       window.history.replaceState({}, '', '/calendar');
     }
   }, [location.search, activeBrandId]);
@@ -94,6 +99,30 @@ export default function Calendar() {
     try {
       await googleCalendarAPI.disconnect(activeBrandId);
       setGoogleConn({ connected: false });
+    } catch { /* silent */ }
+  };
+
+  const handleOutlookConnect = async () => {
+    try {
+      const res = await outlookCalendarAPI.initiateAuth(activeBrandId);
+      window.location.href = res.data.data.url;
+    } catch (e) { setError(e.response?.data?.message || 'Failed to connect Outlook Calendar'); }
+  };
+
+  const handleOutlookSync = async () => {
+    setOcSyncing(true);
+    try {
+      await outlookCalendarAPI.syncNow(activeBrandId);
+      fetchEvents();
+    } catch (e) { setError(e.response?.data?.message || 'Sync failed'); }
+    finally { setOcSyncing(false); }
+  };
+
+  const handleOutlookDisconnect = async () => {
+    if (!window.confirm('Disconnect Outlook Calendar?')) return;
+    try {
+      await outlookCalendarAPI.disconnect(activeBrandId);
+      setOutlookConn({ connected: false });
     } catch { /* silent */ }
   };
 
@@ -164,7 +193,7 @@ export default function Calendar() {
             <div className="flex items-center gap-2">
               <span className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full inline-block"></span>
-                Google Calendar
+                Google
                 {googleConn.last_synced_at && <span className="text-gray-400"> · {new Date(googleConn.last_synced_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
               </span>
               <button onClick={handleGoogleSync} disabled={gcSyncing} className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-50">
@@ -174,7 +203,25 @@ export default function Calendar() {
             </div>
           ) : (
             <button onClick={handleGoogleConnect} className="text-xs px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 flex items-center gap-1">
-              <span>🗓</span> Connect Google Calendar
+              <span>🗓</span> Google Calendar
+            </button>
+          )}
+          {/* Outlook Calendar connect/sync */}
+          {outlookConn?.connected ? (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full inline-block"></span>
+                Outlook
+                {outlookConn.last_synced_at && <span className="text-gray-400"> · {new Date(outlookConn.last_synced_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
+              </span>
+              <button onClick={handleOutlookSync} disabled={ocSyncing} className="text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 disabled:opacity-50">
+                {ocSyncing ? 'Syncing…' : '↻ Sync'}
+              </button>
+              <button onClick={handleOutlookDisconnect} className="text-xs text-red-500 hover:underline">Disconnect</button>
+            </div>
+          ) : (
+            <button onClick={handleOutlookConnect} className="text-xs px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 dark:text-gray-300 flex items-center gap-1">
+              <span>📅</span> Outlook Calendar
             </button>
           )}
           <button onClick={() => openNew()} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">+ New Event</button>

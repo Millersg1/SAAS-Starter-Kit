@@ -76,6 +76,7 @@ const EmailSequenceEditor    = lazy(() => import('./pages/EmailSequenceEditor'))
 const ChatWidget             = lazy(() => import('./pages/ChatWidget'));
 const Surveys                = lazy(() => import('./pages/Surveys'));
 const SurveyResponse         = lazy(() => import('./pages/SurveyResponse'));
+const EmailInbox             = lazy(() => import('./pages/EmailInbox'));
 
 // Policy pages — rarely visited, no reason to be in main bundle
 const PrivacyPolicy           = lazy(() => import('./pages/PrivacyPolicy'));
@@ -184,6 +185,7 @@ function App() {
               <Route path="/campaigns"             element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
               <Route path="/campaigns/:campaignId" element={<ProtectedRoute><CampaignDetails /></ProtectedRoute>} />
               <Route path="/email-connections"     element={<ProtectedRoute><EmailConnections /></ProtectedRoute>} />
+              <Route path="/email-inbox"          element={<ProtectedRoute><EmailInbox /></ProtectedRoute>} />
               <Route path="/sms"                  element={<ProtectedRoute><SmsInbox /></ProtectedRoute>} />
               <Route path="/sms-broadcasts"       element={<ProtectedRoute><SmsBroadcast /></ProtectedRoute>} />
               <Route path="/automations"          element={<ProtectedRoute><Automations /></ProtectedRoute>} />

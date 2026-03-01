@@ -512,6 +512,13 @@ export const googleCalendarAPI = {
   syncNow:       (brandId)  => api.post(`/google-calendar/${brandId}/sync`),
 };
 
+export const outlookCalendarAPI = {
+  getConnection: (brandId)  => api.get(`/outlook-calendar/${brandId}/connection`),
+  initiateAuth:  (brandId)  => api.post(`/outlook-calendar/${brandId}/auth`),
+  disconnect:    (brandId)  => api.delete(`/outlook-calendar/${brandId}/connection`),
+  syncNow:       (brandId)  => api.post(`/outlook-calendar/${brandId}/sync`),
+};
+
 export const packagesAPI = {
   listPackages:   (brandId, params)              => api.get(`/packages/${brandId}/packages`, { params }),
   createPackage:  (brandId, data)                => api.post(`/packages/${brandId}/packages`, data),
@@ -523,10 +530,13 @@ export const packagesAPI = {
 };
 
 export const clientReportAPI = {
-  listReports:   (brandId, params)  => api.get(`/client-reports/${brandId}/reports`, { params }),
-  generateReport:(brandId, data)    => api.post(`/client-reports/${brandId}/reports/generate`, data),
-  getReport:     (brandId, id)      => api.get(`/client-reports/${brandId}/reports/${id}`),
-  deleteReport:  (brandId, id)      => api.delete(`/client-reports/${brandId}/reports/${id}`),
+  listReports:    (brandId, params)  => api.get(`/client-reports/${brandId}/reports`, { params }),
+  generateReport: (brandId, data)    => api.post(`/client-reports/${brandId}/reports/generate`, data),
+  getReport:      (brandId, id)      => api.get(`/client-reports/${brandId}/reports/${id}`),
+  deleteReport:   (brandId, id)      => api.delete(`/client-reports/${brandId}/reports/${id}`),
+  listTemplates:  (brandId)          => api.get(`/client-reports/${brandId}/templates`),
+  createTemplate: (brandId, data)    => api.post(`/client-reports/${brandId}/templates`, data),
+  deleteTemplate: (brandId, id)      => api.delete(`/client-reports/${brandId}/templates/${id}`),
 };
 
 export const reputationAPI = {
@@ -620,6 +630,13 @@ export const chatWidgetAPI = {
   convertSession: (brandId, id)       => api.post(`/chat-widget/${brandId}/sessions/${id}/convert`),
   deleteSession:  (brandId, id)       => api.delete(`/chat-widget/${brandId}/sessions/${id}`),
   replyAsAgent:   (brandId, id, data) => api.post(`/chat-widget/${brandId}/sessions/${id}/reply`, data),
+};
+
+export const emailAPI = {
+  getThreads:    (brandId, params) => api.get(`/emails/${brandId}/threads`, { params }),
+  getThread:     (brandId, threadId) => api.get(`/emails/${brandId}/threads/${threadId}`),
+  sendReply:     (brandId, threadId, data) => api.post(`/emails/${brandId}/threads/${threadId}/reply`, data),
+  getUnreadCount:(brandId) => api.get(`/emails/${brandId}/unread-count`),
 };
 
 export const surveyAPI = {

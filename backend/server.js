@@ -8,6 +8,7 @@ import { startWeeklyReportCron } from './src/utils/weeklyReportCron.js';
 import { startEmailSyncCron } from './src/utils/emailSyncCron.js';
 import { startWorkflowCron } from './src/utils/workflowCron.js';
 import { startGoogleCalendarCron } from './src/utils/googleCalendarCron.js';
+import { startOutlookCalendarCron } from './src/utils/outlookCalendarCron.js';
 import { startDripCron } from './src/utils/dripCron.js';
 import { setupWebSocket } from './src/utils/websocket.js';
 import dotenv from 'dotenv';
@@ -855,6 +856,80 @@ const startServer = async () => {
         CREATE INDEX IF NOT EXISTS idx_survey_sends_token  ON survey_sends(token);
         CREATE INDEX IF NOT EXISTS idx_survey_sends_brand  ON survey_sends(brand_id);
         CREATE INDEX IF NOT EXISTS idx_survey_responses_brand ON survey_responses(brand_id, survey_id);
+
+        -- Two-Way Email Threading
+        ALTER TABLE email_connections ADD COLUMN IF NOT EXISTS smtp_host VARCHAR(255);
+        ALTER TABLE email_connections ADD COLUMN IF NOT EXISTS smtp_port INTEGER DEFAULT 587;
+        ALTER TABLE email_connections ADD COLUMN IF NOT EXISTS smtp_user VARCHAR(255);
+        ALTER TABLE email_connections ADD COLUMN IF NOT EXISTS smtp_password TEXT;
+
+        CREATE TABLE IF NOT EXISTS emails (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          connection_id UUID REFERENCES email_connections(id) ON DELETE SET NULL,
+          client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+          thread_id VARCHAR(255) NOT NULL,
+          message_id VARCHAR(500),
+          in_reply_to VARCHAR(500),
+          email_references TEXT,
+          from_address VARCHAR(255) NOT NULL,
+          from_name VARCHAR(255),
+          to_addresses TEXT NOT NULL,
+          cc_addresses TEXT,
+          subject VARCHAR(1000),
+          body_text TEXT,
+          body_html TEXT,
+          direction VARCHAR(10) NOT NULL DEFAULT 'inbound',
+          is_read BOOLEAN DEFAULT FALSE,
+          sent_at TIMESTAMPTZ NOT NULL,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_emails_brand ON emails(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_emails_thread ON emails(brand_id, thread_id);
+        CREATE INDEX IF NOT EXISTS idx_emails_client ON emails(client_id);
+        CREATE INDEX IF NOT EXISTS idx_emails_message_id ON emails(message_id);
+
+        -- Outlook Calendar Sync
+        CREATE TABLE IF NOT EXISTS outlook_calendar_connections (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          access_token TEXT NOT NULL,
+          refresh_token TEXT NOT NULL,
+          token_expiry TIMESTAMP,
+          calendar_id VARCHAR(255) DEFAULT 'primary',
+          delta_link TEXT,
+          is_active BOOLEAN DEFAULT TRUE,
+          last_synced_at TIMESTAMP,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_outlook_cal_conn_brand ON outlook_calendar_connections(brand_id);
+        ALTER TABLE calendar_events ADD COLUMN IF NOT EXISTS outlook_event_id VARCHAR(255);
+
+        -- Custom Report Builder
+        CREATE TABLE IF NOT EXISTS report_templates (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          sections JSONB NOT NULL DEFAULT '[]',
+          is_system BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        ALTER TABLE client_reports ADD COLUMN IF NOT EXISTS template_id UUID REFERENCES report_templates(id) ON DELETE SET NULL;
+        ALTER TABLE client_reports ADD COLUMN IF NOT EXISTS sections JSONB DEFAULT '[]';
+      `);
+
+      // Seed system report templates (idempotent)
+      await query(`
+        INSERT INTO report_templates (name, description, sections, is_system)
+        SELECT 'Executive Summary', 'High-level overview', '["revenue","pipeline","projects","health_score"]'::jsonb, TRUE
+        WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE name = 'Executive Summary' AND is_system = TRUE);
+        INSERT INTO report_templates (name, description, sections, is_system)
+        SELECT 'Quarterly Review', 'Comprehensive quarterly review', '["revenue","pipeline","projects","time","tickets","surveys","health_score"]'::jsonb, TRUE
+        WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE name = 'Quarterly Review' AND is_system = TRUE);
+        INSERT INTO report_templates (name, description, sections, is_system)
+        SELECT 'Project Status', 'Project-focused report', '["projects","time","tickets"]'::jsonb, TRUE
+        WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE name = 'Project Status' AND is_system = TRUE);
       `);
       console.log('✅ Schema migrations applied - server.js:280');
     } catch (migErr) {
@@ -884,6 +959,9 @@ const startServer = async () => {
 
     // Start Google Calendar sync cron (every 30 minutes)
     startGoogleCalendarCron();
+
+    // Start Outlook Calendar sync cron (every 30 minutes)
+    startOutlookCalendarCron();
 
     // Start drip sequence cron (every 5 minutes)
     startDripCron();

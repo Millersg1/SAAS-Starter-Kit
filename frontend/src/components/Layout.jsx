@@ -135,6 +135,7 @@ const Layout = ({ children }) => {
     { name: 'CMS', href: '/cms', icon: '🌐' },
     { name: 'Social Media', href: '/social', icon: '📲' },
     { name: 'Social Analytics', href: '/social/analytics', icon: '📊' },
+    { name: 'Email Inbox', href: '/email-inbox', icon: '📨' },
     { name: 'Email Sync', href: '/email-connections', icon: '📧' },
     { name: 'SMS Inbox', href: '/sms', icon: '📱' },
     { name: 'SMS Broadcasts', href: '/sms-broadcasts', icon: '📨' },
