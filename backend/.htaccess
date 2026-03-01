@@ -1,0 +1,18 @@
+# Proxy all requests to the Node.js API server (port 5000)
+# This file prevents the parent public_html/.htaccess SPA rewrite from
+# creating an infinite redirect loop when the VirtualHost falls back to
+# static file serving.
+
+DirectoryIndex disabled
+Options -Indexes -MultiViews
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # WebSocket upgrade support
+  RewriteCond %{HTTP:Upgrade} websocket [NC]
+  RewriteRule ^(.*)$ ws://127.0.0.1:5000/$1 [P,L]
+
+  # Proxy all other requests to the Node.js server
+  RewriteRule ^(.*)$ http://127.0.0.1:5000/$1 [P,L]
+</IfModule>
