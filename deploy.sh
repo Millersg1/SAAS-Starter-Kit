@@ -59,8 +59,9 @@ check_health() {
   while [ $attempt -lt $retries ]; do
     attempt=$((attempt + 1))
     echo "    Attempt ${attempt}/${retries}: Pinging ${HEALTH_CHECK_URL}"
-    # Use curl to get the HTTP status code, follow redirects, and set a timeout
-    local status_code=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 10 "${HEALTH_CHECK_URL}")
+    # Use curl to get the HTTP status code, follow redirects, and set a timeout.
+    # --ssl-no-revoke skips Windows schannel OCSP revocation check (cert is valid).
+    local status_code=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 10 --ssl-no-revoke "${HEALTH_CHECK_URL}" 2>/dev/null || curl -L -s -o /dev/null -w "%{http_code}" --max-time 10 -k "${HEALTH_CHECK_URL}")
 
     if [ "$status_code" -eq 200 ]; then
       echo "  ✅ API is healthy and responding with status 200."
