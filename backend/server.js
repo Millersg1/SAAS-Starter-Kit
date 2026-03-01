@@ -371,6 +371,9 @@ const startServer = async () => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS idx_campaign_variants_campaign ON campaign_variants(campaign_id);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_campaign_variants_unique ON campaign_variants(campaign_id, variant_name);
+        ALTER TABLE campaign_variants ADD COLUMN IF NOT EXISTS send_percentage INTEGER DEFAULT 50;
+        ALTER TABLE campaign_variants ADD COLUMN IF NOT EXISTS is_winner BOOLEAN DEFAULT FALSE;
         ALTER TABLE campaign_recipients ADD COLUMN IF NOT EXISTS variant_name CHAR(1) DEFAULT 'A';
 
         -- ── CMS ──────────────────────────────────────────────────────────────

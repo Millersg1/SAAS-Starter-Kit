@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { reputationAPI, clientAPI } from '../services/api';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 
 const PLATFORMS = ['google', 'facebook', 'yelp', 'custom'];
 const PLATFORM_LABELS = { google: 'Google', facebook: 'Facebook', yelp: 'Yelp', custom: 'Custom' };
