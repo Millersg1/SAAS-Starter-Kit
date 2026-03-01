@@ -4,6 +4,8 @@ module.exports = {
       name: 'clienthub-api',
       script: 'server.js',
       instances: 1, // Can be set to 'max' to run in cluster mode on multi-core servers
+      exec_mode: 'fork',
+      node_args: '--jitless',
       autorestart: true,
       watch: false, // Should be false in production
       max_memory_restart: '1G', // Restart if it exceeds 1GB of memory
