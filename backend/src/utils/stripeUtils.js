@@ -1,7 +1,11 @@
-import Stripe from 'stripe';
+import { createRequire } from 'module';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// Use CJS require to load Stripe — avoids ESM parallel file opens (EMFILE on cPanel/LVE)
+const require = createRequire(import.meta.url);
+const { Stripe } = require('stripe');
 
 // Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -374,4 +378,4 @@ export const createConnectCheckoutSession = async ({
   }
 };
 
-export default stripe;
+export { stripe as default };
