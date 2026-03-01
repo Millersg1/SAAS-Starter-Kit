@@ -355,6 +355,13 @@ export const revenueAnalyticsAPI = {
   clientHealthScore: (brandId, clientId) => api.get(`/analytics/${brandId}/health-scores/${clientId}`),
   dealScores:        (brandId)           => api.get(`/analytics/${brandId}/deal-scores`),
   dealScore:         (brandId, dealId)   => api.get(`/analytics/${brandId}/deal-scores/${dealId}`),
+  teamPerformance:   (brandId, params)   => api.get(`/analytics/${brandId}/team-performance`, { params }),
+};
+
+export const churnAPI = {
+  getPredictions:    (brandId)           => api.get(`/churn/${brandId}/churn`),
+  getClientChurn:    (brandId, clientId) => api.get(`/churn/${brandId}/churn/${clientId}`),
+  recalculate:       (brandId)           => api.post(`/churn/${brandId}/churn/recalculate`),
 };
 
 export const webhookAPI = {

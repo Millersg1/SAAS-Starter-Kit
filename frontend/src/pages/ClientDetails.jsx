@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI, workflowAPI, revenueAnalyticsAPI, aiAPI } from '../services/api';
+import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI, workflowAPI, revenueAnalyticsAPI, aiAPI, churnAPI } from '../services/api';
 
 const ClientDetails = () => {
   const { id } = useParams();
@@ -67,6 +67,7 @@ const ClientDetails = () => {
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState(false);
+  const [churnData, setChurnData] = useState(null);
 
   useEffect(() => {
     fetchBrands();
@@ -210,6 +211,7 @@ const ClientDetails = () => {
   useEffect(() => {
     if (!client) return;
     fetchHealthScore(client.brand_id);
+    fetchChurnData(client.brand_id);
     if (activeTab === 'activity') fetchActivities();
     if (activeTab === 'tasks') fetchClientTasks();
   }, [activeTab, client]);
@@ -222,6 +224,14 @@ const ClientDetails = () => {
       setHealthData(res.data.data);
     } catch { /* non-critical */ }
     finally { setHealthLoading(false); }
+  };
+
+  const fetchChurnData = async (brandId) => {
+    if (!brandId) return;
+    try {
+      const res = await churnAPI.getClientChurn(brandId, id);
+      setChurnData(res.data.data?.prediction || null);
+    } catch { /* non-critical */ }
   };
 
   const fetchInsights = async () => {
@@ -644,6 +654,51 @@ const ClientDetails = () => {
                     </div>
                   )}
                 </>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Churn Risk Panel */}
+        {churnData && churnData.churn_probability >= 30 && (() => {
+          const prob = churnData.churn_probability;
+          const risk = prob >= 70 ? { label: 'High Risk', color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', bar: 'bg-red-500' }
+            : prob >= 40 ? { label: 'Medium Risk', color: 'text-yellow-600', bg: 'bg-yellow-50', border: 'border-yellow-200', bar: 'bg-yellow-500' }
+            : { label: 'Low Risk', color: 'text-gray-600', bg: 'bg-gray-50', border: 'border-gray-200', bar: 'bg-gray-400' };
+          const factors = churnData.risk_factors || {};
+          return (
+            <div className={`mb-4 ${risk.bg} border ${risk.border} rounded-lg p-5`}>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700">Churn Prediction</h3>
+                <div className="flex items-center gap-2">
+                  <span className={`text-2xl font-bold ${risk.color}`}>{prob}%</span>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${risk.bg} ${risk.color}`}>{risk.label}</span>
+                </div>
+              </div>
+              {/* Probability bar */}
+              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                <div className={`h-2 rounded-full ${risk.bar} transition-all`} style={{ width: `${prob}%` }} />
+              </div>
+              {/* Risk factors */}
+              {Object.keys(factors).length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Risk Factors</p>
+                  {factors.health_component != null && (
+                    <div className="flex justify-between text-xs"><span className="text-gray-600">Health Score Risk</span><span className="font-medium text-gray-800">{factors.health_component}%</span></div>
+                  )}
+                  {factors.trend_component != null && (
+                    <div className="flex justify-between text-xs"><span className="text-gray-600">Score Trend</span><span className="font-medium text-gray-800">{factors.trend_component}%</span></div>
+                  )}
+                  {factors.inactivity_component != null && (
+                    <div className="flex justify-between text-xs"><span className="text-gray-600">Inactivity</span><span className="font-medium text-gray-800">{factors.inactivity_component}%</span></div>
+                  )}
+                  {factors.payment_component != null && (
+                    <div className="flex justify-between text-xs"><span className="text-gray-600">Payment Risk</span><span className="font-medium text-gray-800">{factors.payment_component}%</span></div>
+                  )}
+                </div>
+              )}
+              {churnData.predicted_at && (
+                <p className="text-xs text-gray-400 mt-3">Last predicted: {new Date(churnData.predicted_at).toLocaleDateString()}</p>
               )}
             </div>
           );

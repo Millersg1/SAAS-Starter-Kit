@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { query } from '../config/database.js';
 import {
   getActiveEnrollmentsDue,
   getStepsForSequence,
@@ -36,6 +37,27 @@ const buildUnsubscribeUrl = (enrollmentId, sequenceId) => {
   return `${API_URL}/api/drip/unsubscribe?token=${token}`;
 };
 
+// Build tracking pixel for open tracking
+const buildTrackingPixel = (enrollmentId, stepNumber) => {
+  const trackingId = Buffer.from(`${enrollmentId}:${stepNumber}`).toString('base64url');
+  return `<img src="${API_URL}/api/track/drip/open/${trackingId}" width="1" height="1" style="display:none" alt="" />`;
+};
+
+// Wrap links in HTML with click tracking
+const wrapLinksWithTracking = (html, enrollmentId, stepNumber) => {
+  const trackingId = Buffer.from(`${enrollmentId}:${stepNumber}`).toString('base64url');
+  // Replace href="..." links (except unsubscribe links and tracking links)
+  return html.replace(
+    /href="(https?:\/\/[^"]+)"/gi,
+    (match, url) => {
+      // Don't wrap tracking URLs or unsubscribe links
+      if (url.includes('/api/track/') || url.includes('/api/drip/unsubscribe')) return match;
+      const encodedUrl = encodeURIComponent(url);
+      return `href="${API_URL}/api/track/drip/click/${trackingId}?url=${encodedUrl}"`;
+    }
+  );
+};
+
 // Append unsubscribe footer to HTML
 const appendUnsubscribe = (html, unsubUrl) => {
   return `${html}
@@ -44,6 +66,61 @@ const appendUnsubscribe = (html, unsubUrl) => {
   You received this email because you were enrolled in an email sequence.
   <a href="${unsubUrl}" style="color:#999;">Unsubscribe</a>
 </p>`;
+};
+
+// Check if a condition step's condition is met
+const evaluateCondition = async (conditionConfig, enrollmentId) => {
+  if (!conditionConfig) return false;
+  const { type, check_step } = conditionConfig;
+  if (!type || check_step == null) return false;
+
+  const eventType = type === 'email_opened' ? 'open' : type === 'email_clicked' ? 'click' : null;
+  if (!eventType) return false;
+
+  const result = await query(
+    `SELECT COUNT(*) AS cnt FROM email_tracking_events
+     WHERE enrollment_id = $1 AND step_number = $2 AND event_type = $3`,
+    [enrollmentId, check_step, eventType]
+  );
+  return parseInt(result.rows[0]?.cnt || 0) > 0;
+};
+
+// Advance to next step, handling condition steps
+const advanceToNext = async (enrollmentId, steps, currentIndex) => {
+  let nextIndex = currentIndex + 1;
+
+  // Skip through condition steps immediately
+  while (nextIndex < steps.length && steps[nextIndex].step_type === 'condition') {
+    const condStep = steps[nextIndex];
+    const condMet = await evaluateCondition(condStep.condition_config, enrollmentId);
+    const targetStep = condMet ? condStep.yes_next_step : condStep.no_next_step;
+
+    if (targetStep != null) {
+      // Find step by position number
+      const targetIndex = steps.findIndex(s => s.position === targetStep);
+      if (targetIndex >= 0) {
+        nextIndex = targetIndex;
+      } else {
+        nextIndex++;
+      }
+    } else {
+      nextIndex++;
+    }
+
+    // Safety: prevent infinite loops
+    if (nextIndex <= currentIndex) break;
+  }
+
+  if (nextIndex >= steps.length) {
+    await completeEnrollment(enrollmentId);
+  } else {
+    const nextStep = steps[nextIndex];
+    const delayMs =
+      ((nextStep.delay_days || 0) * 24 * 60 * 60 +
+        (nextStep.delay_hours || 0) * 60 * 60) * 1000;
+    const nextSendAt = new Date(Date.now() + (delayMs || 0));
+    await advanceEnrollment(enrollmentId, nextIndex, nextSendAt);
+  }
 };
 
 let running = false;
@@ -68,8 +145,22 @@ const processDrip = async () => {
         }
 
         const step = steps[stepIndex];
+
+        // Handle condition steps (should not normally be "current" unless timing edge case)
+        if (step.step_type === 'condition') {
+          await advanceToNext(enrollment.id, steps, stepIndex - 1);
+          continue;
+        }
+
+        // Normal email step
         const unsubUrl = buildUnsubscribeUrl(enrollment.id, enrollment.sequence_id);
-        const html = appendUnsubscribe(step.html_content, unsubUrl);
+        let html = appendUnsubscribe(step.html_content, unsubUrl);
+
+        // Inject tracking pixel
+        html += buildTrackingPixel(enrollment.id, step.position);
+
+        // Wrap links with click tracking
+        html = wrapLinksWithTracking(html, enrollment.id, step.position);
 
         const fromName = step.from_name || enrollment.brand_name || 'ClientHub';
         const fromEmail = step.from_email ||
@@ -102,17 +193,7 @@ const processDrip = async () => {
         });
 
         if (!sendError) {
-          const nextStepIndex = stepIndex + 1;
-          if (nextStepIndex >= steps.length) {
-            await completeEnrollment(enrollment.id);
-          } else {
-            const nextStep = steps[nextStepIndex];
-            const delayMs =
-              ((nextStep.delay_days || 0) * 24 * 60 * 60 +
-                (nextStep.delay_hours || 0) * 60 * 60) * 1000;
-            const nextSendAt = new Date(Date.now() + (delayMs || 0));
-            await advanceEnrollment(enrollment.id, nextStepIndex, nextSendAt);
-          }
+          await advanceToNext(enrollment.id, steps, stepIndex);
         }
         // On send error: leave current_step + next_send_at as-is → retry next cron tick
       } catch (err) {

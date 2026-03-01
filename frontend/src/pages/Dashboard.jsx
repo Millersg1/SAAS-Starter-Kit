@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import OnboardingWizard from '../components/OnboardingWizard';
 import OnboardingChecklist from '../components/OnboardingChecklist';
-import { brandAPI, clientAPI, invoiceAPI, projectAPI, clientActivityAPI, auditAPI, pipelineAPI, taskAPI, revenueAnalyticsAPI } from '../services/api';
+import { brandAPI, clientAPI, invoiceAPI, projectAPI, clientActivityAPI, auditAPI, pipelineAPI, taskAPI, revenueAnalyticsAPI, churnAPI } from '../services/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [pipelineStats, setPipelineStats] = useState(null);
   const [tasksDueToday, setTasksDueToday] = useState([]);
   const [atRiskClients, setAtRiskClients] = useState([]);
+  const [churnMap, setChurnMap] = useState({});
 
   useEffect(() => { fetchBrands(); }, []);
 
@@ -35,6 +36,7 @@ const Dashboard = () => {
       fetchPipelineStats();
       fetchTasksDueToday();
       fetchAtRiskClients();
+      fetchChurnPredictions();
     }
   }, [brands]);
 
@@ -48,6 +50,17 @@ const Dashboard = () => {
         .sort((a, b) => a.health_score - b.health_score)
         .slice(0, 5);
       setAtRiskClients(atRisk);
+    } catch { /* non-critical */ }
+  };
+
+  const fetchChurnPredictions = async () => {
+    if (brands.length === 0) return;
+    try {
+      const res = await churnAPI.getPredictions(brands[0].id);
+      const predictions = res.data.data?.predictions || [];
+      const map = {};
+      predictions.forEach(p => { map[p.client_id] = p.churn_probability; });
+      setChurnMap(map);
     } catch { /* non-critical */ }
   };
 
@@ -340,6 +353,11 @@ const Dashboard = () => {
                       <p className="text-sm font-medium text-gray-900 truncate">{c.company || c.name}</p>
                     </div>
                     <span className={`text-xs font-semibold ${zone.color} flex-shrink-0`}>{c.health_score} · {zone.label}</span>
+                    {churnMap[c.id] >= 40 && (
+                      <span className={`text-xs font-bold flex-shrink-0 px-1.5 py-0.5 rounded ${churnMap[c.id] >= 70 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                        {churnMap[c.id]}% churn
+                      </span>
+                    )}
                     <button
                       onClick={() => navigate(`/clients/${c.id}`)}
                       className="text-xs text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"

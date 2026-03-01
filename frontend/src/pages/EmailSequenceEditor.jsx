@@ -151,6 +151,116 @@ function StepForm({ step, onSave, onCancel }) {
   );
 }
 
+// ── Condition Form ──────────────────────────────────────────────────────────
+
+function ConditionForm({ step, steps: allSteps, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    condition_type: step?.condition_config?.type || 'email_opened',
+    check_step: step?.condition_config?.check_step ?? '',
+    yes_next_step: step?.yes_next_step ?? '',
+    no_next_step: step?.no_next_step ?? '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  // Only email steps can be checked
+  const emailSteps = allSteps.filter(s => (s.step_type || 'email') === 'email');
+
+  const handleSave = async () => {
+    if (form.check_step === '') return;
+    setSaving(true);
+    try {
+      await onSave({
+        step_type: 'condition',
+        subject: `Condition: ${form.condition_type === 'email_opened' ? 'Opened' : 'Clicked'} Step ${form.check_step + 1}`,
+        html_content: '',
+        delay_days: 0,
+        delay_hours: 0,
+        condition_config: { type: form.condition_type, check_step: Number(form.check_step) },
+        yes_next_step: form.yes_next_step !== '' ? Number(form.yes_next_step) : null,
+        no_next_step: form.no_next_step !== '' ? Number(form.no_next_step) : null,
+      });
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="bg-indigo-50 rounded-xl border border-indigo-200 p-5 space-y-4">
+      <p className="text-sm font-semibold text-indigo-700">Condition Step</p>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Condition Type</label>
+        <select
+          value={form.condition_type}
+          onChange={e => setForm(f => ({ ...f, condition_type: e.target.value }))}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+        >
+          <option value="email_opened">Email was Opened</option>
+          <option value="email_clicked">Email Link was Clicked</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Check which step?</label>
+        <select
+          value={form.check_step}
+          onChange={e => setForm(f => ({ ...f, check_step: e.target.value }))}
+          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+        >
+          <option value="">— Select a step —</option>
+          {emailSteps.map((s, i) => (
+            <option key={s.id || i} value={s.position ?? i}>
+              Step {(s.position ?? i) + 1}: {s.subject}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-medium text-green-700 mb-1">IF YES → go to step</label>
+          <select
+            value={form.yes_next_step}
+            onChange={e => setForm(f => ({ ...f, yes_next_step: e.target.value }))}
+            className="w-full px-3 py-2 border border-green-200 rounded-lg text-sm bg-green-50"
+          >
+            <option value="">Next step (default)</option>
+            {allSteps.map((s, i) => (
+              <option key={s.id || i} value={s.position ?? i}>
+                Step {(s.position ?? i) + 1}: {s.subject?.substring(0, 30)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-red-700 mb-1">IF NO → go to step</label>
+          <select
+            value={form.no_next_step}
+            onChange={e => setForm(f => ({ ...f, no_next_step: e.target.value }))}
+            className="w-full px-3 py-2 border border-red-200 rounded-lg text-sm bg-red-50"
+          >
+            <option value="">Next step (default)</option>
+            {allSteps.map((s, i) => (
+              <option key={s.id || i} value={s.position ?? i}>
+                Step {(s.position ?? i) + 1}: {s.subject?.substring(0, 30)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <button onClick={onCancel} className="px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Cancel</button>
+        <button
+          onClick={handleSave}
+          disabled={saving || form.check_step === ''}
+          className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
+        >
+          {saving ? 'Saving...' : step?.id ? 'Update Condition' : 'Add Condition'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Enroll Modal ─────────────────────────────────────────────────────────────
 
 function EnrollModal({ onClose, onEnroll }) {
@@ -241,7 +351,7 @@ export default function EmailSequenceEditor() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editingStep, setEditingStep] = useState(null); // stepId or 'new'
+  const [editingStep, setEditingStep] = useState(null); // stepId or 'new' or 'new-condition'
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [seqName, setSeqName] = useState('');
@@ -398,6 +508,7 @@ export default function EmailSequenceEditor() {
 
           <div className="space-y-3">
             {steps.map((step, idx) => {
+              const isCondition = step.step_type === 'condition';
               const stepStat = getStepStats(step.id);
               const openRate = stepStat && stepStat.sent_count > 0
                 ? Math.round((stepStat.opened_count / stepStat.sent_count) * 100)
@@ -408,17 +519,63 @@ export default function EmailSequenceEditor() {
                   {/* Timeline connector */}
                   {idx > 0 && (
                     <div className="flex justify-center my-2">
-                      <div className="w-0.5 h-6 bg-gray-200" />
+                      <div className={`w-0.5 h-6 ${isCondition ? 'bg-indigo-200' : 'bg-gray-200'}`} />
                     </div>
                   )}
 
                   {editingStep === step.id ? (
-                    <StepForm
-                      step={step}
-                      onSave={(data) => handleUpdateStep(step.id, data)}
-                      onCancel={() => setEditingStep(null)}
-                    />
+                    isCondition ? (
+                      <ConditionForm
+                        step={step}
+                        steps={steps}
+                        onSave={(data) => handleUpdateStep(step.id, data)}
+                        onCancel={() => setEditingStep(null)}
+                      />
+                    ) : (
+                      <StepForm
+                        step={step}
+                        onSave={(data) => handleUpdateStep(step.id, data)}
+                        onCancel={() => setEditingStep(null)}
+                      />
+                    )
+                  ) : isCondition ? (
+                    /* Condition step card */
+                    <div className="bg-indigo-50 rounded-xl border border-indigo-200 p-4 group">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                            ?
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-indigo-800">
+                              IF Step {(step.condition_config?.check_step ?? 0) + 1} was {step.condition_config?.type === 'email_clicked' ? 'clicked' : 'opened'}
+                            </p>
+                            <div className="flex gap-4 mt-1 text-xs">
+                              <span className="text-green-600">
+                                YES → {step.yes_next_step != null ? `Step ${step.yes_next_step + 1}` : 'Next'}
+                              </span>
+                              <span className="text-red-500">
+                                NO → {step.no_next_step != null ? `Step ${step.no_next_step + 1}` : 'Next'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setEditingStep(step.id)}
+                            className="p-1.5 text-xs text-gray-400 hover:text-indigo-600 hover:bg-indigo-100 rounded"
+                            title="Edit"
+                          >✏️</button>
+                          <button
+                            onClick={() => handleDeleteStep(step.id)}
+                            className="p-1.5 text-xs text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
+                            title="Delete"
+                          >🗑</button>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
+                    /* Normal email step card */
                     <div className="bg-white rounded-xl border border-gray-200 p-4 group">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -455,7 +612,7 @@ export default function EmailSequenceEditor() {
             })}
 
             {/* Timeline connector before new */}
-            {steps.length > 0 && editingStep === 'new' && (
+            {steps.length > 0 && (editingStep === 'new' || editingStep === 'new-condition') && (
               <div className="flex justify-center my-2">
                 <div className="w-0.5 h-6 bg-gray-200" />
               </div>
@@ -467,13 +624,28 @@ export default function EmailSequenceEditor() {
                 onSave={handleAddStep}
                 onCancel={() => setEditingStep(null)}
               />
+            ) : editingStep === 'new-condition' ? (
+              <ConditionForm
+                step={null}
+                steps={steps}
+                onSave={handleAddStep}
+                onCancel={() => setEditingStep(null)}
+              />
             ) : (
-              <button
-                onClick={() => setEditingStep('new')}
-                className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-400 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-              >
-                + Add Email Step
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingStep('new')}
+                  className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-400 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                >
+                  + Add Email Step
+                </button>
+                <button
+                  onClick={() => setEditingStep('new-condition')}
+                  className="flex-1 py-3 border-2 border-dashed border-indigo-200 rounded-xl text-sm text-indigo-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                >
+                  + Add Condition
+                </button>
+              </div>
             )}
           </div>
         </div>

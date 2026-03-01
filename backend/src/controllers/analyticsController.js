@@ -533,3 +533,115 @@ export const getDealScore = async (req, res, next) => {
     next(error);
   }
 };
+
+// ─── Team Performance ───────────────────────────────────────────────────────
+
+/** GET /api/analytics/:brandId/team-performance */
+export const getTeamPerformance = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    if (!await verifyBrandAccess(brandId, req.user.id)) {
+      return res.status(403).json({ status: 'fail', message: 'Access denied.' });
+    }
+
+    const { period_start, period_end } = req.query;
+    const ps = period_start ? new Date(period_start) : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const pe = period_end ? new Date(period_end) : new Date();
+
+    // Get all team members for this brand
+    const membersRes = await query(
+      `SELECT u.id, u.name, u.email, bm.role
+       FROM brand_members bm
+       JOIN users u ON bm.user_id = u.id
+       WHERE bm.brand_id = $1`,
+      [brandId]
+    );
+    const members = membersRes.rows;
+    if (!members.length) {
+      return res.json({ status: 'success', data: { members: [], totals: {} } });
+    }
+
+    const memberIds = members.map(m => m.id);
+
+    // Run all aggregation queries in parallel
+    const [revenueRes, hoursRes, tasksRes, activitiesRes] = await Promise.all([
+      // Revenue won (pipeline deals assigned_to)
+      query(
+        `SELECT assigned_to AS user_id,
+           COUNT(*) AS deals_won,
+           COALESCE(SUM(value), 0) AS revenue_won
+         FROM pipeline_deals
+         WHERE brand_id = $1 AND stage = 'closed_won'
+           AND assigned_to = ANY($2)
+           AND updated_at BETWEEN $3 AND $4
+         GROUP BY assigned_to`,
+        [brandId, memberIds, ps, pe]
+      ),
+      // Hours tracked
+      query(
+        `SELECT user_id,
+           ROUND(COALESCE(SUM(duration_minutes) / 60.0, 0)::numeric, 1) AS hours_tracked,
+           COALESCE(SUM(billable_amount), 0) AS billable_amount
+         FROM time_entries
+         WHERE brand_id = $1 AND user_id = ANY($2)
+           AND start_time BETWEEN $3 AND $4
+         GROUP BY user_id`,
+        [brandId, memberIds, ps, pe]
+      ),
+      // Tasks completed + overdue
+      query(
+        `SELECT assigned_to AS user_id,
+           COUNT(*) FILTER (WHERE status = 'completed') AS tasks_completed,
+           COUNT(*) FILTER (WHERE status != 'completed' AND due_date < NOW()) AS tasks_overdue,
+           COUNT(*) AS total_tasks
+         FROM tasks
+         WHERE brand_id = $1 AND assigned_to = ANY($2)
+           AND created_at BETWEEN $3 AND $4
+         GROUP BY assigned_to`,
+        [brandId, memberIds, ps, pe]
+      ),
+      // Activities logged
+      query(
+        `SELECT created_by AS user_id, COUNT(*) AS activities_logged
+         FROM client_activities
+         WHERE brand_id = $1 AND created_by = ANY($2)
+           AND created_at BETWEEN $3 AND $4
+         GROUP BY created_by`,
+        [brandId, memberIds, ps, pe]
+      ),
+    ]);
+
+    // Build lookup maps
+    const revenueMap = Object.fromEntries(revenueRes.rows.map(r => [r.user_id, r]));
+    const hoursMap = Object.fromEntries(hoursRes.rows.map(r => [r.user_id, r]));
+    const tasksMap = Object.fromEntries(tasksRes.rows.map(r => [r.user_id, r]));
+    const activityMap = Object.fromEntries(activitiesRes.rows.map(r => [r.user_id, r]));
+
+    const result = members.map(m => ({
+      user_id: m.id,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+      revenue_won: parseFloat(revenueMap[m.id]?.revenue_won || 0),
+      deals_won: parseInt(revenueMap[m.id]?.deals_won || 0),
+      hours_tracked: parseFloat(hoursMap[m.id]?.hours_tracked || 0),
+      billable_amount: parseFloat(hoursMap[m.id]?.billable_amount || 0),
+      tasks_completed: parseInt(tasksMap[m.id]?.tasks_completed || 0),
+      tasks_overdue: parseInt(tasksMap[m.id]?.tasks_overdue || 0),
+      activities_logged: parseInt(activityMap[m.id]?.activities_logged || 0),
+    }));
+
+    const totals = {
+      revenue_won: result.reduce((s, r) => s + r.revenue_won, 0),
+      deals_won: result.reduce((s, r) => s + r.deals_won, 0),
+      hours_tracked: result.reduce((s, r) => s + r.hours_tracked, 0),
+      tasks_completed: result.reduce((s, r) => s + r.tasks_completed, 0),
+      activities_logged: result.reduce((s, r) => s + r.activities_logged, 0),
+    };
+
+    res.json({ status: 'success', data: { members: result, totals } });
+  } catch (error) {
+    console.error('Error in getTeamPerformance - analyticsController.js', error);
+    next(error);
+  }
+};

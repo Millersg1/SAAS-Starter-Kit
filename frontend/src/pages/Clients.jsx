@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ImportClientsModal from '../components/ImportClientsModal';
-import { clientAPI, brandAPI, subscriptionAPI, revenueAnalyticsAPI } from '../services/api';
+import { clientAPI, brandAPI, subscriptionAPI, revenueAnalyticsAPI, churnAPI } from '../services/api';
 import { downloadCSV } from '../utils/csvUtils';
 
 const Clients = () => {
@@ -26,6 +26,7 @@ const Clients = () => {
   const [bulkTagAction, setBulkTagAction] = useState('add');
   const [bulkSaving, setBulkSaving] = useState(false);
   const [healthMap, setHealthMap] = useState({});
+  const [churnMap, setChurnMap] = useState({});
 
   useEffect(() => { fetchBrands(); }, []);
 
@@ -36,6 +37,7 @@ const Clients = () => {
       fetchPlanLimit();
       fetchTags();
       fetchHealthScores();
+      fetchChurnPredictions();
     }
   }, [selectedBrand]);
 
@@ -46,6 +48,16 @@ const Clients = () => {
       const map = {};
       scores.forEach(s => { map[s.id] = s.health_score; });
       setHealthMap(map);
+    } catch { /* non-critical */ }
+  };
+
+  const fetchChurnPredictions = async () => {
+    try {
+      const res = await churnAPI.getPredictions(selectedBrand.id);
+      const predictions = res.data.data?.predictions || [];
+      const map = {};
+      predictions.forEach(p => { map[p.client_id] = p.churn_probability; });
+      setChurnMap(map);
     } catch { /* non-critical */ }
   };
 
@@ -248,6 +260,16 @@ const Clients = () => {
                         {healthMap[client.id] !== undefined && (
                           <span className={`px-2 py-1 rounded text-xs font-bold ${healthBadgeClass(healthMap[client.id])}`}>
                             ❤ {healthMap[client.id]}
+                          </span>
+                        )}
+                        {churnMap[client.id] >= 70 && (
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700">
+                            Churn {churnMap[client.id]}%
+                          </span>
+                        )}
+                        {churnMap[client.id] >= 40 && churnMap[client.id] < 70 && (
+                          <span className="px-2 py-1 rounded text-xs font-bold bg-yellow-100 text-yellow-700">
+                            Churn {churnMap[client.id]}%
                           </span>
                         )}
                       </div>

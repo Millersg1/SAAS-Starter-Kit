@@ -123,6 +123,7 @@ const Layout = ({ children }) => {
     { name: 'Contracts', href: '/contracts', icon: '📝' },
     { name: 'Pipeline',  href: '/pipeline',  icon: '📈' },
     { name: 'Analytics', href: '/analytics', icon: '📉' },
+    { name: 'Team Performance', href: '/team-performance', icon: '👥' },
     { name: 'Surveys',   href: '/surveys',   icon: '📋' },
     { name: 'Tasks',     href: '/tasks',     icon: '✅' },
     { name: 'Time', href: '/time', icon: '⏱' },

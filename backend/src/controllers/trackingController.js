@@ -38,3 +38,61 @@ export const trackClick = async (req, res) => {
   try { res.redirect(Buffer.from(url, 'base64').toString('utf8')); }
   catch { res.redirect('/'); }
 };
+
+// ── Drip Sequence Tracking ──────────────────────────────────────────────────
+
+export const trackDripOpen = async (req, res) => {
+  const { trackingId } = req.params;
+  try {
+    const decoded = Buffer.from(trackingId, 'base64url').toString('utf8');
+    const [enrollmentId, stepNumber] = decoded.split(':');
+    if (enrollmentId && stepNumber) {
+      // Record tracking event
+      query(
+        `INSERT INTO email_tracking_events (enrollment_id, step_number, event_type)
+         VALUES ($1, $2, 'open')`,
+        [enrollmentId, parseInt(stepNumber)]
+      ).catch(() => {});
+      // Increment open_count on drip_sends
+      query(
+        `UPDATE drip_sends SET open_count = open_count + 1
+         WHERE enrollment_id = $1 AND step_id = (
+           SELECT id FROM drip_steps WHERE sequence_id = (
+             SELECT sequence_id FROM drip_enrollments WHERE id = $1
+           ) AND position = $2
+         )`,
+        [enrollmentId, parseInt(stepNumber)]
+      ).catch(() => {});
+    }
+  } catch { /* non-critical */ }
+  res.set({ 'Content-Type': 'image/gif', 'Cache-Control': 'no-store, no-cache, must-revalidate' });
+  res.send(PIXEL);
+};
+
+export const trackDripClick = async (req, res) => {
+  const { trackingId } = req.params;
+  const { url } = req.query;
+  try {
+    const decoded = Buffer.from(trackingId, 'base64url').toString('utf8');
+    const [enrollmentId, stepNumber] = decoded.split(':');
+    if (enrollmentId && stepNumber) {
+      query(
+        `INSERT INTO email_tracking_events (enrollment_id, step_number, event_type, metadata)
+         VALUES ($1, $2, 'click', $3)`,
+        [enrollmentId, parseInt(stepNumber), JSON.stringify({ url })]
+      ).catch(() => {});
+      query(
+        `UPDATE drip_sends SET click_count = click_count + 1
+         WHERE enrollment_id = $1 AND step_id = (
+           SELECT id FROM drip_steps WHERE sequence_id = (
+             SELECT sequence_id FROM drip_enrollments WHERE id = $1
+           ) AND position = $2
+         )`,
+        [enrollmentId, parseInt(stepNumber)]
+      ).catch(() => {});
+    }
+  } catch { /* non-critical */ }
+  if (!url) return res.redirect('/');
+  try { res.redirect(decodeURIComponent(url)); }
+  catch { res.redirect('/'); }
+};

@@ -22,6 +22,7 @@ const TRIGGER_LABELS = {
   invoice_paid:          'Invoice paid',
   proposal_accepted:     'Proposal accepted',
   tag_added:             'Tag added to client',
+  churn_risk:            'Client churn risk detected',
 };
 
 const ACTION_TYPES = [

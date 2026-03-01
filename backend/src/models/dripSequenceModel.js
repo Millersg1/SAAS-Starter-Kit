@@ -71,17 +71,21 @@ export const createStep = async (sequenceId, data) => {
   );
   const position = posResult.rows[0].max_pos + 1;
   const result = await query(
-    `INSERT INTO drip_steps (sequence_id, position, subject, html_content, delay_days, delay_hours, from_name, from_email)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+    `INSERT INTO drip_steps (sequence_id, position, subject, html_content, delay_days, delay_hours, from_name, from_email, step_type, condition_config, yes_next_step, no_next_step)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
     [
       sequenceId,
       position,
-      data.subject,
-      data.html_content,
+      data.subject || null,
+      data.html_content || null,
       data.delay_days || 0,
       data.delay_hours || 0,
       data.from_name || null,
       data.from_email || null,
+      data.step_type || 'email',
+      data.condition_config ? JSON.stringify(data.condition_config) : null,
+      data.yes_next_step ?? null,
+      data.no_next_step ?? null,
     ]
   );
   return result.rows[0];
@@ -97,6 +101,10 @@ export const updateStep = async (id, sequenceId, data) => {
   if (data.delay_hours !== undefined)  { fields.push(`delay_hours = $${idx++}`);  values.push(data.delay_hours); }
   if (data.from_name !== undefined)    { fields.push(`from_name = $${idx++}`);    values.push(data.from_name); }
   if (data.from_email !== undefined)   { fields.push(`from_email = $${idx++}`);   values.push(data.from_email); }
+  if (data.step_type !== undefined)    { fields.push(`step_type = $${idx++}`);    values.push(data.step_type); }
+  if (data.condition_config !== undefined) { fields.push(`condition_config = $${idx++}`); values.push(JSON.stringify(data.condition_config)); }
+  if (data.yes_next_step !== undefined) { fields.push(`yes_next_step = $${idx++}`); values.push(data.yes_next_step); }
+  if (data.no_next_step !== undefined)  { fields.push(`no_next_step = $${idx++}`);  values.push(data.no_next_step); }
   if (!fields.length) return null;
   fields.push(`updated_at = NOW()`);
   values.push(id, sequenceId);

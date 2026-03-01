@@ -10,6 +10,7 @@ import { startWorkflowCron } from './src/utils/workflowCron.js';
 import { startGoogleCalendarCron } from './src/utils/googleCalendarCron.js';
 import { startOutlookCalendarCron } from './src/utils/outlookCalendarCron.js';
 import { startDripCron } from './src/utils/dripCron.js';
+import { startChurnPredictionCron } from './src/utils/churnPredictionCron.js';
 import { setupWebSocket } from './src/utils/websocket.js';
 import dotenv from 'dotenv';
 
@@ -930,6 +931,37 @@ const startServer = async () => {
         INSERT INTO report_templates (name, description, sections, is_system)
         SELECT 'Project Status', 'Project-focused report', '["projects","time","tickets"]'::jsonb, TRUE
         WHERE NOT EXISTS (SELECT 1 FROM report_templates WHERE name = 'Project Status' AND is_system = TRUE);
+
+        -- ═══ TIER 3: Churn Prediction ═══
+        CREATE TABLE IF NOT EXISTS churn_predictions (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+          churn_probability INTEGER NOT NULL DEFAULT 0,
+          risk_factors JSONB DEFAULT '{}',
+          health_score_trend JSONB DEFAULT '[]',
+          auto_action_taken BOOLEAN DEFAULT FALSE,
+          predicted_at TIMESTAMPTZ DEFAULT NOW(),
+          UNIQUE(brand_id, client_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_churn_brand ON churn_predictions(brand_id);
+
+        -- ═══ TIER 3: Email Tracking ═══
+        CREATE TABLE IF NOT EXISTS email_tracking_events (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          enrollment_id UUID REFERENCES drip_enrollments(id) ON DELETE CASCADE,
+          step_number INTEGER NOT NULL,
+          event_type VARCHAR(20) NOT NULL,
+          tracked_at TIMESTAMPTZ DEFAULT NOW(),
+          metadata JSONB DEFAULT '{}'
+        );
+        CREATE INDEX IF NOT EXISTS idx_tracking_enrollment ON email_tracking_events(enrollment_id, step_number);
+
+        -- ═══ TIER 3: Sequence Branching ═══
+        ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS step_type VARCHAR(20) DEFAULT 'email';
+        ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS condition_config JSONB;
+        ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS yes_next_step INTEGER;
+        ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS no_next_step INTEGER;
       `);
       console.log('✅ Schema migrations applied - server.js:280');
     } catch (migErr) {
@@ -965,6 +997,9 @@ const startServer = async () => {
 
     // Start drip sequence cron (every 5 minutes)
     startDripCron();
+
+    // Start churn prediction cron (daily)
+    startChurnPredictionCron();
 
     // Publish CMS scheduled pages (every 60 seconds)
     const { publishScheduledPages } = await import('./src/models/cmsModel.js');

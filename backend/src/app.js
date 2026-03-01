@@ -134,6 +134,7 @@ import chatWidgetRoutes from './routes/chatWidgetRoutes.js';
 import surveyRoutes from './routes/surveyRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import outlookCalendarRoutes from './routes/outlookCalendarRoutes.js';
+import churnRoutes from './routes/churnRoutes.js';
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -190,6 +191,7 @@ app.use('/api/chat-widget', chatWidgetRoutes);
 app.use('/api/surveys', surveyRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/outlook-calendar', outlookCalendarRoutes);
+app.use('/api/churn', churnRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {
