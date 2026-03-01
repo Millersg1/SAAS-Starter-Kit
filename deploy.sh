@@ -85,14 +85,17 @@ deploy_backend() {
   fi
 
   echo "  → Running remote commands (install dependencies, restart server)..."
-  ssh "$SSH_USER@$SSH_HOST" "
+  # Use bash -l (login shell) so /etc/profile.d/limits.sh runs and sets ulimit -n 65536.
+  # Then kill + restart PM2 daemon so the new daemon inherits the correct fd limit.
+  ssh "$SSH_USER@$SSH_HOST" "bash -l -c '
     set -e
     cd $BACKEND_REMOTE_DIR
-    echo '    → Installing npm dependencies...'
-    NODE_OPTIONS='--jitless' npm install --production 2>/dev/null || echo '    ⚠ npm install skipped (run as root if new packages were added)'
-    echo '    → Restarting application with PM2...'
-    pm2 restart clienthub-api --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --env production
-  "
+    echo \"    → Installing npm dependencies...\"
+    NODE_OPTIONS=\"--jitless\" npm install --production 2>/dev/null || echo \"    ⚠ npm install skipped (run as root if new packages were added)\"
+    echo \"    → Restarting PM2 daemon with correct fd limits...\"
+    pm2 kill 2>/dev/null || true
+    pm2 start ecosystem.config.cjs --env production
+  '"
   echo "✅ Backend deployment successful!"
 }
 
