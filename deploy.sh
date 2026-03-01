@@ -53,8 +53,8 @@ check_health() {
   local attempt=0
 
   # Allow time for the server to restart before checking
-  echo "    Waiting 10 seconds for server to initialize..."
-  sleep 10
+  echo "    Waiting 20 seconds for server to initialize..."
+  sleep 20
 
   while [ $attempt -lt $retries ]; do
     attempt=$((attempt + 1))
