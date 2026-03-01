@@ -308,6 +308,11 @@ const startServer = async () => {
         ALTER TABLE clients ADD COLUMN IF NOT EXISTS enriched_at TIMESTAMP;
         ALTER TABLE brands ADD COLUMN IF NOT EXISTS hunter_api_key VARCHAR(255);
 
+        -- Client health scores
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS health_score SMALLINT;
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS health_score_updated_at TIMESTAMPTZ;
+        ALTER TABLE clients ADD COLUMN IF NOT EXISTS health_score_breakdown JSONB;
+
         -- Feature 1: Typed Custom Field Definitions
         CREATE TABLE IF NOT EXISTS custom_field_definitions (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

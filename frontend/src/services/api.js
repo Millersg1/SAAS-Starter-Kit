@@ -347,10 +347,12 @@ export const taskAPI = {
 };
 
 export const revenueAnalyticsAPI = {
-  getRevenue:    (brandId) => api.get(`/analytics/${brandId}/revenue`),
-  getConversion: (brandId) => api.get(`/analytics/${brandId}/conversion`),
-  getPipeline:   (brandId) => api.get(`/analytics/${brandId}/pipeline`),
-  getForecast:   (brandId) => api.get(`/analytics/${brandId}/forecast`),
+  getRevenue:        (brandId)           => api.get(`/analytics/${brandId}/revenue`),
+  getConversion:     (brandId)           => api.get(`/analytics/${brandId}/conversion`),
+  getPipeline:       (brandId)           => api.get(`/analytics/${brandId}/pipeline`),
+  getForecast:       (brandId)           => api.get(`/analytics/${brandId}/forecast`),
+  healthScores:      (brandId)           => api.get(`/analytics/${brandId}/health-scores`),
+  clientHealthScore: (brandId, clientId) => api.get(`/analytics/${brandId}/health-scores/${clientId}`),
 };
 
 export const webhookAPI = {
@@ -362,8 +364,9 @@ export const webhookAPI = {
 };
 
 export const aiAPI = {
-  draftInvoice:  (brandId, data) => api.post(`/ai/${brandId}/draft-invoice`, data),
-  draftProposal: (brandId, data) => api.post(`/ai/${brandId}/draft-proposal`, data),
+  draftInvoice:   (brandId, data)         => api.post(`/ai/${brandId}/draft-invoice`, data),
+  draftProposal:  (brandId, data)         => api.post(`/ai/${brandId}/draft-proposal`, data),
+  clientInsights: (brandId, clientId)     => api.get(`/ai/${brandId}/client-insights/${clientId}`),
 };
 
 export const contractAPI = {

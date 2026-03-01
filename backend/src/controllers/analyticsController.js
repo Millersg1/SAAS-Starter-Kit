@@ -283,3 +283,127 @@ export const getPipelineAnalytics = async (req, res, next) => {
     next(error);
   }
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Client Health Scores
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Compute a 0–100 health score for one client and persist it on the clients row.
+ * Returns { score, breakdown } — exported so aiController can reuse it.
+ */
+export const computeClientHealthScore = async (clientId, brandId) => {
+  const { rows } = await query(
+    `SELECT
+       c.last_portal_login,
+       COUNT(DISTINCT CASE WHEN i.status = 'overdue' THEN i.id END)                    AS overdue_invoices,
+       COUNT(DISTINCT CASE WHEN t.status != 'completed' AND t.due_date < NOW()
+                            THEN t.id END)                                              AS overdue_tasks,
+       MAX(a.created_at)                                                                AS last_activity_at
+     FROM clients c
+     LEFT JOIN invoices          i ON i.client_id = c.id AND i.brand_id = $1
+     LEFT JOIN tasks             t ON t.client_id = c.id AND t.brand_id = $1
+     LEFT JOIN client_activities a ON a.client_id = c.id AND a.brand_id = $1
+     WHERE c.id = $2 AND c.brand_id = $1
+     GROUP BY c.last_portal_login`,
+    [brandId, clientId]
+  );
+
+  const row = rows[0] || {};
+  const overdueInvoices = parseInt(row.overdue_invoices || 0);
+  const overdueTasks    = parseInt(row.overdue_tasks    || 0);
+
+  // Payment component (0–35)
+  const payment = Math.max(0, 35 - overdueInvoices * 15);
+
+  // Activity component (0–30): days since last logged activity
+  let activity = 0;
+  if (row.last_activity_at) {
+    const daysSince = (Date.now() - new Date(row.last_activity_at).getTime()) / 86400000;
+    if      (daysSince <= 7)  activity = 30;
+    else if (daysSince <= 14) activity = 22;
+    else if (daysSince <= 30) activity = 14;
+    else if (daysSince <= 90) activity = 7;
+  }
+
+  // Delivery component (0–20): overdue tasks
+  const delivery = Math.max(0, 20 - overdueTasks * 7);
+
+  // Engagement component (0–15): portal login recency
+  let engagement = 0;
+  if (row.last_portal_login) {
+    const daysSince = (Date.now() - new Date(row.last_portal_login).getTime()) / 86400000;
+    if      (daysSince <= 7)  engagement = 15;
+    else if (daysSince <= 30) engagement = 10;
+    else if (daysSince <= 90) engagement = 5;
+  }
+
+  const score = payment + activity + delivery + engagement;
+  const breakdown = { payment, activity, delivery, engagement };
+
+  // Persist to clients table (fire-and-forget style — don't let it block)
+  await query(
+    `UPDATE clients
+     SET health_score = $1, health_score_updated_at = NOW(), health_score_breakdown = $2
+     WHERE id = $3 AND brand_id = $4`,
+    [score, JSON.stringify(breakdown), clientId, brandId]
+  );
+
+  return { score, breakdown };
+};
+
+const STALE_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/** GET /api/analytics/:brandId/health-scores — all active clients */
+export const getHealthScores = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    if (!await verifyBrandAccess(brandId, req.user.id)) {
+      return res.status(403).json({ status: 'fail', message: 'Access denied.' });
+    }
+
+    // Fetch all active clients with their stored score
+    const { rows: clients } = await query(
+      `SELECT id, name, company, health_score, health_score_updated_at, health_score_breakdown
+       FROM clients WHERE brand_id = $1 AND is_active = TRUE ORDER BY name`,
+      [brandId]
+    );
+
+    // Recalculate stale or missing scores
+    const results = await Promise.all(clients.map(async (c) => {
+      const isStale = !c.health_score_updated_at ||
+        (Date.now() - new Date(c.health_score_updated_at).getTime()) > STALE_MS;
+
+      if (isStale) {
+        try {
+          const { score, breakdown } = await computeClientHealthScore(c.id, brandId);
+          return { id: c.id, name: c.name, company: c.company, health_score: score, health_score_breakdown: breakdown };
+        } catch {
+          return { id: c.id, name: c.name, company: c.company, health_score: c.health_score, health_score_breakdown: c.health_score_breakdown };
+        }
+      }
+      return { id: c.id, name: c.name, company: c.company, health_score: c.health_score, health_score_breakdown: c.health_score_breakdown };
+    }));
+
+    res.json({ status: 'success', data: { scores: results } });
+  } catch (error) {
+    console.error('Error in getHealthScores - analyticsController.js', error);
+    next(error);
+  }
+};
+
+/** GET /api/analytics/:brandId/health-scores/:clientId — single client, always fresh */
+export const getClientHealthScore = async (req, res, next) => {
+  try {
+    const { brandId, clientId } = req.params;
+    if (!await verifyBrandAccess(brandId, req.user.id)) {
+      return res.status(403).json({ status: 'fail', message: 'Access denied.' });
+    }
+
+    const { score, breakdown } = await computeClientHealthScore(clientId, brandId);
+    res.json({ status: 'success', data: { score, breakdown } });
+  } catch (error) {
+    console.error('Error in getClientHealthScore - analyticsController.js', error);
+    next(error);
+  }
+};

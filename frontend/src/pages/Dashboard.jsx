@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import OnboardingWizard from '../components/OnboardingWizard';
 import OnboardingChecklist from '../components/OnboardingChecklist';
-import { brandAPI, clientAPI, invoiceAPI, projectAPI, clientActivityAPI, auditAPI, pipelineAPI, taskAPI } from '../services/api';
+import { brandAPI, clientAPI, invoiceAPI, projectAPI, clientActivityAPI, auditAPI, pipelineAPI, taskAPI, revenueAnalyticsAPI } from '../services/api';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -21,6 +21,7 @@ const Dashboard = () => {
   const [portalActivity, setPortalActivity] = useState([]);
   const [pipelineStats, setPipelineStats] = useState(null);
   const [tasksDueToday, setTasksDueToday] = useState([]);
+  const [atRiskClients, setAtRiskClients] = useState([]);
 
   useEffect(() => { fetchBrands(); }, []);
 
@@ -33,8 +34,22 @@ const Dashboard = () => {
       fetchPortalActivity();
       fetchPipelineStats();
       fetchTasksDueToday();
+      fetchAtRiskClients();
     }
   }, [brands]);
+
+  const fetchAtRiskClients = async () => {
+    if (brands.length === 0) return;
+    try {
+      const res = await revenueAnalyticsAPI.healthScores(brands[0].id);
+      const scores = res.data.data?.scores || [];
+      const atRisk = scores
+        .filter(c => c.health_score !== null && c.health_score < 60)
+        .sort((a, b) => a.health_score - b.health_score)
+        .slice(0, 5);
+      setAtRiskClients(atRisk);
+    } catch { /* non-critical */ }
+  };
 
   const fetchPipelineStats = async () => {
     if (brands.length === 0) return;
@@ -163,6 +178,14 @@ const Dashboard = () => {
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+
+  const healthZone = (score) => {
+    if (score === null || score === undefined) return { label: 'Unknown', color: 'text-gray-400', dot: 'bg-gray-300' };
+    if (score >= 80) return { label: 'Healthy',       color: 'text-green-600',  dot: 'bg-green-500' };
+    if (score >= 60) return { label: 'At Risk',       color: 'text-yellow-600', dot: 'bg-yellow-400' };
+    if (score >= 40) return { label: 'Needs Attention', color: 'text-orange-600', dot: 'bg-orange-500' };
+    return               { label: 'Critical',        color: 'text-red-600',    dot: 'bg-red-500' };
+  };
 
   const stats = [
     {
@@ -296,6 +319,38 @@ const Dashboard = () => {
               <p className="text-xs text-gray-500 mt-1">{stat.sub}</p>
             </div>
           ))}
+        </div>
+
+        {/* At-Risk Clients */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 className="text-lg font-semibold text-gray-900">⚠ At-Risk Clients</h2>
+            <button onClick={() => navigate('/clients')} className="text-sm text-blue-600 hover:text-blue-700 font-medium">View All →</button>
+          </div>
+          {atRiskClients.length === 0 ? (
+            <div className="px-6 py-5 text-center text-sm text-green-600 font-medium">All clients are healthy ✓</div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {atRiskClients.map(c => {
+                const zone = healthZone(c.health_score);
+                return (
+                  <div key={c.id} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50">
+                    <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${zone.dot}`} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{c.company || c.name}</p>
+                    </div>
+                    <span className={`text-xs font-semibold ${zone.color} flex-shrink-0`}>{c.health_score} · {zone.label}</span>
+                    <button
+                      onClick={() => navigate(`/clients/${c.id}`)}
+                      className="text-xs text-blue-600 hover:text-blue-800 font-medium flex-shrink-0"
+                    >
+                      Details →
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}

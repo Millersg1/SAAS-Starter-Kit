@@ -1,6 +1,8 @@
 import { getBrandMember, getBrandVoice } from '../models/brandModel.js';
 import { getClientById } from '../models/clientModel.js';
 import { AppError, catchAsync } from '../middleware/errorHandler.js';
+import { computeClientHealthScore } from './analyticsController.js';
+import { query } from '../config/database.js';
 
 // Build a brand voice context string to inject into prompts
 const buildVoiceContext = (voice) => {
@@ -260,4 +262,80 @@ Respond ONLY with valid JSON, no markdown, no explanation:
   }
 
   res.json({ status: 'success', data: { caption: parsed.caption || '', hashtags: parsed.hashtags || [] } });
+});
+
+/**
+ * GET /api/ai/:brandId/client-insights/:clientId
+ * Returns { summary, risks: string[], action } — AI interpretation of health score data.
+ */
+export const getClientInsights = catchAsync(async (req, res, next) => {
+  const { brandId, clientId } = req.params;
+  const member = await getBrandMember(brandId, req.user.id);
+  if (!member) return next(new AppError('Access denied', 403));
+
+  const aiClient = await getAnthropicClient();
+  if (!aiClient) return next(new AppError('AI insights require an ANTHROPIC_API_KEY to be configured', 503));
+
+  // Gather fresh health score + recent activities for context
+  const [{ score, breakdown }, clientRow, activitiesResult] = await Promise.all([
+    computeClientHealthScore(clientId, brandId),
+    getClientById(clientId).catch(() => null),
+    query(
+      `SELECT type, description, created_at
+       FROM client_activities
+       WHERE client_id = $1 AND brand_id = $2
+       ORDER BY created_at DESC LIMIT 5`,
+      [clientId, brandId]
+    ),
+  ]);
+
+  const recentActivity = activitiesResult.rows
+    .map(a => `${a.type}: ${a.description || '(no description)'} (${new Date(a.created_at).toLocaleDateString()})`)
+    .join('\n');
+
+  const prompt = `You are a CRM analyst. Analyze this client's health data and return a JSON object.
+
+Client: ${clientRow?.name || 'Unknown'}${clientRow?.company ? ` at ${clientRow.company}` : ''}
+Overall Health Score: ${score}/100
+
+Score breakdown:
+- Payment health: ${breakdown.payment}/35 (tracks overdue invoices — 35 is best)
+- Activity recency: ${breakdown.activity}/30 (tracks when we last logged a call/email/meeting)
+- Delivery health: ${breakdown.delivery}/20 (tracks overdue tasks)
+- Portal engagement: ${breakdown.engagement}/15 (tracks client portal logins)
+
+Recent activity log:
+${recentActivity || '(no recent activities logged)'}
+
+Return ONLY a JSON object with these exact keys:
+{
+  "summary": "One or two sentences explaining the client's health situation in plain business language.",
+  "risks": ["Risk 1", "Risk 2", "Risk 3"],
+  "action": "One specific recommended action to take this week to improve this client relationship."
+}`;
+
+  const message = await aiClient.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 512,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = message.content[0]?.text?.trim() || '{}';
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return next(new AppError('AI returned an unreadable response', 502));
+    parsed = JSON.parse(match[0]);
+  }
+
+  res.json({
+    status: 'success',
+    data: {
+      summary: parsed.summary || '',
+      risks:   Array.isArray(parsed.risks) ? parsed.risks.slice(0, 3) : [],
+      action:  parsed.action  || '',
+    },
+  });
 });

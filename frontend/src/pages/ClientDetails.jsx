@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI, workflowAPI } from '../services/api';
+import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI, workflowAPI, revenueAnalyticsAPI, aiAPI } from '../services/api';
 
 const ClientDetails = () => {
   const { id } = useParams();
@@ -62,6 +62,11 @@ const ClientDetails = () => {
   const [selectedWf, setSelectedWf] = useState('');
   const [enrolling, setEnrolling] = useState(false);
   const [enrollSuccess, setEnrollSuccess] = useState('');
+  const [healthData, setHealthData] = useState(null);
+  const [healthLoading, setHealthLoading] = useState(false);
+  const [insights, setInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState(false);
 
   useEffect(() => {
     fetchBrands();
@@ -204,9 +209,32 @@ const ClientDetails = () => {
 
   useEffect(() => {
     if (!client) return;
+    fetchHealthScore(client.brand_id);
     if (activeTab === 'activity') fetchActivities();
     if (activeTab === 'tasks') fetchClientTasks();
   }, [activeTab, client]);
+
+  const fetchHealthScore = async (brandId) => {
+    if (!brandId) return;
+    setHealthLoading(true);
+    try {
+      const res = await revenueAnalyticsAPI.clientHealthScore(brandId, id);
+      setHealthData(res.data.data);
+    } catch { /* non-critical */ }
+    finally { setHealthLoading(false); }
+  };
+
+  const fetchInsights = async () => {
+    if (!client?.brand_id || insightsLoading) return;
+    setInsightsLoading(true);
+    setInsightsError(false);
+    try {
+      const res = await aiAPI.clientInsights(client.brand_id, id);
+      setInsights(res.data.data);
+    } catch (err) {
+      if (err.response?.status === 503) setInsightsError(true);
+    } finally { setInsightsLoading(false); }
+  };
 
   const fetchActivities = async () => {
     try {
@@ -557,6 +585,69 @@ const ClientDetails = () => {
             </>
           )}
         </div>
+
+        {/* Client Health Score */}
+        {(healthLoading || healthData) && (() => {
+          const score = healthData?.score;
+          const bd    = healthData?.breakdown || {};
+          const zone  = score === undefined || score === null ? { label: 'Unknown', color: 'text-gray-500', bar: 'bg-gray-300' }
+            : score >= 80 ? { label: 'Healthy',          color: 'text-green-600',  bar: 'bg-green-500' }
+            : score >= 60 ? { label: 'At Risk',          color: 'text-yellow-600', bar: 'bg-yellow-400' }
+            : score >= 40 ? { label: 'Needs Attention',  color: 'text-orange-600', bar: 'bg-orange-500' }
+            :               { label: 'Critical',         color: 'text-red-600',    bar: 'bg-red-500'    };
+          const Bar = ({ value, max, color }) => (
+            <div className="flex items-center gap-2">
+              <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${Math.round((value / max) * 100)}%` }} />
+              </div>
+              <span className="text-xs text-gray-500 w-10 text-right">{value}/{max}</span>
+            </div>
+          );
+          return (
+            <div className="mb-4 bg-white rounded-lg shadow-md p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-700">Client Health</h3>
+                {healthLoading ? <span className="text-xs text-gray-400">Calculating…</span>
+                  : <span className={`text-2xl font-bold ${zone.color}`}>{score ?? '—'}</span>}
+              </div>
+              {!healthLoading && score !== undefined && (
+                <>
+                  <p className={`text-xs font-medium ${zone.color} mb-3`}>{zone.label}</p>
+                  <div className="space-y-2 mb-4">
+                    <div><p className="text-xs text-gray-500 mb-0.5">Payment <span className="text-gray-300">(35)</span></p><Bar value={bd.payment ?? 0} max={35} color={zone.bar} /></div>
+                    <div><p className="text-xs text-gray-500 mb-0.5">Activity <span className="text-gray-300">(30)</span></p><Bar value={bd.activity ?? 0} max={30} color={zone.bar} /></div>
+                    <div><p className="text-xs text-gray-500 mb-0.5">Delivery <span className="text-gray-300">(20)</span></p><Bar value={bd.delivery ?? 0} max={20} color={zone.bar} /></div>
+                    <div><p className="text-xs text-gray-500 mb-0.5">Engagement <span className="text-gray-300">(15)</span></p><Bar value={bd.engagement ?? 0} max={15} color={zone.bar} /></div>
+                  </div>
+                  {!insightsError && (
+                    <button
+                      onClick={fetchInsights}
+                      disabled={insightsLoading || !!insights}
+                      className="w-full py-1.5 text-sm font-medium rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 disabled:opacity-50 transition-colors"
+                    >
+                      {insightsLoading ? 'Generating…' : insights ? 'Insights loaded' : '✨ Get AI Insights'}
+                    </button>
+                  )}
+                  {insights && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-gray-700">{insights.summary}</p>
+                      {insights.risks?.length > 0 && (
+                        <ul className="space-y-1">
+                          {insights.risks.map((r, i) => (
+                            <li key={i} className="text-xs text-gray-600 flex gap-1.5"><span className="text-orange-500 flex-shrink-0">•</span>{r}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {insights.action && (
+                        <p className="text-xs font-medium text-indigo-700 border-t pt-2 mt-2">→ {insights.action}</p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Tab Nav */}
         <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1 w-fit">

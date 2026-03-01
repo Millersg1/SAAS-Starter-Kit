@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import ImportClientsModal from '../components/ImportClientsModal';
-import { clientAPI, brandAPI, subscriptionAPI } from '../services/api';
+import { clientAPI, brandAPI, subscriptionAPI, revenueAnalyticsAPI } from '../services/api';
 import { downloadCSV } from '../utils/csvUtils';
 
 const Clients = () => {
@@ -25,6 +25,7 @@ const Clients = () => {
   const [bulkTagInput, setBulkTagInput] = useState('');
   const [bulkTagAction, setBulkTagAction] = useState('add');
   const [bulkSaving, setBulkSaving] = useState(false);
+  const [healthMap, setHealthMap] = useState({});
 
   useEffect(() => { fetchBrands(); }, []);
 
@@ -34,8 +35,19 @@ const Clients = () => {
       fetchStats();
       fetchPlanLimit();
       fetchTags();
+      fetchHealthScores();
     }
   }, [selectedBrand]);
+
+  const fetchHealthScores = async () => {
+    try {
+      const res = await revenueAnalyticsAPI.healthScores(selectedBrand.id);
+      const scores = res.data.data?.scores || [];
+      const map = {};
+      scores.forEach(s => { map[s.id] = s.health_score; });
+      setHealthMap(map);
+    } catch { /* non-critical */ }
+  };
 
   const fetchPlanLimit = async () => {
     try {
@@ -110,6 +122,13 @@ const Clients = () => {
 
   const getStatusColor = (s) => ({ active: 'bg-green-100 text-green-800', inactive: 'bg-gray-100 text-gray-800', pending: 'bg-yellow-100 text-yellow-800' }[s] || 'bg-gray-100 text-gray-800');
   const getTypeColor = (t) => ({ vip: 'bg-purple-100 text-purple-800', enterprise: 'bg-blue-100 text-blue-800', trial: 'bg-yellow-100 text-yellow-800', regular: 'bg-gray-100 text-gray-800' }[t] || 'bg-gray-100 text-gray-800');
+  const healthBadgeClass = (score) => {
+    if (score === null || score === undefined) return 'bg-gray-100 text-gray-500';
+    if (score >= 80) return 'bg-green-100 text-green-700';
+    if (score >= 60) return 'bg-yellow-100 text-yellow-700';
+    if (score >= 40) return 'bg-orange-100 text-orange-700';
+    return 'bg-red-100 text-red-700';
+  };
 
   if (!selectedBrand) {
     return (
@@ -223,9 +242,14 @@ const Clients = () => {
                           {client.company && <p className="text-sm text-gray-600">{client.company}</p>}
                         </div>
                       </div>
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col gap-1 items-end">
                         <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(client.status)}`}>{client.status}</span>
                         <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(client.client_type)}`}>{client.client_type}</span>
+                        {healthMap[client.id] !== undefined && (
+                          <span className={`px-2 py-1 rounded text-xs font-bold ${healthBadgeClass(healthMap[client.id])}`}>
+                            ❤ {healthMap[client.id]}
+                          </span>
+                        )}
                       </div>
                     </div>
 
