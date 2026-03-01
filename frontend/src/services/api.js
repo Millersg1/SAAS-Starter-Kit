@@ -353,6 +353,8 @@ export const revenueAnalyticsAPI = {
   getForecast:       (brandId)           => api.get(`/analytics/${brandId}/forecast`),
   healthScores:      (brandId)           => api.get(`/analytics/${brandId}/health-scores`),
   clientHealthScore: (brandId, clientId) => api.get(`/analytics/${brandId}/health-scores/${clientId}`),
+  dealScores:        (brandId)           => api.get(`/analytics/${brandId}/deal-scores`),
+  dealScore:         (brandId, dealId)   => api.get(`/analytics/${brandId}/deal-scores/${dealId}`),
 };
 
 export const webhookAPI = {
@@ -618,6 +620,21 @@ export const chatWidgetAPI = {
   convertSession: (brandId, id)       => api.post(`/chat-widget/${brandId}/sessions/${id}/convert`),
   deleteSession:  (brandId, id)       => api.delete(`/chat-widget/${brandId}/sessions/${id}`),
   replyAsAgent:   (brandId, id, data) => api.post(`/chat-widget/${brandId}/sessions/${id}/reply`, data),
+};
+
+export const surveyAPI = {
+  list:      (brandId)           => api.get(`/surveys/${brandId}`),
+  create:    (brandId, data)     => api.post(`/surveys/${brandId}`, data),
+  update:    (brandId, id, data) => api.patch(`/surveys/${brandId}/${id}`, data),
+  remove:    (brandId, id)       => api.delete(`/surveys/${brandId}/${id}`),
+  send:      (brandId, id, data) => api.post(`/surveys/${brandId}/${id}/send`, data),
+  responses: (brandId, id)       => api.get(`/surveys/${brandId}/${id}/responses`),
+  stats:     (brandId, id)       => api.get(`/surveys/${brandId}/${id}/stats`),
+};
+
+export const publicSurveyAPI = {
+  get:    (token)       => api.get(`/public/survey/${token}`),
+  submit: (token, data) => api.post(`/public/survey/${token}`, data),
 };
 
 export default api;

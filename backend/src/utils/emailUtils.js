@@ -712,3 +712,59 @@ export const sendReviewRequestEmail = async (clientEmail, clientName, brandName,
     console.error('Error sending review request email:', error);
   }
 };
+
+/**
+ * Send an NPS/CSAT survey email with one-click score buttons.
+ * Clicking a score in the email links to FRONTEND_URL/survey/:token?score=N
+ */
+export const sendSurveyEmail = async (email, clientName, token, question, type, brandName) => {
+  const transporter = createTransporter();
+  const FRONTEND_URL = process.env.FRONTEND_URL || 'https://faithharborclienthub.com';
+  const baseUrl = `${FRONTEND_URL}/survey/${token}`;
+
+  const isNps = type !== 'csat';
+  const maxScore = isNps ? 10 : 5;
+  const scoreLabel = isNps ? '0 = Not at all, 10 = Extremely likely' : '1 = Very dissatisfied, 5 = Very satisfied';
+
+  const scoreColors = isNps
+    ? ['#ef4444','#ef4444','#ef4444','#ef4444','#ef4444','#ef4444','#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e']
+    : ['#ef4444','#f59e0b','#f59e0b','#22c55e','#22c55e'];
+
+  const minScore = isNps ? 0 : 1;
+  const scores = Array.from({ length: maxScore - minScore + 1 }, (_, i) => i + minScore);
+
+  const scoreButtons = scores.map(n => {
+    const color = scoreColors[isNps ? n : n - 1];
+    return `<a href="${baseUrl}?score=${n}" style="display:inline-block;width:36px;height:36px;line-height:36px;text-align:center;border-radius:50%;background:${color};color:#fff;font-weight:700;font-size:14px;text-decoration:none;margin:3px;">${n}</a>`;
+  }).join('');
+
+  const mailOptions = {
+    from: `"${brandName}" <${process.env.SMTP_USER || 'noreply@clienthub.app'}>`,
+    to: email,
+    subject: `Quick feedback for ${brandName}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:8px;border:1px solid #e5e7eb;">
+        <div style="background:#4f46e5;padding:24px;border-radius:8px 8px 0 0;text-align:center;">
+          <h1 style="color:#fff;margin:0;font-size:22px;">${brandName}</h1>
+        </div>
+        <div style="padding:32px 24px;text-align:center;">
+          <p style="font-size:16px;color:#374151;margin:0 0 8px;">Hi ${clientName},</p>
+          <p style="font-size:18px;font-weight:600;color:#111827;margin:0 0 24px;">${question}</p>
+          <p style="font-size:13px;color:#6b7280;margin:0 0 16px;">${scoreLabel}</p>
+          <div style="margin-bottom:24px;">${scoreButtons}</div>
+          <p style="font-size:13px;color:#9ca3af;">Or <a href="${baseUrl}" style="color:#4f46e5;">leave a written response</a></p>
+        </div>
+        <div style="background:#f9fafb;padding:16px 24px;text-align:center;border-radius:0 0 8px 8px;border-top:1px solid #e5e7eb;">
+          <p style="margin:0;font-size:12px;color:#9ca3af;">Sent by ${brandName} via ClientHub</p>
+        </div>
+      </div>
+    `,
+    text: `Hi ${clientName},\n\n${question}\n\nClick here to respond: ${baseUrl}\n\nSent by ${brandName}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error('Error sending survey email:', error);
+  }
+};

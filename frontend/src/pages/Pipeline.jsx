@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
-import { pipelineAPI, brandAPI, clientAPI } from '../services/api';
+import { pipelineAPI, brandAPI, clientAPI, revenueAnalyticsAPI } from '../services/api';
 import { DndContext, DragOverlay, useDroppable, useDraggable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 
 const DEFAULT_STAGES = ['Lead', 'Qualified', 'Proposal Sent', 'Negotiation', 'Won', 'Lost'];
@@ -26,6 +26,13 @@ const getStageStyle = (index) => {
   const idx = index % STAGE_COLORS.length;
   const [colBg, colBorder, badgeText, badgeBg] = STAGE_COLORS[idx].split(' ');
   return { colBg, colBorder, badgeText, badgeBg, dot: DOT_COLORS[idx] };
+};
+
+const dealScoreBadgeClass = (score) => {
+  if (score >= 80) return 'bg-green-100 text-green-700';
+  if (score >= 60) return 'bg-blue-100 text-blue-700';
+  if (score >= 40) return 'bg-yellow-100 text-yellow-700';
+  return 'bg-red-100 text-red-700';
 };
 
 const EMPTY_FORM = { title: '', client_id: '', value: '', currency: 'USD', stage: '', probability: 20, expected_close_date: '', notes: '', pipeline_id: '' };
@@ -82,6 +89,7 @@ export default function Pipeline() {
   const [saving, setSaving] = useState(false);
   const [stageMenuOpen, setStageMenuOpen] = useState(null);
   const [activeDeal, setActiveDeal] = useState(null);
+  const [dealScoreMap, setDealScoreMap] = useState({});
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -141,6 +149,13 @@ export default function Pipeline() {
       ]);
       setDeals(dealsRes.data.data?.deals || []);
       setSummary(summaryRes.data.data?.summary || { byStage: {}, totalWeighted: 0, stages: [] });
+      // Load deal scores in background (non-blocking)
+      revenueAnalyticsAPI.dealScores(brandId).then(r => {
+        const scores = r.data.data?.scores || [];
+        const map = {};
+        scores.forEach(s => { map[s.id] = s.deal_score; });
+        setDealScoreMap(map);
+      }).catch(() => {});
     } catch (err) {
       console.error('fetchAll error', err);
     } finally {
@@ -394,7 +409,14 @@ export default function Pipeline() {
                         )}
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-sm font-semibold text-gray-800">{formatCurrency(deal.value)}</span>
-                          <span className={`text-xs px-1.5 py-0.5 rounded-full ${badgeBg} ${badgeText}`}>{deal.probability}%</span>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${badgeBg} ${badgeText}`}>{deal.probability}%</span>
+                            {dealScoreMap[deal.id] !== undefined && (
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full ${dealScoreBadgeClass(dealScoreMap[deal.id])}`}>
+                                ★ {dealScoreMap[deal.id]}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {deal.expected_close_date && (
                           <p className="text-xs text-gray-400 mb-2">Close: {new Date(deal.expected_close_date).toLocaleDateString()}</p>

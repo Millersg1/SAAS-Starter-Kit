@@ -123,6 +123,7 @@ const Layout = ({ children }) => {
     { name: 'Contracts', href: '/contracts', icon: '📝' },
     { name: 'Pipeline',  href: '/pipeline',  icon: '📈' },
     { name: 'Analytics', href: '/analytics', icon: '📉' },
+    { name: 'Surveys',   href: '/surveys',   icon: '📋' },
     { name: 'Tasks',     href: '/tasks',     icon: '✅' },
     { name: 'Time', href: '/time', icon: '⏱' },
     { name: 'Call Logs', href: '/call-logs', icon: '📞' },
@@ -372,7 +373,7 @@ const Layout = ({ children }) => {
                           onClick={() => { setBellOpen(false); navigate('/messages'); }}
                           className="text-xs text-blue-600 hover:text-blue-700 font-medium"
                         >
-                          View all messages →
+                          View all notifications →
                         </button>
                       </div>
                     )}

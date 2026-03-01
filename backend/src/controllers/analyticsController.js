@@ -407,3 +407,129 @@ export const getClientHealthScore = async (req, res, next) => {
     next(error);
   }
 };
+
+// ─── Pipeline Deal Scoring ───────────────────────────────────────────────────
+
+/**
+ * Compute a 0–100 deal health score for a single pipeline deal.
+ * Components:
+ *   Momentum    (35) — recency of last update
+ *   Completeness(30) — data quality of the deal record
+ *   Engagement  (20) — recency of last client activity
+ *   Probability (15) — deal probability field
+ * Persists result to pipeline_deals.deal_score / deal_score_updated_at.
+ */
+const computeDealScore = async (dealId, brandId) => {
+  const result = await query(
+    `SELECT
+       pd.updated_at, pd.probability, pd.expected_close_date,
+       pd.notes, pd.client_id,
+       MAX(a.created_at) AS last_activity_at
+     FROM pipeline_deals pd
+     LEFT JOIN client_activities a ON a.client_id = pd.client_id AND a.brand_id = $1
+     WHERE pd.id = $2 AND pd.brand_id = $1
+     GROUP BY pd.updated_at, pd.probability, pd.expected_close_date, pd.notes, pd.client_id`,
+    [brandId, dealId]
+  );
+
+  if (!result.rows.length) throw new Error('Deal not found');
+  const d = result.rows[0];
+
+  const now = Date.now();
+  const daysSinceUpdate = (now - new Date(d.updated_at).getTime()) / 86400000;
+  const daysSinceActivity = d.last_activity_at
+    ? (now - new Date(d.last_activity_at).getTime()) / 86400000
+    : 999;
+
+  // Momentum (35)
+  let momentum = 0;
+  if (daysSinceUpdate <= 7)       momentum = 35;
+  else if (daysSinceUpdate <= 14) momentum = 25;
+  else if (daysSinceUpdate <= 30) momentum = 15;
+  else if (daysSinceUpdate <= 60) momentum = 5;
+
+  // Completeness (30)
+  let completeness = 0;
+  if (d.expected_close_date) completeness += 10;
+  if (d.client_id)           completeness += 10;
+  if (d.notes && d.notes.trim().length > 0) completeness += 5;
+  const prob = parseInt(d.probability) || 20;
+  if (prob !== 20)           completeness += 5;
+
+  // Engagement (20)
+  let engagement = 0;
+  if (daysSinceActivity <= 7)       engagement = 20;
+  else if (daysSinceActivity <= 14) engagement = 12;
+  else if (daysSinceActivity <= 30) engagement = 6;
+
+  // Probability (15)
+  let probability = 0;
+  if (prob >= 80)      probability = 15;
+  else if (prob >= 60) probability = 10;
+  else if (prob >= 40) probability = 5;
+
+  const score = momentum + completeness + engagement + probability;
+  const breakdown = { momentum, completeness, engagement, probability };
+
+  await query(
+    `UPDATE pipeline_deals SET deal_score = $1, deal_score_updated_at = NOW() WHERE id = $2`,
+    [score, dealId]
+  );
+
+  return { score, breakdown };
+};
+
+const DEAL_SCORE_STALE_MS = 24 * 60 * 60 * 1000;
+
+/** GET /api/analytics/:brandId/deal-scores — all active deals, 24h TTL cache */
+export const getDealScores = async (req, res, next) => {
+  try {
+    const { brandId } = req.params;
+    if (!await verifyBrandAccess(brandId, req.user.id)) {
+      return res.status(403).json({ status: 'fail', message: 'Access denied.' });
+    }
+
+    const dealsResult = await query(
+      `SELECT id, title, deal_score, deal_score_updated_at
+       FROM pipeline_deals
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND stage NOT IN ('won','lost','Won','Lost')`,
+      [brandId]
+    );
+
+    const results = await Promise.all(dealsResult.rows.map(async (d) => {
+      const isStale = !d.deal_score_updated_at ||
+        (Date.now() - new Date(d.deal_score_updated_at).getTime()) > DEAL_SCORE_STALE_MS;
+      if (isStale) {
+        try {
+          const { score, breakdown } = await computeDealScore(d.id, brandId);
+          return { id: d.id, title: d.title, deal_score: score, breakdown };
+        } catch {
+          return { id: d.id, title: d.title, deal_score: d.deal_score, breakdown: null };
+        }
+      }
+      return { id: d.id, title: d.title, deal_score: d.deal_score, breakdown: null };
+    }));
+
+    res.json({ status: 'success', data: { scores: results } });
+  } catch (error) {
+    console.error('Error in getDealScores - analyticsController.js', error);
+    next(error);
+  }
+};
+
+/** GET /api/analytics/:brandId/deal-scores/:dealId — single deal, always fresh */
+export const getDealScore = async (req, res, next) => {
+  try {
+    const { brandId, dealId } = req.params;
+    if (!await verifyBrandAccess(brandId, req.user.id)) {
+      return res.status(403).json({ status: 'fail', message: 'Access denied.' });
+    }
+
+    const { score, breakdown } = await computeDealScore(dealId, brandId);
+    res.json({ status: 'success', data: { score, breakdown } });
+  } catch (error) {
+    console.error('Error in getDealScore - analyticsController.js', error);
+    next(error);
+  }
+};

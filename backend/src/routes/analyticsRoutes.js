@@ -11,5 +11,7 @@ router.get('/:brandId/pipeline',             analyticsController.getPipelineAnal
 router.get('/:brandId/forecast',             analyticsController.getForecast);
 router.get('/:brandId/health-scores',        analyticsController.getHealthScores);
 router.get('/:brandId/health-scores/:clientId', analyticsController.getClientHealthScore);
+router.get('/:brandId/deal-scores',          analyticsController.getDealScores);
+router.get('/:brandId/deal-scores/:dealId',  analyticsController.getDealScore);
 
 export default router;

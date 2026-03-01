@@ -5,6 +5,7 @@ import { getInvoiceItems } from '../models/invoiceModel.js';
 import * as stripeUtils from '../utils/stripeUtils.js';
 import { AppError, catchAsync } from '../middleware/errorHandler.js';
 import { sendContactEmail } from '../utils/emailUtils.js';
+import { handlePublicSurveyView, handlePublicSurveySubmit } from '../controllers/surveyController.js';
 
 const router = express.Router();
 
@@ -161,5 +162,9 @@ router.post('/contact', catchAsync(async (req, res, next) => {
 
   res.status(200).json({ status: 'success', message: 'Your message has been sent. We\'ll be in touch shortly.' });
 }));
+
+/** Public survey endpoints — no auth required */
+router.get('/survey/:token',  handlePublicSurveyView);
+router.post('/survey/:token', handlePublicSurveySubmit);
 
 export default router;

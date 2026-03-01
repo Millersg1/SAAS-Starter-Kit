@@ -165,6 +165,105 @@ export const getNotifications = catchAsync(async (req, res, next) => {
     console.error('Notification: failed to fetch pipeline deals', err.message);
   }
 
+  // Stale pipeline deals (stuck in same stage > 14 days)
+  try {
+    const staleResult = await query(
+      `SELECT COUNT(*) as count
+       FROM pipeline_deals
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND stage NOT IN ('won','lost','Won','Lost')
+         AND updated_at < NOW() - INTERVAL '14 days'`,
+      [brandId]
+    );
+    const staleCount = parseInt(staleResult.rows[0]?.count || 0);
+    if (staleCount > 0) {
+      notifications.push({
+        type: 'stale_deals',
+        title: 'Stale Pipeline Deals',
+        body: `${staleCount} deal${staleCount !== 1 ? 's' : ''} stuck for over 14 days`,
+        link: '/pipeline',
+        count: staleCount,
+        icon: '📊',
+      });
+    }
+  } catch (err) {
+    console.error('Notification: failed to fetch stale deals', err.message);
+  }
+
+  // Critical client health (score < 40)
+  try {
+    const criticalResult = await query(
+      `SELECT COUNT(*) as count
+       FROM clients
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND health_score IS NOT NULL AND health_score < 40`,
+      [brandId]
+    );
+    const criticalCount = parseInt(criticalResult.rows[0]?.count || 0);
+    if (criticalCount > 0) {
+      notifications.push({
+        type: 'critical_health',
+        title: 'Critical Client Health',
+        body: `${criticalCount} client${criticalCount !== 1 ? 's' : ''} with critical health score`,
+        link: '/clients',
+        count: criticalCount,
+        icon: '❤',
+      });
+    }
+  } catch (err) {
+    console.error('Notification: failed to fetch critical health clients', err.message);
+  }
+
+  // Deals closing within 30 days
+  try {
+    const closingResult = await query(
+      `SELECT COUNT(*) as count
+       FROM pipeline_deals
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND stage NOT IN ('won','lost','Won','Lost')
+         AND expected_close_date BETWEEN NOW() AND NOW() + INTERVAL '30 days'`,
+      [brandId]
+    );
+    const closingCount = parseInt(closingResult.rows[0]?.count || 0);
+    if (closingCount > 0) {
+      notifications.push({
+        type: 'closing_soon',
+        title: 'Deals Closing This Month',
+        body: `${closingCount} deal${closingCount !== 1 ? 's' : ''} expected to close within 30 days`,
+        link: '/pipeline',
+        count: closingCount,
+        icon: '🎯',
+      });
+    }
+  } catch (err) {
+    console.error('Notification: failed to fetch closing deals', err.message);
+  }
+
+  // Unsigned contracts (sent > 7 days ago)
+  try {
+    const contractResult = await query(
+      `SELECT COUNT(*) as count
+       FROM contracts
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND status = 'sent'
+         AND sent_at < NOW() - INTERVAL '7 days'`,
+      [brandId]
+    );
+    const contractCount = parseInt(contractResult.rows[0]?.count || 0);
+    if (contractCount > 0) {
+      notifications.push({
+        type: 'unsigned_contracts',
+        title: 'Contracts Awaiting Signature',
+        body: `${contractCount} contract${contractCount !== 1 ? 's' : ''} sent over 7 days ago without signature`,
+        link: '/contracts',
+        count: contractCount,
+        icon: '📝',
+      });
+    }
+  } catch (err) {
+    console.error('Notification: failed to fetch unsigned contracts', err.message);
+  }
+
   res.status(200).json({
     status: 'success',
     data: {
@@ -227,6 +326,49 @@ export const getUnreadCount = catchAsync(async (req, res, next) => {
       [brandId]
     );
     count += parseInt(proposalResult.rows[0]?.count || 0);
+  } catch (err) { /* ignore */ }
+
+  try {
+    const staleResult = await query(
+      `SELECT COUNT(*) as count FROM pipeline_deals
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND stage NOT IN ('won','lost','Won','Lost')
+         AND updated_at < NOW() - INTERVAL '14 days'`,
+      [brandId]
+    );
+    count += parseInt(staleResult.rows[0]?.count || 0);
+  } catch (err) { /* ignore */ }
+
+  try {
+    const criticalResult = await query(
+      `SELECT COUNT(*) as count FROM clients
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND health_score IS NOT NULL AND health_score < 40`,
+      [brandId]
+    );
+    count += parseInt(criticalResult.rows[0]?.count || 0);
+  } catch (err) { /* ignore */ }
+
+  try {
+    const closingResult = await query(
+      `SELECT COUNT(*) as count FROM pipeline_deals
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND stage NOT IN ('won','lost','Won','Lost')
+         AND expected_close_date BETWEEN NOW() AND NOW() + INTERVAL '30 days'`,
+      [brandId]
+    );
+    count += parseInt(closingResult.rows[0]?.count || 0);
+  } catch (err) { /* ignore */ }
+
+  try {
+    const contractResult = await query(
+      `SELECT COUNT(*) as count FROM contracts
+       WHERE brand_id = $1 AND is_active = TRUE
+         AND status = 'sent'
+         AND sent_at < NOW() - INTERVAL '7 days'`,
+      [brandId]
+    );
+    count += parseInt(contractResult.rows[0]?.count || 0);
   } catch (err) { /* ignore */ }
 
   res.status(200).json({

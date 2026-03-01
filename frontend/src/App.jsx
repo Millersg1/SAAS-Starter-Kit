@@ -74,6 +74,8 @@ const PublicFunnelPage       = lazy(() => import('./pages/PublicFunnelPage'));
 const EmailSequences         = lazy(() => import('./pages/EmailSequences'));
 const EmailSequenceEditor    = lazy(() => import('./pages/EmailSequenceEditor'));
 const ChatWidget             = lazy(() => import('./pages/ChatWidget'));
+const Surveys                = lazy(() => import('./pages/Surveys'));
+const SurveyResponse         = lazy(() => import('./pages/SurveyResponse'));
 
 // Policy pages — rarely visited, no reason to be in main bundle
 const PrivacyPolicy           = lazy(() => import('./pages/PrivacyPolicy'));
@@ -163,6 +165,8 @@ function App() {
               {/* Sales Power Pack */}
               <Route path="/pipeline"  element={<ProtectedRoute><Pipeline /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/surveys"   element={<ProtectedRoute><Surveys /></ProtectedRoute>} />
+              <Route path="/survey/:token" element={<SurveyResponse />} />
               <Route path="/tasks"     element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
 
               {/* Subscriptions */}

@@ -219,6 +219,11 @@ export const updateProject = async (req, res, next) => {
       import('../utils/reputationTrigger.js')
         .then(m => m.autoSendReviewRequest(brandId, project.client_id, 'project_completed'))
         .catch(() => {});
+
+      // Auto-trigger NPS/CSAT surveys configured for project_complete
+      import('./surveyController.js')
+        .then(m => m.triggerSurveyForEvent('project_complete', brandId, project.client_id))
+        .catch(() => {});
     }
 
     res.status(200).json({

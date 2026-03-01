@@ -585,6 +585,11 @@ export const recordPayment = async (req, res) => {
       import('../utils/reputationTrigger.js')
         .then(m => m.autoSendReviewRequest(brandId, invoice.client_id, 'invoice_paid'))
         .catch(() => {});
+
+      // Auto-trigger NPS/CSAT surveys configured for invoice_paid
+      import('./surveyController.js')
+        .then(m => m.triggerSurveyForEvent('invoice_paid', brandId, invoice.client_id))
+        .catch(() => {});
     }
 
     res.status(201).json({

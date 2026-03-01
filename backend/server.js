@@ -345,6 +345,8 @@ const startServer = async () => {
         CREATE INDEX IF NOT EXISTS idx_pipelines_brand ON pipelines(brand_id);
         ALTER TABLE pipeline_deals ADD COLUMN IF NOT EXISTS pipeline_id UUID REFERENCES pipelines(id) ON DELETE SET NULL;
         CREATE INDEX IF NOT EXISTS idx_pipeline_deals_pipeline ON pipeline_deals(pipeline_id);
+        ALTER TABLE pipeline_deals ADD COLUMN IF NOT EXISTS deal_score SMALLINT;
+        ALTER TABLE pipeline_deals ADD COLUMN IF NOT EXISTS deal_score_updated_at TIMESTAMPTZ;
 
         -- Feature 3: Client Segments
         CREATE TABLE IF NOT EXISTS client_segments (
@@ -817,6 +819,42 @@ const startServer = async () => {
           sent_at TIMESTAMPTZ
         );
         CREATE INDEX IF NOT EXISTS idx_sms_broadcast_recipients ON sms_broadcast_recipients(broadcast_id);
+
+        -- NPS / CSAT Surveys
+        CREATE TABLE IF NOT EXISTS surveys (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          brand_id UUID NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+          name VARCHAR(255) NOT NULL,
+          type VARCHAR(10) NOT NULL DEFAULT 'nps',
+          question TEXT NOT NULL,
+          send_trigger VARCHAR(30) DEFAULT 'manual',
+          delay_days INTEGER DEFAULT 1,
+          is_active BOOLEAN DEFAULT TRUE,
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS survey_sends (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          survey_id UUID NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
+          brand_id UUID NOT NULL,
+          client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+          token UUID NOT NULL DEFAULT gen_random_uuid(),
+          sent_at TIMESTAMPTZ DEFAULT NOW(),
+          responded_at TIMESTAMPTZ,
+          is_responded BOOLEAN DEFAULT FALSE
+        );
+        CREATE TABLE IF NOT EXISTS survey_responses (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          survey_id UUID NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
+          survey_send_id UUID REFERENCES survey_sends(id),
+          brand_id UUID NOT NULL,
+          client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
+          score SMALLINT NOT NULL CHECK (score >= 0 AND score <= 10),
+          comment TEXT,
+          responded_at TIMESTAMPTZ DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_survey_sends_token  ON survey_sends(token);
+        CREATE INDEX IF NOT EXISTS idx_survey_sends_brand  ON survey_sends(brand_id);
+        CREATE INDEX IF NOT EXISTS idx_survey_responses_brand ON survey_responses(brand_id, survey_id);
       `);
       console.log('✅ Schema migrations applied - server.js:280');
     } catch (migErr) {
