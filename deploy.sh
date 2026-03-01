@@ -35,8 +35,14 @@ deploy_frontend() {
   echo "  → Building production assets..."
   npm run build
 
-  echo "  → Uploading frontend assets with rsync..."
-  rsync -avz --delete --exclude 'api.faithharborclienthub.com' --exclude '.well-known' --exclude 'cgi-bin' "$FRONTEND_DIR/dist/" "$SSH_USER@$SSH_HOST:$FRONTEND_REMOTE_DIR/"
+  echo "  → Uploading frontend assets..."
+  if command -v rsync &>/dev/null; then
+    rsync -avz --delete --exclude 'api.faithharborclienthub.com' --exclude '.well-known' --exclude 'cgi-bin' "$FRONTEND_DIR/dist/" "$SSH_USER@$SSH_HOST:$FRONTEND_REMOTE_DIR/"
+  else
+    # rsync not available — use tar pipe over SSH (clears existing assets first)
+    ssh "$SSH_USER@$SSH_HOST" "find $FRONTEND_REMOTE_DIR -maxdepth 1 -not -name 'api.faithharborclienthub.com' -not -name '.well-known' -not -name 'cgi-bin' -not -path '$FRONTEND_REMOTE_DIR' -delete 2>/dev/null; mkdir -p $FRONTEND_REMOTE_DIR"
+    tar -czf - -C "$FRONTEND_DIR/dist" . | ssh "$SSH_USER@$SSH_HOST" "tar -xzf - -C $FRONTEND_REMOTE_DIR"
+  fi
   echo "✅ Frontend deployment successful!"
 }
 
@@ -71,8 +77,12 @@ check_health() {
 deploy_backend() {
   echo "🚀 Deploying Backend..."
 
-  echo "  → Uploading backend source files with rsync..."
-  rsync -avz --delete --exclude 'node_modules' --exclude '.env' --exclude 'uploads' "$BACKEND_DIR/" "$SSH_USER@$SSH_HOST:$BACKEND_REMOTE_DIR/"
+  echo "  → Uploading backend source files..."
+  if command -v rsync &>/dev/null; then
+    rsync -avz --delete --exclude 'node_modules' --exclude '.env' --exclude 'uploads' "$BACKEND_DIR/" "$SSH_USER@$SSH_HOST:$BACKEND_REMOTE_DIR/"
+  else
+    tar --exclude='./node_modules' --exclude='./.env' --exclude='./uploads' -czf - -C "$BACKEND_DIR" . | ssh "$SSH_USER@$SSH_HOST" "mkdir -p $BACKEND_REMOTE_DIR && tar -xzf - -C $BACKEND_REMOTE_DIR"
+  fi
 
   echo "  → Running remote commands (install dependencies, restart server)..."
   ssh "$SSH_USER@$SSH_HOST" "
@@ -81,7 +91,7 @@ deploy_backend() {
     echo '    → Installing npm dependencies...'
     npm install --production
     echo '    → Restarting application with PM2...'
-    pm2 restart clienthub-api --update-env 2>/dev/null || pm2 start ecosystem.config.js --env production
+    pm2 restart clienthub-api --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --env production
   "
   echo "✅ Backend deployment successful!"
 }
