@@ -16,12 +16,35 @@ const TRIGGER_LABELS = {
   tag_added:             'Tag added to client',
 };
 
+const ENR_COLORS = {
+  active:    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  completed: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  failed:    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  cancelled: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400',
+};
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '—';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
 export default function Automations() {
   const { activeBrandId } = useAuth();
   const navigate = useNavigate();
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+
+  // Enrollment modal state
+  const [enrWf, setEnrWf] = useState(null);          // workflow object being inspected
+  const [enrollments, setEnrollments] = useState([]); // loaded enrollments
+  const [enrLoading, setEnrLoading] = useState(false);
 
   const fetchWorkflows = useCallback(async () => {
     if (!activeBrandId) return;
@@ -37,7 +60,6 @@ export default function Automations() {
   const handleNew = async () => {
     setCreating(true);
     try {
-      // Create a new visual workflow with a trigger-only definition
       const initialDef = {
         nodes: [{ id: 'trigger-1', type: 'trigger', trigger_type: 'client_created', config: {}, x: 400, y: 0 }],
         connections: []
@@ -65,6 +87,16 @@ export default function Automations() {
     if (!window.confirm('Delete this workflow? This cannot be undone.')) return;
     try { await workflowAPI.remove(activeBrandId, id); fetchWorkflows(); }
     catch { /* silent */ }
+  };
+
+  const openEnrollments = async (wf) => {
+    setEnrWf(wf);
+    setEnrollments([]);
+    setEnrLoading(true);
+    try {
+      const r = await workflowAPI.enrollments(activeBrandId, wf.id);
+      setEnrollments(r.data.data?.enrollments || []);
+    } catch { /* silent */ } finally { setEnrLoading(false); }
   };
 
   return (
@@ -141,7 +173,12 @@ export default function Automations() {
                     <><span className="font-medium text-gray-600 dark:text-gray-300">{wf.node_count}</span> nodes</>
                   ) : null}
                   {wf.node_count != null && ' · '}
-                  <span className="font-medium text-gray-600 dark:text-gray-300">{wf.active_enrollments || 0}</span> active
+                  <button
+                    onClick={() => openEnrollments(wf)}
+                    className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {wf.active_enrollments || 0} active
+                  </button>
                 </p>
               </div>
 
@@ -152,6 +189,13 @@ export default function Automations() {
                   className="flex-1 text-xs text-center py-1.5 rounded-lg border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium"
                 >
                   Open Builder
+                </button>
+                <button
+                  onClick={() => openEnrollments(wf)}
+                  className="text-xs px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 font-medium"
+                  title="View enrollment history"
+                >
+                  👥
                 </button>
                 <button
                   onClick={() => handleToggle(wf)}
@@ -172,6 +216,66 @@ export default function Automations() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Enrollment History Modal */}
+      {enrWf && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Enrollment History</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{enrWf.name}</p>
+              </div>
+              <button
+                onClick={() => setEnrWf(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl font-light"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-5">
+              {enrLoading ? (
+                <div className="text-center py-8 text-gray-500">Loading…</div>
+              ) : enrollments.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-3xl mb-2">📋</div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">No enrollments yet</p>
+                  <p className="text-xs text-gray-400 mt-1">Clients will appear here when the trigger fires or you enroll them manually.</p>
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700">
+                      <th className="pb-2 font-medium">Client</th>
+                      <th className="pb-2 font-medium">Status</th>
+                      <th className="pb-2 font-medium">Enrolled</th>
+                      <th className="pb-2 font-medium">Completed</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+                    {enrollments.map(e => (
+                      <tr key={e.id}>
+                        <td className="py-2.5 pr-4">
+                          <p className="font-medium text-gray-900 dark:text-white">{e.client_name || 'Unknown'}</p>
+                          <p className="text-xs text-gray-400">{e.client_email || '—'}</p>
+                        </td>
+                        <td className="py-2.5 pr-4">
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ENR_COLORS[e.status] || ENR_COLORS.cancelled}`}>
+                            {e.status}
+                          </span>
+                        </td>
+                        <td className="py-2.5 pr-4 text-xs text-gray-500 dark:text-gray-400">{timeAgo(e.enrolled_at)}</td>
+                        <td className="py-2.5 text-xs text-gray-500 dark:text-gray-400">{timeAgo(e.completed_at)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

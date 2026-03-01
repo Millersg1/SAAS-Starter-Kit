@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
-import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI } from '../services/api';
+import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI, workflowAPI } from '../services/api';
 
 const ClientDetails = () => {
   const { id } = useParams();
@@ -57,6 +57,11 @@ const ClientDetails = () => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [fieldDefs, setFieldDefs] = useState([]);
+  const [showWfModal, setShowWfModal] = useState(false);
+  const [brandWorkflows, setBrandWorkflows] = useState([]);
+  const [selectedWf, setSelectedWf] = useState('');
+  const [enrolling, setEnrolling] = useState(false);
+  const [enrollSuccess, setEnrollSuccess] = useState('');
 
   useEffect(() => {
     fetchBrands();
@@ -511,6 +516,18 @@ const ClientDetails = () => {
                 className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-400"
               >
                 {enriching ? 'Enriching…' : '🔍 Enrich'}
+              </button>
+              <button
+                onClick={async () => {
+                  setShowWfModal(true);
+                  setSelectedWf('');
+                  setEnrollSuccess('');
+                  const r = await workflowAPI.list(client.brand_id);
+                  setBrandWorkflows((r.data.data?.workflows || []).filter(w => w.is_active));
+                }}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700"
+              >
+                ⚡ Run Workflow
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
@@ -1153,6 +1170,61 @@ const ClientDetails = () => {
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Run Workflow Modal */}
+        {showWfModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Run Workflow</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Manually enroll <span className="font-medium text-gray-700 dark:text-gray-200">{client.name}</span> into an active workflow.
+              </p>
+              {enrollSuccess ? (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg p-3 text-sm text-green-700 dark:text-green-300 mb-4">
+                  {enrollSuccess}
+                </div>
+              ) : null}
+              <select
+                value={selectedWf}
+                onChange={e => setSelectedWf(e.target.value)}
+                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white mb-4"
+              >
+                <option value="">— Select a workflow —</option>
+                {brandWorkflows.map(w => (
+                  <option key={w.id} value={w.id}>{w.name}</option>
+                ))}
+              </select>
+              {brandWorkflows.length === 0 && (
+                <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">No active workflows found. Create one in the Automations page.</p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={async () => {
+                    if (!selectedWf) return;
+                    setEnrolling(true);
+                    try {
+                      await workflowAPI.manualEnroll(client.brand_id, selectedWf, { client_id: id });
+                      setEnrollSuccess('Client enrolled successfully! The workflow will begin processing shortly.');
+                      setSelectedWf('');
+                    } catch {
+                      setEnrollSuccess('');
+                    } finally { setEnrolling(false); }
+                  }}
+                  disabled={!selectedWf || enrolling}
+                  className="flex-1 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 text-sm font-medium"
+                >
+                  {enrolling ? 'Enrolling…' : 'Enroll in Workflow'}
+                </button>
+                <button
+                  onClick={() => setShowWfModal(false)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm"
+                >
+                  Close
                 </button>
               </div>
             </div>

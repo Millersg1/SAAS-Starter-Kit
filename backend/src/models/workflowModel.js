@@ -92,3 +92,15 @@ export const getActiveWorkflowsForTrigger = async (brandId, triggerType) =>
      WHERE w.brand_id = $1 AND w.trigger_type = $2 AND w.is_active = TRUE`,
     [brandId, triggerType]
   )).rows;
+
+export const getEnrollmentsForWorkflow = async (workflowId) =>
+  (await query(
+    `SELECT e.id, e.entity_id, e.status, e.current_step, e.current_node_id,
+            e.enrolled_at, e.completed_at,
+            c.name AS client_name, c.email AS client_email
+     FROM automation_enrollments e
+     LEFT JOIN clients c ON c.id = e.entity_id
+     WHERE e.workflow_id = $1
+     ORDER BY e.enrolled_at DESC LIMIT 100`,
+    [workflowId]
+  )).rows;

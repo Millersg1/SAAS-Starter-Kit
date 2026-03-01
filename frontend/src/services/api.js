@@ -470,11 +470,13 @@ export const voipAPI = {
 };
 
 export const workflowAPI = {
-  list:   (brandId)              => api.get(`/workflows/${brandId}`),
-  get:    (brandId, id)          => api.get(`/workflows/${brandId}/${id}`),
-  create: (brandId, data)        => api.post(`/workflows/${brandId}`, data),
-  update: (brandId, id, d)       => api.patch(`/workflows/${brandId}/${id}`, d),
-  remove: (brandId, id)          => api.delete(`/workflows/${brandId}/${id}`),
+  list:         (brandId)           => api.get(`/workflows/${brandId}`),
+  get:          (brandId, id)       => api.get(`/workflows/${brandId}/${id}`),
+  create:       (brandId, data)     => api.post(`/workflows/${brandId}`, data),
+  update:       (brandId, id, d)    => api.patch(`/workflows/${brandId}/${id}`, d),
+  remove:       (brandId, id)       => api.delete(`/workflows/${brandId}/${id}`),
+  enrollments:  (brandId, id)       => api.get(`/workflows/${brandId}/${id}/enrollments`),
+  manualEnroll: (brandId, id, data) => api.post(`/workflows/${brandId}/${id}/enroll`, data),
 };
 
 export const customFieldAPI = {

@@ -51,3 +51,28 @@ export const deleteWorkflow = async (req, res, next) => {
     res.json({ status: 'success', message: 'Workflow deleted' });
   } catch (e) { next(e); }
 };
+
+export const getEnrollments = async (req, res, next) => {
+  try {
+    if (!await auth(req.params.brandId, req.user.id, res)) return;
+    const enrollments = await workflowModel.getEnrollmentsForWorkflow(req.params.workflowId);
+    res.json({ status: 'success', data: { enrollments } });
+  } catch (e) { next(e); }
+};
+
+export const manualEnroll = async (req, res, next) => {
+  try {
+    const { brandId, workflowId } = req.params;
+    if (!await auth(brandId, req.user.id, res)) return;
+    const { client_id } = req.body;
+    if (!client_id) return res.status(400).json({ status: 'fail', message: 'client_id is required' });
+    const enrollment = await workflowModel.enrollEntity({
+      workflow_id: workflowId,
+      brand_id: brandId,
+      entity_id: client_id,
+      entity_type: 'client',
+      next_step_at: new Date(),
+    });
+    res.status(201).json({ status: 'success', data: { enrollment } });
+  } catch (e) { next(e); }
+};

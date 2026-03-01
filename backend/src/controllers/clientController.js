@@ -232,6 +232,15 @@ export const updateClient = async (req, res, next) => {
       });
     }
 
+    // Fire tag_added workflow trigger if new tags were added
+    if (Array.isArray(updateData.tags)) {
+      const oldTags = existingClient.tags || [];
+      const addedTags = updateData.tags.filter(t => !oldTags.includes(t));
+      if (addedTags.length > 0) {
+        triggerWorkflow(brandId, 'tag_added', client.id, 'client').catch(() => {});
+      }
+    }
+
     res.status(200).json({
       status: 'success',
       message: 'Client updated successfully',
