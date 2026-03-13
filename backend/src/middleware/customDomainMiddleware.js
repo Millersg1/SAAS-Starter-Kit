@@ -22,7 +22,7 @@ async function getBrandByCustomDomain(hostname) {
  */
 export const customDomainMiddleware = async (req, res, next) => {
   const host = (req.hostname || '').toLowerCase().replace(/^www\./, '');
-  const appHost = (process.env.APP_HOSTNAME || 'faithharborclienthub.com').toLowerCase();
+  const appHost = (process.env.APP_HOSTNAME || 'saassurface.com').toLowerCase();
 
   if (host && host !== appHost && host !== 'localhost' && host !== '127.0.0.1') {
     const brand = await getBrandByCustomDomain(host);

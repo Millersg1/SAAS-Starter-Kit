@@ -72,7 +72,7 @@ export const sendReply = catchAsync(async (req, res, next) => {
     .filter(Boolean)
     .join(' ');
 
-  const newMessageId = `<${randomUUID()}@clienthub.app>`;
+  const newMessageId = `<${randomUUID()}@saassurface.com>`;
 
   // Create nodemailer transporter with connection's SMTP credentials
   const transporter = nodemailer.createTransport({

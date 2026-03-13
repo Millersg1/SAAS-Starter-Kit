@@ -182,7 +182,7 @@ export const oauthRedirect = async (req, res) => {
     }
     const config = OAUTH_CONFIGS[platform];
     if (!config) return res.status(400).json({ success: false, message: `Unknown platform: ${platform}` });
-    const redirectUri = `${process.env.API_URL || 'https://api.faithharborclienthub.com'}/api/social/${brandId}/oauth/${platform}/callback`;
+    const redirectUri = `${process.env.API_URL || 'https://api.saassurface.com'}/api/social/${brandId}/oauth/${platform}/callback`;
     const state = Buffer.from(JSON.stringify({ brandId, userId: req.user.id })).toString('base64');
     const params = new URLSearchParams({
       response_type: 'code', client_id: keys.clientId,
@@ -201,7 +201,7 @@ export const oauthCallback = async (req, res) => {
     const { userId } = JSON.parse(Buffer.from(state, 'base64').toString());
     const brand = await getBrandById(brandId);
     const keys = brand?.social_api_keys?.[platform];
-    const redirectUri = `${process.env.API_URL || 'https://api.faithharborclienthub.com'}/api/social/${brandId}/oauth/${platform}/callback`;
+    const redirectUri = `${process.env.API_URL || 'https://api.saassurface.com'}/api/social/${brandId}/oauth/${platform}/callback`;
 
     const axios = (await import('axios')).default;
     const TOKEN_URLS = {
@@ -222,7 +222,7 @@ export const oauthCallback = async (req, res) => {
       token_expires_at: expires_in ? new Date(Date.now() + expires_in * 1000) : null
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'https://faithharborclienthub.com';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://saassurface.com';
     res.redirect(`${frontendUrl}/social?connected=${platform}`);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

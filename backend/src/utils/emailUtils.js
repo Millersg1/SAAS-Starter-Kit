@@ -48,12 +48,12 @@ export const sendVerificationEmail = async (email, name, token) => {
   const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify-email/${token}`;
   
   const mailOptions = {
-    from: `${process.env.SMTP_FROM_NAME || 'ClientHub'} <${process.env.SMTP_FROM_EMAIL || 'noreply@clienthub.com'}>`,
+    from: `${process.env.SMTP_FROM_NAME || 'SAAS Surface'} <${process.env.SMTP_FROM_EMAIL || 'noreply@saassurface.com'}>`,
     to: email,
-    subject: 'Verify Your Email - ClientHub',
+    subject: 'Verify Your Email - SAAS Surface',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Welcome to ClientHub, ${name}!</h2>
+        <h2>Welcome to SAAS Surface, ${name}!</h2>
         <p>Thank you for registering. Please verify your email address by clicking the button below:</p>
         <div style="text-align: center; margin: 30px 0;">
           <a href="${verificationUrl}" 
@@ -69,7 +69,7 @@ export const sendVerificationEmail = async (email, name, token) => {
         </p>
       </div>
     `,
-    text: `Welcome to ClientHub, ${name}!\n\nPlease verify your email by visiting: ${verificationUrl}\n\nThis link will expire in 24 hours.`
+    text: `Welcome to SAAS Surface, ${name}!\n\nPlease verify your email by visiting: ${verificationUrl}\n\nThis link will expire in 24 hours.`
   };
 
   try {
@@ -93,9 +93,9 @@ export const sendPasswordResetEmail = async (email, name, token) => {
   const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password/${token}`;
   
   const mailOptions = {
-    from: `${process.env.SMTP_FROM_NAME || 'ClientHub'} <${process.env.SMTP_FROM_EMAIL || 'noreply@clienthub.com'}>`,
+    from: `${process.env.SMTP_FROM_NAME || 'SAAS Surface'} <${process.env.SMTP_FROM_EMAIL || 'noreply@saassurface.com'}>`,
     to: email,
-    subject: 'Password Reset Request - ClientHub',
+    subject: 'Password Reset Request - SAAS Surface',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
@@ -141,7 +141,7 @@ export const sendInvoiceEmail = async (clientEmail, clientName, invoiceNumber, t
   const formattedDue = dueDate ? new Date(dueDate).toLocaleDateString() : 'Upon receipt';
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: clientEmail,
     subject: `Invoice ${invoiceNumber} from ${brandName}`,
     html: `
@@ -176,7 +176,7 @@ export const sendPaymentConfirmationEmail = async (clientEmail, clientName, invo
   const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amountPaid);
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: clientEmail,
     subject: `Payment Received - Invoice ${invoiceNumber}`,
     html: `
@@ -205,7 +205,7 @@ export const sendProjectUpdateEmail = async (clientEmail, clientName, projectNam
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: clientEmail,
     subject: `Project Update: ${projectName}`,
     html: `
@@ -238,7 +238,7 @@ export const sendFailedPaymentEmail = async (ownerEmail, ownerName, brandName, a
   const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(amount);
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: ownerEmail,
     subject: `Action Required: Payment Failed for ${brandName}`,
     html: `
@@ -270,7 +270,7 @@ export const sendTrialEndingEmail = async (ownerEmail, ownerName, brandName, tri
   const formattedDate = new Date(trialEndDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: ownerEmail,
     subject: `Your ${brandName} trial ends on ${formattedDate}`,
     html: `
@@ -301,7 +301,7 @@ export const sendPortalAccessEmail = async (clientEmail, clientName, brandName, 
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: clientEmail,
     subject: `You've been invited to the ${brandName} client portal`,
     html: `
@@ -338,7 +338,7 @@ export const sendOverdueReminderEmail = async (clientEmail, clientName, invoiceN
   const formattedAmount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amountDue);
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: clientEmail,
     subject: `Action Required: Invoice ${invoiceNumber} is ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} overdue`,
     html: `
@@ -374,7 +374,7 @@ export const sendProposalEmail = async (clientEmail, clientName, proposalTitle, 
   const formattedExpiry = expiryDate ? new Date(expiryDate).toLocaleDateString() : 'No expiry';
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: clientEmail,
     subject: `Proposal: ${proposalTitle} from ${brandName}`,
     html: `
@@ -406,12 +406,12 @@ export const sendWelcomeEmail = async (email, name) => {
   const transporter = createTransporter();
   
   const mailOptions = {
-    from: `${process.env.SMTP_FROM_NAME || 'ClientHub'} <${process.env.SMTP_FROM_EMAIL || 'noreply@clienthub.com'}>`,
+    from: `${process.env.SMTP_FROM_NAME || 'SAAS Surface'} <${process.env.SMTP_FROM_EMAIL || 'noreply@saassurface.com'}>`,
     to: email,
-    subject: 'Welcome to ClientHub!',
+    subject: 'Welcome to SAAS Surface!',
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>Welcome to ClientHub, ${name}! 🎉</h2>
+        <h2>Welcome to SAAS Surface, ${name}! 🎉</h2>
         <p>Your email has been verified successfully. You can now access all features of your account.</p>
         <p>Get started by:</p>
         <ul>
@@ -429,7 +429,7 @@ export const sendWelcomeEmail = async (email, name) => {
         <p>If you have any questions, feel free to reach out to our support team.</p>
       </div>
     `,
-    text: `Welcome to ClientHub, ${name}!\n\nYour email has been verified successfully. Visit your dashboard to get started.`
+    text: `Welcome to SAAS Surface, ${name}!\n\nYour email has been verified successfully. Visit your dashboard to get started.`
   };
 
   try {
@@ -448,8 +448,8 @@ export const sendContactEmail = async ({ name, email, company, message }) => {
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: `ClientHub Contact Form <${process.env.SMTP_FROM_EMAIL || 'noreply@faithharborclienthub.com'}>`,
-    to: 'sales@faithharborclienthub.com',
+    from: `SAAS Surface Contact Form <${process.env.SMTP_FROM_EMAIL || 'noreply@saassurface.com'}>`,
+    to: 'sales@saassurface.com',
     replyTo: email,
     subject: `New Contact Form Submission from ${name}${company ? ` (${company})` : ''}`,
     html: `
@@ -490,10 +490,10 @@ export const sendContactEmail = async ({ name, email, company, message }) => {
 
 export const sendProposalFollowUpEmail = async (clientEmail, clientName, proposalTitle, total, portalUrl, brandName, dayNumber) => {
   const transporter = createTransporter();
-  const fromName = brandName || process.env.SMTP_FROM_NAME || 'ClientHub';
+  const fromName = brandName || process.env.SMTP_FROM_NAME || 'SAAS Surface';
 
   const mailOptions = {
-    from: `${fromName} <${process.env.SMTP_FROM_EMAIL || 'noreply@clienthub.com'}>`,
+    from: `${fromName} <${process.env.SMTP_FROM_EMAIL || 'noreply@saassurface.com'}>`,
     to: clientEmail,
     subject: `Following up on your proposal — ${proposalTitle}`,
     html: `
@@ -531,10 +531,10 @@ export const sendProposalFollowUpEmail = async (clientEmail, clientName, proposa
 
 export const sendTaskReminderEmail = async (userEmail, userName, taskTitle, clientName, dueDate) => {
   const transporter = createTransporter();
-  const fromName = process.env.SMTP_FROM_NAME || 'ClientHub';
+  const fromName = process.env.SMTP_FROM_NAME || 'SAAS Surface';
 
   const mailOptions = {
-    from: `${fromName} <${process.env.SMTP_FROM_EMAIL || 'noreply@clienthub.com'}>`,
+    from: `${fromName} <${process.env.SMTP_FROM_EMAIL || 'noreply@saassurface.com'}>`,
     to: userEmail,
     subject: `Task due today: ${taskTitle}`,
     html: `
@@ -550,7 +550,7 @@ export const sendTaskReminderEmail = async (userEmail, userName, taskTitle, clie
             ${clientName ? `<p style="margin:6px 0 0;color:#78350f;font-size:14px;">Client: ${clientName}</p>` : ''}
             <p style="margin:6px 0 0;color:#78350f;font-size:14px;">Due: ${dueDate}</p>
           </div>
-          <p style="color:#374151;">Log in to ClientHub to mark this task as complete.</p>
+          <p style="color:#374151;">Log in to SAAS Surface to mark this task as complete.</p>
         </div>
       </div>
     `
@@ -568,7 +568,7 @@ export const sendTaskReminderEmail = async (userEmail, userName, taskTitle, clie
  */
 export const sendWeeklyReportEmail = async (ownerEmail, ownerName, brandName, stats) => {
   const transporter = createTransporter();
-  const fromName = process.env.SMTP_FROM_NAME || 'ClientHub';
+  const fromName = process.env.SMTP_FROM_NAME || 'SAAS Surface';
 
   const statCard = (label, value, color = '#1d4ed8') =>
     `<div style="display:inline-block;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;margin:6px;min-width:120px;text-align:center;">
@@ -577,7 +577,7 @@ export const sendWeeklyReportEmail = async (ownerEmail, ownerName, brandName, st
     </div>`;
 
   const mailOptions = {
-    from: `${fromName} <${process.env.SMTP_FROM_EMAIL || 'noreply@clienthub.com'}>`,
+    from: `${fromName} <${process.env.SMTP_FROM_EMAIL || 'noreply@saassurface.com'}>`,
     to: ownerEmail,
     subject: `Your weekly summary — ${brandName}`,
     html: `
@@ -601,14 +601,14 @@ export const sendWeeklyReportEmail = async (ownerEmail, ownerName, brandName, st
           </div>
 
           <div style="text-align:center;margin-top:24px;">
-            <a href="${process.env.FRONTEND_URL || 'https://app.clienthub.com'}/dashboard"
+            <a href="${process.env.FRONTEND_URL || 'https://app.saassurface.com'}/dashboard"
                style="background:#1d4ed8;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">
               View Dashboard
             </a>
           </div>
         </div>
         <p style="color:#9ca3af;font-size:11px;text-align:center;margin-top:16px;">
-          You're receiving this because you're an owner of the ${brandName} workspace on ClientHub.
+          You're receiving this because you're an owner of the ${brandName} workspace on SAAS Surface.
         </p>
       </div>
     `
@@ -620,7 +620,7 @@ export const sendWeeklyReportEmail = async (ownerEmail, ownerName, brandName, st
 export const sendBookingConfirmationEmail = async (email, name, pageTitle, startTime, cancelToken) => {
   const transporter = createTransporter();
   const date = new Date(startTime).toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  const cancelUrl = `${process.env.FRONTEND_URL || 'https://faithharborclienthub.com'}/book/cancel/${cancelToken}`;
+  const cancelUrl = `${process.env.FRONTEND_URL || 'https://saassurface.com'}/book/cancel/${cancelToken}`;
   await transporter.sendMail({
     from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
     to: email,
@@ -677,7 +677,7 @@ export const sendReviewRequestEmail = async (clientEmail, clientName, brandName,
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@clienthub.app',
+    from: process.env.EMAIL_FROM || 'noreply@saassurface.com',
     to: clientEmail,
     subject: `How was your experience with ${brandName}?`,
     html: `
@@ -699,7 +699,7 @@ export const sendReviewRequestEmail = async (clientEmail, clientName, brandName,
           </p>
         </div>
         <div style="background: #f9fafb; padding: 16px 24px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
-          <p style="margin: 0; font-size: 12px; color: #9ca3af;">Sent by ${brandName} via ClientHub</p>
+          <p style="margin: 0; font-size: 12px; color: #9ca3af;">Sent by ${brandName} via SAAS Surface</p>
         </div>
       </div>
     `,
@@ -719,7 +719,7 @@ export const sendReviewRequestEmail = async (clientEmail, clientName, brandName,
  */
 export const sendSurveyEmail = async (email, clientName, token, question, type, brandName) => {
   const transporter = createTransporter();
-  const FRONTEND_URL = process.env.FRONTEND_URL || 'https://faithharborclienthub.com';
+  const FRONTEND_URL = process.env.FRONTEND_URL || 'https://saassurface.com';
   const baseUrl = `${FRONTEND_URL}/survey/${token}`;
 
   const isNps = type !== 'csat';
@@ -739,7 +739,7 @@ export const sendSurveyEmail = async (email, clientName, token, question, type, 
   }).join('');
 
   const mailOptions = {
-    from: `"${brandName}" <${process.env.SMTP_USER || 'noreply@clienthub.app'}>`,
+    from: `"${brandName}" <${process.env.SMTP_USER || 'noreply@saassurface.com'}>`,
     to: email,
     subject: `Quick feedback for ${brandName}`,
     html: `
@@ -755,7 +755,7 @@ export const sendSurveyEmail = async (email, clientName, token, question, type, 
           <p style="font-size:13px;color:#9ca3af;">Or <a href="${baseUrl}" style="color:#4f46e5;">leave a written response</a></p>
         </div>
         <div style="background:#f9fafb;padding:16px 24px;text-align:center;border-radius:0 0 8px 8px;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">Sent by ${brandName} via ClientHub</p>
+          <p style="margin:0;font-size:12px;color:#9ca3af;">Sent by ${brandName} via SAAS Surface</p>
         </div>
       </div>
     `,

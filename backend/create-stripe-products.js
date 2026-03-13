@@ -19,7 +19,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 // Product definitions matching your subscription plans
 const products = [
   {
-    name: 'ClientHub Basic Monthly',
+    name: 'SAAS Surface Basic Monthly',
     description: 'Perfect for small agencies getting started',
     price: 2900, // $29.00 in cents
     interval: 'month',
@@ -33,7 +33,7 @@ const products = [
     ]
   },
   {
-    name: 'ClientHub Basic Annual',
+    name: 'SAAS Surface Basic Annual',
     description: 'Perfect for small agencies getting started (Annual billing)',
     price: 29000, // $290.00 in cents
     interval: 'year',
@@ -48,7 +48,7 @@ const products = [
     ]
   },
   {
-    name: 'ClientHub Pro Monthly',
+    name: 'SAAS Surface Pro Monthly',
     description: 'For growing agencies with more clients',
     price: 7900, // $79.00 in cents
     interval: 'month',
@@ -64,7 +64,7 @@ const products = [
     ]
   },
   {
-    name: 'ClientHub Pro Annual',
+    name: 'SAAS Surface Pro Annual',
     description: 'For growing agencies with more clients (Annual billing)',
     price: 79000, // $790.00 in cents
     interval: 'year',
@@ -81,7 +81,7 @@ const products = [
     ]
   },
   {
-    name: 'ClientHub Enterprise Monthly',
+    name: 'SAAS Surface Enterprise Monthly',
     description: 'For large agencies with unlimited needs',
     price: 19900, // $199.00 in cents
     interval: 'month',
@@ -100,7 +100,7 @@ const products = [
     ]
   },
   {
-    name: 'ClientHub Enterprise Annual',
+    name: 'SAAS Surface Enterprise Annual',
     description: 'For large agencies with unlimited needs (Annual billing)',
     price: 199000, // $1990.00 in cents
     interval: 'year',

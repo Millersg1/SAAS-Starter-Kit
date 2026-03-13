@@ -33,7 +33,7 @@ export const startEmailSequencesCron = () => {
             continue;
           }
 
-          const portalUrl = `${process.env.FRONTEND_URL || 'https://faithharborclienthub.com'}/portal/proposals`;
+          const portalUrl = `${process.env.FRONTEND_URL || 'https://saassurface.com'}/portal/proposals`;
 
           await sendProposalFollowUpEmail(
             seq.client_email,

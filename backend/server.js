@@ -1035,7 +1035,7 @@ const startServer = async () => {
 
     // Start Express server
     const server = app.listen(PORT, () => {
-      console.log('🚀 ClientHub API Server Started - server.js:311');
+      console.log('🚀 SAAS Surface API Server Started - server.js:311');
       console.log(`📡 Server running on port ${PORT} - server.js:312`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'} - server.js:313`);
       console.log(`🔗 API URL: http://localhost:${PORT} - server.js:314`);

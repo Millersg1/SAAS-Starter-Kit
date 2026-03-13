@@ -24,14 +24,14 @@ export const getWidgetScript = (req, res) => {
   const apiBase = `${API_URL}/api/chat-widget`;
   const script = `(function(){
 'use strict';
-var _ch = window._ClientHubChat = window._ClientHubChat || {};
+var _ch = window._SaasSurfaceChat = window._SaasSurfaceChat || {};
 if (_ch._loaded) return;
 _ch._loaded = true;
 
 // Find the script tag to read brandId
 var scripts = document.querySelectorAll('script[data-brand-id]');
 var brandId = scripts.length ? scripts[scripts.length-1].getAttribute('data-brand-id') : null;
-if (!brandId) { console.warn('[ClientHub Chat] Missing data-brand-id attribute'); return; }
+if (!brandId) { console.warn('[SAAS Surface Chat] Missing data-brand-id attribute'); return; }
 
 var API = '${apiBase}';
 var sessionId = null;

@@ -8,7 +8,7 @@ import { getBrandById } from '../models/brandModel.js';
 import { getTwilioConnection } from '../models/smsModel.js';
 import { sendReviewRequestEmail } from './emailUtils.js';
 
-const API_BASE = process.env.API_URL || process.env.BACKEND_URL || 'https://api.faithharborclienthub.com/api';
+const API_BASE = process.env.API_URL || process.env.BACKEND_URL || 'https://api.saassurface.com/api';
 
 function interpolate(template, vars) {
   return (template || '').replace(/\{(\w+)\}/g, (_, key) => vars[key] || '');

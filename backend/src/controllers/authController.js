@@ -314,7 +314,7 @@ export const updatePassword = catchAsync(async (req, res, next) => {
  */
 export const setup2FA = catchAsync(async (req, res, next) => {
   const secret = speakeasy.generateSecret({
-    name: `ClientHub:${req.user.email}`,
+    name: `SAAS Surface:${req.user.email}`,
     length: 20,
   });
 

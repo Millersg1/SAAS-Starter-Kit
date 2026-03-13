@@ -49,9 +49,9 @@ export async function deliverWebhook(brandId, eventType, payload) {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'X-ClientHub-Event': eventType,
-              'X-ClientHub-Signature': `sha256=${sig}`,
-              'User-Agent': 'ClientHub-Webhooks/1.0',
+              'X-SaasSurface-Event': eventType,
+              'X-SaasSurface-Signature': `sha256=${sig}`,
+              'User-Agent': 'SaasSurface-Webhooks/1.0',
             },
             body,
             signal: controller.signal,

@@ -24,7 +24,7 @@ test('GET / returns API metadata', async () => {
   const body = await response.json();
 
   assert.equal(response.status, 200);
-  assert.equal(body.message, 'ClientHub API');
+  assert.equal(body.message, 'SAAS Surface API');
   assert.equal(typeof body.health, 'string');
 });
 

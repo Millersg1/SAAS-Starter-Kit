@@ -1,7 +1,7 @@
 {
-  "name": "clienthub-backend",
+  "name": "saassurface-backend",
   "version": "1.0.0",
-  "description": "ClientHub Backend API - White-label client portal for agencies",
+  "description": "SAAS Surface Backend API - White-label client portal for agencies",
   "main": "server.js",
   "type": "module",
   "scripts": {

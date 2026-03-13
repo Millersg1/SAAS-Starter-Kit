@@ -157,7 +157,7 @@ router.post('/contact', catchAsync(async (req, res, next) => {
     await sendContactEmail({ name, email, company, message });
   } catch (err) {
     console.error('Contact email delivery failed:', err.message);
-    return next(new AppError('Unable to send your message right now. Please email us directly at sales@faithharborclienthub.com', 503));
+    return next(new AppError('Unable to send your message right now. Please email us directly at sales@saassurface.com', 503));
   }
 
   res.status(200).json({ status: 'success', message: 'Your message has been sent. We\'ll be in touch shortly.' });

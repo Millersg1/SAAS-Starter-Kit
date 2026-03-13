@@ -227,7 +227,7 @@ app.use('/api/churn', churnRoutes);
 // Welcome route
 app.get('/', (req, res) => {
   res.json({
-    message: 'ClientHub API',
+    message: 'SAAS Surface API',
     version: '1.0.0',
     documentation: '/api/docs',
     health: '/health'

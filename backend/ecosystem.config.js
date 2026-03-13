@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'clienthub-api',
+      name: 'saassurface-api',
       script: 'server.js',
       instances: 1, // Can be set to 'max' to run in cluster mode on multi-core servers
       autorestart: true,

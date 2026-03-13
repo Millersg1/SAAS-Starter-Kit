@@ -162,11 +162,11 @@ const processDrip = async () => {
         // Wrap links with click tracking
         html = wrapLinksWithTracking(html, enrollment.id, step.position);
 
-        const fromName = step.from_name || enrollment.brand_name || 'ClientHub';
+        const fromName = step.from_name || enrollment.brand_name || 'SAAS Surface';
         const fromEmail = step.from_email ||
           process.env.SMTP_FROM_EMAIL ||
           process.env.EMAIL_FROM ||
-          'noreply@clienthub.app';
+          'noreply@saassurface.com';
 
         let sendError = null;
         try {
