@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import Layout from '../components/Layout';
+import Skeleton from '../components/Skeleton';
 import { invoiceAPI, brandAPI, clientAPI, aiAPI } from '../services/api';
 import { downloadCSV } from '../utils/csvUtils';
 
@@ -92,10 +94,12 @@ const Invoices = () => {
       });
       fetchInvoices();
       fetchStats();
+      toast.success('Invoice created');
       // Navigate to the new invoice
       const invoice = response.data.data?.invoice;
       if (invoice) navigate(`/invoices/${invoice.id}`);
     } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create invoice');
       setError(err.response?.data?.message || 'Failed to create invoice');
     }
   };
@@ -104,9 +108,11 @@ const Invoices = () => {
     if (!window.confirm('Delete this invoice?')) return;
     try {
       await invoiceAPI.deleteInvoice(selectedBrand.id, invoiceId);
+      toast.success('Invoice deleted');
       fetchInvoices();
       fetchStats();
     } catch (err) {
+      toast.error('Failed to delete invoice');
       setError('Failed to delete invoice');
     }
   };
@@ -160,8 +166,20 @@ const Invoices = () => {
   if (loading) {
     return (
       <Layout>
-        <div className="flex justify-center items-center h-64">
-          <p className="text-gray-600">Loading invoices...</p>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-6">
+            <div className="space-y-2">
+              <Skeleton.Text w="w-32" h="h-7" />
+              <Skeleton.Text w="w-56" h="h-4" />
+            </div>
+            <Skeleton.Text w="w-28" h="h-10" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            {Array.from({ length: 4 }).map((_, i) => <Skeleton.StatCard key={i} />)}
+          </div>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton.Row key={i} />)}
+          </div>
         </div>
       </Layout>
     );
@@ -183,8 +201,8 @@ const Invoices = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-            <p className="text-gray-600">Manage your invoices and track payments</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invoices</h1>
+            <p className="text-gray-600 dark:text-gray-400">Manage your invoices and track payments</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -234,29 +252,29 @@ const Invoices = () => {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow border">
-              <p className="text-sm text-gray-500">Total Invoices</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total_invoices || 0}</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Invoices</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total_invoices || 0}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow border">
-              <p className="text-sm text-gray-500">Total Amount</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats.total_amount)}</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Total Amount</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(stats.total_amount)}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow border">
-              <p className="text-sm text-gray-500">Paid</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Paid</p>
               <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.paid_amount)}</p>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow border">
-              <p className="text-sm text-gray-500">Pending</p>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border dark:border-gray-700">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Pending</p>
               <p className="text-2xl font-bold text-yellow-600">{formatCurrency(stats.pending_amount)}</p>
             </div>
           </div>
         )}
 
         {/* Invoices Table */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-900">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
@@ -267,7 +285,7 @@ const Invoices = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {invoices.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="px-6 py-8 text-center text-gray-500">

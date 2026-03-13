@@ -1,9 +1,12 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PortalAuthProvider } from './context/PortalAuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PortalProtectedRoute from './components/PortalProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
+import OfflineBanner from './components/OfflineBanner';
 import CookieBanner from './components/CookieBanner';
 import ScrollToTop from './components/ScrollToTop';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
@@ -116,9 +119,12 @@ const SuperAdminRoute = ({ children }) => {
 
 function App() {
   return (
+    <ErrorBoundary>
     <Router>
       <PortalAuthProvider>
         <AuthProvider>
+          <OfflineBanner />
+          <Toaster position="top-right" richColors closeButton duration={4000} />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* ── Agency Public Routes ── */}
@@ -258,6 +264,7 @@ function App() {
         </AuthProvider>
       </PortalAuthProvider>
     </Router>
+    </ErrorBoundary>
   );
 }
 

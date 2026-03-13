@@ -2,6 +2,7 @@ import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireSuperAdmin } from '../middleware/superAdminMiddleware.js';
 import * as superAdminController from '../controllers/superAdminController.js';
+import { getErrorSummary } from '../utils/errorMonitor.js';
 
 const router = express.Router();
 router.use(protect, requireSuperAdmin);
@@ -16,5 +17,6 @@ router.get('/subscriptions',           superAdminController.getAllSubscriptions)
 router.patch('/subscriptions/:id',     superAdminController.updateSubscription);
 router.get('/audit',                   superAdminController.getAuditLogs);
 router.post('/fix',                    superAdminController.runFix);
+router.get('/error-summary',           (req, res) => res.json({ status: 'success', data: getErrorSummary() }));
 
 export default router;

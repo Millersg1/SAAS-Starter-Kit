@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { userAPI, twoFactorAPI, uploadAPI } from '../services/api';
 import Layout from '../components/Layout';
@@ -86,6 +87,7 @@ const Profile = () => {
     try {
       await userAPI.updatePassword({ currentPassword: passwordData.currentPassword, newPassword: passwordData.newPassword });
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      toast.success('Password updated');
       setPasswordMessage({ type: 'success', text: 'Password updated successfully.' });
       setTimeout(() => setPasswordMessage({ type: '', text: '' }), 5000);
     } catch (err) {
@@ -156,6 +158,7 @@ const Profile = () => {
       });
 
       updateUser(response.data.data.user);
+      toast.success('Profile updated');
       showMessage('success', 'Profile updated successfully!');
     } catch (error) {
       showMessage('error', error.response?.data?.message || 'Failed to update profile');

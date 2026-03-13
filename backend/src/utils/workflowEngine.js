@@ -313,6 +313,88 @@ async function executeGraphNode(node, enrollment) {
   }
 }
 
+// ── Cycle detection (shared between validation and execution) ─────────────
+
+export function detectCycles(nodes, connections) {
+  const adj = {};
+  for (const n of nodes) adj[n.id] = [];
+  for (const c of connections) {
+    if (adj[c.from]) adj[c.from].push(c.to);
+  }
+
+  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const color = {};
+  for (const n of nodes) color[n.id] = WHITE;
+  const cycleNodes = new Set();
+
+  function dfs(id) {
+    color[id] = GRAY;
+    for (const next of (adj[id] || [])) {
+      if (color[next] === GRAY) { cycleNodes.add(id); cycleNodes.add(next); return true; }
+      if (color[next] === WHITE && dfs(next)) { cycleNodes.add(id); return true; }
+    }
+    color[id] = BLACK;
+    return false;
+  }
+
+  for (const n of nodes) {
+    if (color[n.id] === WHITE) dfs(n.id);
+  }
+  return cycleNodes;
+}
+
+// ── Workflow validation ───────────────────────────────────────────────────
+
+export function validateWorkflow(workflowDef) {
+  const errors = [];
+  if (!workflowDef) { errors.push('No workflow definition'); return errors; }
+  const { nodes = [], connections = [] } = workflowDef;
+
+  // Must have a trigger node
+  const triggerNode = nodes.find(n => n.type === 'trigger');
+  if (!triggerNode) errors.push('Workflow must have a trigger node');
+
+  // Must have at least one action node
+  const actionNodes = nodes.filter(n => n.type !== 'trigger' && n.type !== 'condition');
+  if (actionNodes.length === 0) errors.push('Workflow must have at least one action node');
+
+  // Trigger must have an outbound connection
+  if (triggerNode) {
+    const triggerOuts = connections.filter(c => c.from === triggerNode.id);
+    if (triggerOuts.length === 0) errors.push('Trigger must be connected to at least one node');
+  }
+
+  // Condition nodes must have YES and NO outputs
+  for (const n of nodes.filter(n => n.type === 'condition')) {
+    const outs = connections.filter(c => c.from === n.id);
+    if (!outs.find(c => c.branch === 'yes')) errors.push(`Condition node "${n.id}" is missing a YES branch`);
+    if (!outs.find(c => c.branch === 'no'))  errors.push(`Condition node "${n.id}" is missing a NO branch`);
+    if (!n.config?.field || !n.config?.operator) errors.push(`Condition node is not fully configured (missing field or operator)`);
+  }
+
+  // Action config validation
+  for (const n of actionNodes) {
+    const c = n.config || {};
+    if (n.type === 'send_email' && !c.subject) errors.push('Send Email action is missing a subject');
+    if (n.type === 'send_sms' && !c.message) errors.push('Send SMS action is missing a message');
+    if (n.type === 'create_task' && !c.title) errors.push('Create Task action is missing a title');
+    if (n.type === 'add_tag' && !c.tag) errors.push('Add Tag action is missing a tag name');
+    if (n.type === 'remove_tag' && !c.tag) errors.push('Remove Tag action is missing a tag name');
+    if (n.type === 'move_pipeline_stage' && !c.stage) errors.push('Move Pipeline Stage action is missing a stage name');
+    if (n.type === 'enroll_in_drip' && !c.sequence_id) errors.push('Enroll in Sequence action is missing a sequence');
+    if (n.type === 'send_webhook' && !c.url) errors.push('Send Webhook action is missing a URL');
+  }
+
+  // Cycle detection
+  const cycleNodes = detectCycles(nodes, connections);
+  if (cycleNodes.size > 0) errors.push('Workflow contains a circular loop — this would cause infinite execution');
+
+  return errors;
+}
+
+// ── Max node visits (runtime safety net) ─────────────────────────────────
+const MAX_NODE_VISITS = 500;
+
 export async function executeGraphWorkflow(enrollment, workflowDef) {
   const { nodes, connections } = workflowDef;
 
@@ -321,6 +403,18 @@ export async function executeGraphWorkflow(enrollment, workflowDef) {
     await workflowModel.completeEnrollment(enrollment.id);
     return;
   }
+
+  // Runtime cycle guard: track total node visits via DB column
+  const visitCount = (enrollment.node_visit_count || 0) + 1;
+  if (visitCount > MAX_NODE_VISITS) {
+    console.error(`Enrollment ${enrollment.id} exceeded ${MAX_NODE_VISITS} node visits — aborting (possible cycle)`);
+    await query(
+      `UPDATE automation_enrollments SET status = 'failed', completed_at = NOW() WHERE id = $1`,
+      [enrollment.id]
+    );
+    return;
+  }
+  await query(`UPDATE automation_enrollments SET node_visit_count = $2 WHERE id = $1`, [enrollment.id, visitCount]);
 
   // Execute action (condition nodes have no side-effects, they just route)
   if (currentNode.type !== 'condition' && currentNode.type !== 'trigger') {
@@ -363,6 +457,111 @@ export async function executeGraphWorkflow(enrollment, workflowDef) {
   const nextAt = new Date(Date.now() + delayMs);
   await workflowModel.advanceEnrollmentByNode(enrollment.id, nextNode.id, nextAt);
 }
+
+// ── Test/Dry-Run: simulate workflow execution without side effects ────────
+
+export async function testWorkflow(workflowDef, brandId, entityId) {
+  const { nodes = [], connections = [] } = workflowDef || {};
+  const triggerNode = nodes.find(n => n.type === 'trigger');
+  if (!triggerNode) return { steps: [], error: 'No trigger node found' };
+
+  const firstConn = connections.find(c => c.from === triggerNode.id);
+  if (!firstConn) return { steps: [{ nodeId: triggerNode.id, label: 'Trigger fires', status: 'ok' }], error: 'No nodes connected to trigger' };
+
+  // Fetch real entity data for condition evaluation
+  let entityRow = null;
+  if (entityId) {
+    entityRow = (await query(
+      `SELECT c.*, (SELECT stage FROM pipeline_deals d WHERE d.client_id = c.id AND d.is_active = TRUE ORDER BY d.created_at DESC LIMIT 1) AS pipeline_stage
+       FROM clients c WHERE c.id = $1`, [entityId]
+    )).rows[0] || null;
+  }
+
+  const steps = [{ nodeId: triggerNode.id, type: 'trigger', label: 'Trigger fires', status: 'ok' }];
+  const visited = new Set();
+  let currentId = firstConn.to;
+  let branch = firstConn.branch || null;
+
+  while (currentId && !visited.has(currentId) && steps.length < 50) {
+    visited.add(currentId);
+    const node = nodes.find(n => n.id === currentId);
+    if (!node) { steps.push({ nodeId: currentId, label: 'Missing node', status: 'error' }); break; }
+
+    if (node.type === 'condition') {
+      const result = entityRow ? evaluateCondition(node.config, entityRow) : null;
+      const branchTaken = result === null ? 'unknown' : (result ? 'yes' : 'no');
+      steps.push({
+        nodeId: node.id, type: 'condition',
+        label: `Condition: ${node.config?.field || '?'} ${node.config?.operator || '?'} ${node.config?.value || ''}`.trim(),
+        status: 'ok', branch: branchTaken,
+        detail: result === null ? 'No test client selected — cannot evaluate' : `Evaluates to ${branchTaken.toUpperCase()}`,
+      });
+
+      if (result === null) break; // can't continue without entity data
+      const nextConn = connections.filter(c => c.from === node.id).find(c => c.branch === branchTaken);
+      currentId = nextConn?.to || null;
+      branch = nextConn?.branch || null;
+    } else {
+      // Action node — validate config without executing
+      const config = node.config || {};
+      let status = 'ok';
+      let detail = '';
+      if (node.type === 'send_email') {
+        if (!config.subject) { status = 'warning'; detail = 'Missing subject'; }
+        else detail = `Subject: "${config.subject}"`;
+      } else if (node.type === 'send_sms') {
+        if (!config.message) { status = 'warning'; detail = 'Missing message'; }
+        else detail = `Message: "${config.message.slice(0, 50)}"`;
+      } else if (node.type === 'create_task') {
+        detail = config.title || 'Untitled task';
+      } else if (node.type === 'add_tag' || node.type === 'remove_tag') {
+        detail = config.tag ? `Tag: ${config.tag}` : 'No tag set';
+        if (!config.tag) status = 'warning';
+      } else if (node.type === 'move_pipeline_stage') {
+        detail = config.stage || 'No stage set';
+      } else if (node.type === 'enroll_in_drip') {
+        detail = config.sequence_id ? 'Sequence selected' : 'No sequence set';
+        if (!config.sequence_id) status = 'warning';
+      } else if (node.type === 'send_webhook') {
+        detail = config.url ? config.url.slice(0, 60) : 'No URL set';
+        if (!config.url) status = 'warning';
+      } else if (node.type === 'wait') {
+        detail = `Wait ${node.delay_minutes || 0} minutes`;
+      }
+
+      const actionLabel = ACTION_LABELS[node.type] || node.type;
+      steps.push({
+        nodeId: node.id, type: node.type,
+        label: actionLabel,
+        status, detail,
+        delay: node.delay_minutes || 0,
+      });
+
+      const nextConn = connections.find(c => c.from === node.id);
+      currentId = nextConn?.to || null;
+      branch = nextConn?.branch || null;
+    }
+  }
+
+  if (visited.has(currentId)) {
+    steps.push({ nodeId: currentId, type: 'error', label: 'Cycle detected — workflow would loop here', status: 'error' });
+  }
+
+  return { steps };
+}
+
+const ACTION_LABELS = {
+  send_email: 'Send Email',
+  send_sms: 'Send SMS',
+  create_task: 'Create Task',
+  add_tag: 'Add Tag',
+  remove_tag: 'Remove Tag',
+  move_pipeline_stage: 'Move Pipeline Stage',
+  enroll_in_drip: 'Enroll in Email Sequence',
+  create_note: 'Create Note',
+  send_webhook: 'Send Webhook',
+  wait: 'Wait / Delay',
+};
 
 // ── TRIGGER: fire-and-forget enrollment helper ──────────────────────────────
 

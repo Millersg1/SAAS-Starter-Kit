@@ -1,35 +1,45 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import * as authController from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
-import { 
-  validate, 
-  registerSchema, 
-  loginSchema, 
-  forgotPasswordSchema, 
+import {
+  validate,
+  registerSchema,
+  loginSchema,
+  forgotPasswordSchema,
   resetPasswordSchema,
-  refreshTokenSchema 
+  refreshTokenSchema
 } from '../utils/validators.js';
 
 const router = express.Router();
+
+// Strict rate limiting for auth endpoints (brute-force protection)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 attempts per window
+  message: { status: 'fail', message: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 /**
  * Public routes (no authentication required)
  */
 
 // Register new user
-router.post('/register', validate(registerSchema), authController.register);
+router.post('/register', authLimiter, validate(registerSchema), authController.register);
 
 // Login user
-router.post('/login', validate(loginSchema), authController.login);
+router.post('/login', authLimiter, validate(loginSchema), authController.login);
 
 // Refresh access token
 router.post('/refresh', validate(refreshTokenSchema), authController.refreshToken);
 
 // Request password reset
-router.post('/forgot-password', validate(forgotPasswordSchema), authController.forgotPassword);
+router.post('/forgot-password', authLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
 
 // Reset password with token
-router.post('/reset-password/:token', validate(resetPasswordSchema), authController.resetPassword);
+router.post('/reset-password/:token', authLimiter, validate(resetPasswordSchema), authController.resetPassword);
 
 // Verify email with token
 router.get('/verify-email/:token', authController.verifyEmail);

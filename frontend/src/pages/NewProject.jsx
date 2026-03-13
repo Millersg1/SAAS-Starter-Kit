@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { projectAPI, brandAPI, clientAPI } from '../services/api';
 
@@ -96,8 +97,10 @@ const NewProject = () => {
       if (cleanedData.progress_percentage) cleanedData.progress_percentage = parseInt(cleanedData.progress_percentage);
 
       await projectAPI.createProject(brandId, cleanedData);
+      toast.success('Project created successfully');
       navigate('/projects');
     } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create project');
       setError(err.response?.data?.message || 'Failed to create project');
     } finally {
       setLoading(false);

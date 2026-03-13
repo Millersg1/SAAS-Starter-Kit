@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(chmod 600 /c/Users/shawn/.ssh/id_rsa_deploy)",
+      "Bash(mv postcss.config.js postcss.config.cjs)",
+      "Bash(mv tailwind.config.js tailwind.config.cjs)"
+    ]
+  }
+}

@@ -10,7 +10,7 @@ export default function AcceptableUsePolicy() {
               <div style={{ color: '#5b6478' }}>Effective date: February 21, 2026</div>
             </div>
             <div style={{ display: 'inline-block', fontSize: 12, padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b3b77', border: '1px solid #d7e9ff' }}>
-              Faith Harbor Client Hub
+              SAAS Surface
             </div>
           </div>
 
@@ -18,10 +18,10 @@ export default function AcceptableUsePolicy() {
 
           <p><em>We aim to operate with integrity, honesty, and respect, and we expect respectful communication and ethical conduct on our platforms.</em></p>
 
-          <p style={{ lineHeight: 1.55 }}>This Acceptable Use Policy ("AUP") governs your use of <strong>Faith Harbor Client Hub</strong> and applies to all users, including agency account holders and their clients. By using the platform, you agree to this policy.</p>
+          <p style={{ lineHeight: 1.55 }}>This Acceptable Use Policy ("AUP") governs your use of <strong>SAAS Surface</strong> and applies to all users, including agency account holders and their clients. By using the platform, you agree to this policy.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Permitted Use</h2>
-          <p style={{ lineHeight: 1.55 }}>You may use Faith Harbor Client Hub to:</p>
+          <p style={{ lineHeight: 1.55 }}>You may use SAAS Surface to:</p>
           <ul style={{ lineHeight: 1.55 }}>
             <li>Manage client relationships, projects, invoices, documents, and communications for legitimate business purposes.</li>
             <li>Invite clients to access their portal to view project updates, invoices, and documents.</li>
@@ -64,12 +64,12 @@ export default function AcceptableUsePolicy() {
           </ul>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Reporting Violations</h2>
-          <p style={{ lineHeight: 1.55 }}>If you believe someone is violating this AUP, please report it to <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>If you believe someone is violating this AUP, please report it to <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>.</p>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
           <div style={{ color: '#5b6478', fontSize: 12 }}>
             Contact: Faith Harbor LLC • 815 Superior Ave East • Suite 1618 • Cleveland, OH, 44114 • United States •{' '}
-            Email: <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>
+            Email: <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />

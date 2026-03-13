@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import Layout from '../components/Layout';
+import Skeleton from '../components/Skeleton';
 import ImportClientsModal from '../components/ImportClientsModal';
 import { clientAPI, brandAPI, subscriptionAPI, revenueAnalyticsAPI, churnAPI } from '../services/api';
 import { downloadCSV } from '../utils/csvUtils';
@@ -115,6 +117,7 @@ const Clients = () => {
     setBulkSaving(true);
     try {
       await clientAPI.bulkTagClients(selectedBrand.id, { client_ids: selectedIds, tags, action: bulkTagAction });
+      toast.success(`Tags ${bulkTagAction}ed on ${selectedIds.length} client(s)`);
       setSuccessMessage(`Tags ${bulkTagAction}ed on ${selectedIds.length} client(s)`);
       setShowBulkTagModal(false);
       setBulkTagInput('');
@@ -122,6 +125,7 @@ const Clients = () => {
       await fetchClients();
       await fetchTags();
     } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update tags');
       setError(err.response?.data?.message || 'Failed to update tags');
     } finally { setBulkSaving(false); }
   };
@@ -163,8 +167,8 @@ const Clients = () => {
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
-                <p className="text-gray-600 mt-1">Manage your clients and contacts</p>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Clients</h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your clients and contacts</p>
               </div>
               <div className="flex gap-2">
                 <button
@@ -196,10 +200,10 @@ const Clients = () => {
           {/* Stats */}
           {stats && (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-white rounded-lg shadow p-4"><p className="text-sm text-gray-600">Total</p><p className="text-2xl font-bold text-gray-900">{stats.total_clients}</p></div>
-              <div className="bg-white rounded-lg shadow p-4"><p className="text-sm text-gray-600">Active</p><p className="text-2xl font-bold text-green-600">{stats.active_clients}</p></div>
-              <div className="bg-white rounded-lg shadow p-4"><p className="text-sm text-gray-600">Portal</p><p className="text-2xl font-bold text-blue-600">{stats.portal_enabled}</p></div>
-              <div className="bg-white rounded-lg shadow p-4"><p className="text-sm text-gray-600">VIP</p><p className="text-2xl font-bold text-purple-600">{stats.vip_clients}</p></div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"><p className="text-sm text-gray-600 dark:text-gray-400">Total</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total_clients}</p></div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"><p className="text-sm text-gray-600 dark:text-gray-400">Active</p><p className="text-2xl font-bold text-green-600">{stats.active_clients}</p></div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"><p className="text-sm text-gray-600 dark:text-gray-400">Portal</p><p className="text-2xl font-bold text-blue-600">{stats.portal_enabled}</p></div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"><p className="text-sm text-gray-600 dark:text-gray-400">VIP</p><p className="text-2xl font-bold text-purple-600">{stats.vip_clients}</p></div>
             </div>
           )}
 
@@ -234,7 +238,9 @@ const Clients = () => {
           )}
 
           {loading ? (
-            <div className="flex justify-center items-center h-64"><div className="text-gray-600">Loading clients...</div></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => <Skeleton.Card key={i} />)}
+            </div>
           ) : filtered.length === 0 ? (
             <div className="bg-white rounded-lg shadow-md p-12 text-center">
               <div className="text-6xl mb-4">👥</div>
@@ -244,7 +250,7 @@ const Clients = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filtered.map((client) => (
-                <div key={client.id} className={`bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden ${selectedIds.includes(client.id) ? 'ring-2 ring-blue-500' : ''}`}>
+                <div key={client.id} className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden ${selectedIds.includes(client.id) ? 'ring-2 ring-blue-500' : ''}`}>
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-start gap-2 flex-1">

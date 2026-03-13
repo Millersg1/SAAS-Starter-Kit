@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import Layout from '../components/Layout';
+import Skeleton from '../components/Skeleton';
 import { documentAPI, brandAPI } from '../services/api';
 
 const getFileIcon = (fileType) => {
@@ -158,6 +160,7 @@ const Documents = () => {
       if (uploadForm.tags.length > 0) formData.append('tags', JSON.stringify(uploadForm.tags));
 
       await documentAPI.uploadDocument(selectedBrand.id, formData);
+      toast.success('Document uploaded');
       setSuccessMessage('Document uploaded successfully');
       setShowUploadModal(false);
       setSelectedFile(null);
@@ -191,6 +194,7 @@ const Documents = () => {
     if (!window.confirm(`Delete "${doc.name}"? This cannot be undone.`)) return;
     try {
       await documentAPI.deleteDocument(selectedBrand.id, doc.id);
+      toast.success('Document deleted');
       setSuccessMessage('Document deleted');
       fetchDocuments();
       fetchStats();
@@ -220,8 +224,8 @@ const Documents = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Documents</h1>
-            <p className="text-gray-600 mt-1">Upload, organize, and share documents</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Documents</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Upload, organize, and share documents</p>
           </div>
           <button
             onClick={() => setShowUploadModal(true)}
@@ -247,27 +251,27 @@ const Documents = () => {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">Total Documents</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total_documents || 0}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Documents</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total_documents || 0}</p>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">Total Storage</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Storage</p>
               <p className="text-2xl font-bold text-blue-600">{formatFileSize(stats.total_storage_bytes)}</p>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">Total Downloads</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Downloads</p>
               <p className="text-2xl font-bold text-green-600">{stats.total_downloads || 0}</p>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">Client Visible</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Client Visible</p>
               <p className="text-2xl font-bold text-purple-600">{stats.client_visible_documents || 0}</p>
             </div>
           </div>
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input
               type="text"
@@ -317,8 +321,8 @@ const Documents = () => {
 
         {/* Documents List */}
         {loading ? (
-          <div className="flex justify-center items-center h-32">
-            <p className="text-gray-600">Loading documents...</p>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => <Skeleton.Row key={i} />)}
           </div>
         ) : documents.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -331,9 +335,9 @@ const Documents = () => {
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Document</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>

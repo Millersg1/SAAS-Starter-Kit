@@ -1,5 +1,55 @@
 import { useState } from 'react';
 
+// ── HTML sanitizer — strips dangerous tags & attributes to prevent XSS ──────
+const ALLOWED_TAGS = new Set([
+  'h1','h2','h3','h4','h5','h6','p','br','hr','div','span','a',
+  'strong','b','em','i','u','s','mark','small','sub','sup',
+  'ul','ol','li','blockquote','pre','code',
+  'table','thead','tbody','tfoot','tr','th','td',
+  'img','figure','figcaption',
+]);
+
+const ALLOWED_ATTRS = new Set([
+  'href','src','alt','title','class','style','width','height',
+  'target','rel','colspan','rowspan','id',
+]);
+
+function sanitizeHtml(dirty) {
+  if (!dirty) return '';
+  const doc = new DOMParser().parseFromString(dirty, 'text/html');
+  const walk = (node) => {
+    const children = [...node.childNodes];
+    for (const child of children) {
+      if (child.nodeType === 3) continue; // text node — safe
+      if (child.nodeType !== 1) { child.remove(); continue; }
+      const tag = child.tagName.toLowerCase();
+      if (!ALLOWED_TAGS.has(tag)) { child.remove(); continue; }
+      // Strip dangerous attributes
+      for (const attr of [...child.attributes]) {
+        const name = attr.name.toLowerCase();
+        if (!ALLOWED_ATTRS.has(name) || name.startsWith('on')) {
+          child.removeAttribute(attr.name);
+        }
+        // Block javascript: URLs
+        if ((name === 'href' || name === 'src') && /^\s*javascript\s*:/i.test(attr.value)) {
+          child.removeAttribute(attr.name);
+        }
+      }
+      walk(child);
+    }
+  };
+  walk(doc.body);
+  return doc.body.innerHTML;
+}
+
+// Validate URLs — reject javascript: and data: protocols
+function safeUrl(url) {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (/^\s*(javascript|data|vbscript)\s*:/i.test(trimmed)) return '';
+  return trimmed;
+}
+
 // Convert YouTube/Vimeo watch URLs to embed URLs
 function toEmbedUrl(url) {
   if (!url) return '';
@@ -7,7 +57,9 @@ function toEmbedUrl(url) {
   if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
   const vm = url.match(/vimeo\.com\/(\d+)/);
   if (vm) return `https://player.vimeo.com/video/${vm[1]}`;
-  return url;
+  // Only allow http/https embed URLs
+  if (/^https?:\/\//i.test(url)) return url;
+  return '';
 }
 
 function StarRating({ rating }) {
@@ -40,14 +92,14 @@ function HeroBlock({ props }) {
   return (
     <section
       className={`w-full py-20 px-6 flex flex-col ${alignCls}`}
-      style={{ backgroundColor, backgroundImage: imageUrl ? `url(${imageUrl})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
+      style={{ backgroundColor, backgroundImage: safeUrl(imageUrl) ? `url(${safeUrl(imageUrl)})` : undefined, backgroundSize: 'cover', backgroundPosition: 'center' }}
     >
       <div className={`max-w-3xl w-full mx-auto flex flex-col ${alignCls} gap-6`}>
         <h1 className={`text-4xl md:text-5xl font-bold leading-tight ${textCls}`}>{headline}</h1>
         {subheadline && <p className={`text-lg md:text-xl opacity-90 max-w-2xl ${textCls}`}>{subheadline}</p>}
         {ctaText && (
           <a
-            href={ctaUrl || '#'}
+            href={safeUrl(ctaUrl) || '#'}
             className="inline-block px-8 py-4 bg-white text-gray-900 font-bold rounded-xl hover:opacity-90 transition-opacity shadow-lg text-lg"
             onClick={e => { if (ctaUrl?.startsWith('#') || !ctaUrl) e.preventDefault(); }}
           >
@@ -141,7 +193,7 @@ function CtaBannerBlock({ props }) {
         <h2 className={`text-3xl md:text-4xl font-bold ${textCls}`}>{headline}</h2>
         {subheadline && <p className={`text-lg opacity-80 ${textCls}`}>{subheadline}</p>}
         {ctaText && (
-          <a href={ctaUrl || '#'} className="inline-block px-8 py-4 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-400 transition-colors shadow-lg text-lg">
+          <a href={safeUrl(ctaUrl) || '#'} className="inline-block px-8 py-4 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-400 transition-colors shadow-lg text-lg">
             {ctaText}
           </a>
         )}
@@ -295,7 +347,7 @@ function PricingBlock({ props }) {
                 ))}
               </ul>
               <a
-                href={plan.ctaUrl || '#'}
+                href={safeUrl(plan.ctaUrl) || '#'}
                 className={`block text-center py-3 rounded-xl font-bold transition-colors ${
                   plan.highlighted
                     ? 'bg-white text-blue-600 hover:bg-blue-50'
@@ -320,7 +372,7 @@ function TextContentBlock({ props }) {
     <section className="w-full py-12 px-6" style={{ backgroundColor }}>
       <div
         className={`${maxWCls} ${alignCls} prose prose-gray max-w-none`}
-        dangerouslySetInnerHTML={{ __html: content }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
       />
     </section>
   );
@@ -369,7 +421,7 @@ function SocialProofBlock({ props }) {
         {logoUrls.length > 0 ? (
           <div className="flex flex-wrap justify-center items-center gap-8">
             {logoUrls.filter(Boolean).map((url, i) => (
-              <img key={i} src={url} alt={`Partner ${i + 1}`} className="h-10 object-contain opacity-60 hover:opacity-100 transition-opacity" />
+              <img key={i} src={safeUrl(url)} alt={`Partner ${i + 1}`} className="h-10 object-contain opacity-60 hover:opacity-100 transition-opacity" />
             ))}
           </div>
         ) : (

@@ -10,13 +10,13 @@ export default function DataProcessingAgreement() {
               <div style={{ color: '#5b6478' }}>Effective date: February 21, 2026</div>
             </div>
             <div style={{ display: 'inline-block', fontSize: 12, padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b3b77', border: '1px solid #d7e9ff' }}>
-              Faith Harbor Client Hub
+              SAAS Surface
             </div>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
 
-          <p style={{ lineHeight: 1.55 }}>This Data Processing Agreement ("DPA") is entered into between <strong>Faith Harbor LLC</strong> ("Processor") and the agency or business ("Controller") using <strong>Faith Harbor Client Hub</strong>. This DPA forms part of the Terms of Service and applies where the Controller processes personal data of EU/EEA/UK data subjects through the platform.</p>
+          <p style={{ lineHeight: 1.55 }}>This Data Processing Agreement ("DPA") is entered into between <strong>Faith Harbor LLC</strong> ("Processor") and the agency or business ("Controller") using <strong>SAAS Surface</strong>. This DPA forms part of the Terms of Service and applies where the Controller processes personal data of EU/EEA/UK data subjects through the platform.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Definitions</h2>
           <ul style={{ lineHeight: 1.55 }}>
@@ -27,7 +27,7 @@ export default function DataProcessingAgreement() {
           </ul>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Scope and Purpose</h2>
-          <p style={{ lineHeight: 1.55 }}>Faith Harbor LLC processes personal data solely to provide the Faith Harbor Client Hub platform services as described in the Terms of Service. Processing includes:</p>
+          <p style={{ lineHeight: 1.55 }}>Faith Harbor LLC processes personal data solely to provide the SAAS Surface platform services as described in the Terms of Service. Processing includes:</p>
           <ul style={{ lineHeight: 1.55 }}>
             <li>Storing client contact information entered by the Controller</li>
             <li>Processing invoice and payment data</li>
@@ -73,12 +73,12 @@ export default function DataProcessingAgreement() {
           <p style={{ lineHeight: 1.55 }}>Data is stored and processed in the United States. For transfers of EU/EEA personal data, Faith Harbor LLC relies on Standard Contractual Clauses or other approved transfer mechanisms as required by applicable law.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Contact</h2>
-          <p style={{ lineHeight: 1.55 }}>For data protection inquiries, contact us at <a href="mailto:privacy@faithharborclienthub.com" style={{ color: '#2f8cff' }}>privacy@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>For data protection inquiries, contact us at <a href="mailto:privacy@saassurface.com" style={{ color: '#2f8cff' }}>privacy@saassurface.com</a>.</p>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
           <div style={{ color: '#5b6478', fontSize: 12 }}>
             Contact: Faith Harbor LLC • 815 Superior Ave East • Suite 1618 • Cleveland, OH, 44114 • United States •{' '}
-            Email: <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>
+            Email: <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />

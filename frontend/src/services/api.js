@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 
 // API base URL - points to your backend
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -34,6 +35,10 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
+    } else if (error.response?.status >= 500) {
+      toast.error('Server error — please try again in a moment');
+    } else if (!error.response && error.message === 'Network Error') {
+      toast.error('Network error — check your connection');
     }
     return Promise.reject(error);
   }
@@ -489,6 +494,8 @@ export const workflowAPI = {
   remove:       (brandId, id)       => api.delete(`/workflows/${brandId}/${id}`),
   enrollments:  (brandId, id)       => api.get(`/workflows/${brandId}/${id}/enrollments`),
   manualEnroll: (brandId, id, data) => api.post(`/workflows/${brandId}/${id}/enroll`, data),
+  validate:     (brandId, id)       => api.get(`/workflows/${brandId}/${id}/validate`),
+  test:         (brandId, id, data) => api.post(`/workflows/${brandId}/${id}/test`, data),
 };
 
 export const customFieldAPI = {

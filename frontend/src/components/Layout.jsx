@@ -22,6 +22,7 @@ const Layout = ({ children }) => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const searchRef = useRef(null);
+  const searchInputRef = useRef(null);
   const searchTimerRef = useRef(null);
 
   // Fetch first brand on mount
@@ -71,6 +72,18 @@ const Layout = ({ children }) => {
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Ctrl+K / Cmd+K to focus search
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, []);
 
   const handleSearchChange = (e) => {
@@ -165,17 +178,18 @@ const Layout = ({ children }) => {
       >
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 bg-blue-600">
-          <h1 className="text-xl font-bold text-white">ClientHub</h1>
+          <h1 className="text-xl font-bold text-white">SAAS Surface</h1>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-white hover:text-gray-200"
+            aria-label="Close sidebar"
           >
             ✕
           </button>
         </div>
 
         {/* Navigation */}
-        <nav className="mt-6 px-3 pb-24 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+        <nav aria-label="Main navigation" className="mt-6 px-3 pb-24 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           {navigation.map((item) => (
             <Link
               key={item.name}
@@ -206,7 +220,7 @@ const Layout = ({ children }) => {
         )}
 
         {/* User Info */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm">
@@ -214,10 +228,10 @@ const Layout = ({ children }) => {
               </div>
             </div>
             <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                 {user?.name || 'User'}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
             </div>
           </div>
         </div>
@@ -231,6 +245,7 @@ const Layout = ({ children }) => {
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="text-gray-500 hover:text-gray-700"
+              aria-label={sidebarOpen ? 'Close sidebar' : 'Open sidebar'}
             >
               <svg
                 className="w-6 h-6"
@@ -254,11 +269,13 @@ const Layout = ({ children }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
+                  ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onFocus={() => searchResults && setSearchOpen(true)}
-                  placeholder="Search clients, projects, invoices..."
+                  placeholder="Search... (Ctrl+K)"
+                  aria-label="Global search"
                   className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-900 placeholder-gray-400"
                 />
                 {searchLoading && (
@@ -267,7 +284,7 @@ const Layout = ({ children }) => {
               </div>
 
               {searchOpen && searchResults && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-y-auto">
                   {(() => {
                     const sections = [
                       { key: 'clients',   label: 'Clients',   icon: '👥' },
@@ -329,6 +346,7 @@ const Layout = ({ children }) => {
                 <button
                   onClick={() => setBellOpen((o) => !o)}
                   className="relative text-gray-500 hover:text-gray-700"
+                  aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -344,9 +362,9 @@ const Layout = ({ children }) => {
 
                 {/* Dropdown */}
                 {bellOpen && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-200 z-50">
-                    <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">Notifications</p>
+                  <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</p>
                     </div>
                     <div className="max-h-72 overflow-y-auto">
                       {notifications.length === 0 ? (
@@ -358,12 +376,12 @@ const Layout = ({ children }) => {
                           <button
                             key={i}
                             onClick={() => { setBellOpen(false); navigate(n.link); }}
-                            className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 transition-colors flex items-start gap-3"
+                            className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-b border-gray-50 dark:border-gray-700 transition-colors flex items-start gap-3"
                           >
                             {n.icon && <span className="text-lg mt-0.5 flex-shrink-0">{n.icon}</span>}
                             <div>
-                              <p className="text-sm font-medium text-gray-900">{n.title}</p>
-                              <p className="text-xs text-gray-500 mt-0.5">{n.body}</p>
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{n.title}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.body}</p>
                             </div>
                           </button>
                         ))
@@ -388,6 +406,7 @@ const Layout = ({ children }) => {
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  aria-label="Log out"
                 >
                   Logout
                 </button>
@@ -397,7 +416,7 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="p-6 dark:text-gray-100">
+        <main className="p-6 dark:text-gray-100" role="main">
           {children}
         </main>
       </div>
@@ -407,6 +426,7 @@ const Layout = ({ children }) => {
         <div
           className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         ></div>
       )}
     </div>

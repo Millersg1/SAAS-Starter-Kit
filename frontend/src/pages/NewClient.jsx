@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { clientAPI, brandAPI } from '../services/api';
 
@@ -126,8 +127,10 @@ const NewClient = () => {
       }, {});
 
       await clientAPI.createClient(brandId, cleanedData);
+      toast.success('Client created successfully');
       navigate('/clients');
     } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to create client');
       setError(err.response?.data?.message || 'Failed to create client');
     } finally {
       setLoading(false);

@@ -10,13 +10,13 @@ export default function CookiePolicy() {
               <div style={{ color: '#5b6478' }}>Effective date: February 21, 2026</div>
             </div>
             <div style={{ display: 'inline-block', fontSize: 12, padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b3b77', border: '1px solid #d7e9ff' }}>
-              Faith Harbor Client Hub
+              SAAS Surface
             </div>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
 
-          <p style={{ lineHeight: 1.55 }}>This Cookie Policy explains how <strong>Faith Harbor LLC</strong> uses cookies and similar technologies on <strong>Faith Harbor Client Hub</strong> (https://faithharborclienthub.com).</p>
+          <p style={{ lineHeight: 1.55 }}>This Cookie Policy explains how <strong>Faith Harbor LLC</strong> uses cookies and similar technologies on <strong>SAAS Surface</strong> (https://saassurface.com).</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>What Are Cookies?</h2>
           <p style={{ lineHeight: 1.55 }}>Cookies are small text files placed on your device when you visit a website. They help the site remember your preferences and understand how you use it.</p>
@@ -48,15 +48,15 @@ export default function CookiePolicy() {
           </ul>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>GDPR &amp; CCPA</h2>
-          <p style={{ lineHeight: 1.55 }}>If you are located in the EEA, UK, or California, you have additional rights regarding cookies and tracking technologies. You may opt out of non-essential cookies at any time by adjusting your browser settings or contacting us at <a href="mailto:privacy@faithharborclienthub.com" style={{ color: '#2f8cff' }}>privacy@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>If you are located in the EEA, UK, or California, you have additional rights regarding cookies and tracking technologies. You may opt out of non-essential cookies at any time by adjusting your browser settings or contacting us at <a href="mailto:privacy@saassurface.com" style={{ color: '#2f8cff' }}>privacy@saassurface.com</a>.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Contact</h2>
-          <p style={{ lineHeight: 1.55 }}>For questions about our use of cookies, contact us at <a href="mailto:privacy@faithharborclienthub.com" style={{ color: '#2f8cff' }}>privacy@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>For questions about our use of cookies, contact us at <a href="mailto:privacy@saassurface.com" style={{ color: '#2f8cff' }}>privacy@saassurface.com</a>.</p>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
           <div style={{ color: '#5b6478', fontSize: 12 }}>
             Contact: Faith Harbor LLC • 815 Superior Ave East • Suite 1618 • Cleveland, OH, 44114 • United States •{' '}
-            Email: <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>
+            Email: <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />

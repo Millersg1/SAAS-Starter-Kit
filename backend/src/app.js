@@ -8,6 +8,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { testConnection } from './config/database.js';
+import { errorMonitorMiddleware } from './utils/errorMonitor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -57,15 +58,45 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('combined'));
 }
 
-// Health check endpoint
+// Health check endpoint — deep checks for DB, Stripe, email, memory
 app.get('/health', async (req, res) => {
-  const dbStatus = await testConnection();
-  res.status(dbStatus ? 200 : 503).json({
-    status: dbStatus ? 'healthy' : 'unhealthy',
+  const checks = {};
+
+  // Database
+  try {
+    const dbOk = await testConnection();
+    checks.database = dbOk ? 'connected' : 'disconnected';
+  } catch {
+    checks.database = 'error';
+  }
+
+  // Stripe API reachability
+  try {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    checks.stripe = stripeKey && stripeKey.length > 10 ? 'configured' : 'not_configured';
+  } catch {
+    checks.stripe = 'error';
+  }
+
+  // Email (SMTP configured?)
+  checks.email = process.env.SMTP_HOST ? 'configured' : 'not_configured';
+
+  // Memory usage
+  const mem = process.memoryUsage();
+  checks.memory = {
+    rss_mb: Math.round(mem.rss / 1048576),
+    heap_used_mb: Math.round(mem.heapUsed / 1048576),
+    heap_total_mb: Math.round(mem.heapTotal / 1048576),
+  };
+
+  const healthy = checks.database === 'connected';
+
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
+    uptime: Math.round(process.uptime()),
     environment: process.env.NODE_ENV,
-    database: dbStatus ? 'connected' : 'disconnected'
+    checks,
   });
 });
 
@@ -205,6 +236,9 @@ app.get('/', (req, res) => {
 
 // 404 handler
 app.use(notFound);
+
+// Structured error logging (before generic error handler)
+app.use(errorMonitorMiddleware);
 
 // Error handling middleware (must be last)
 app.use(errorHandler);

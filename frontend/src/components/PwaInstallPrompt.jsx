@@ -35,7 +35,7 @@ export default function PwaInstallPrompt() {
   return (
     <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-white border border-gray-200 shadow-lg rounded-xl px-5 py-3 text-sm">
       <span className="text-lg">📱</span>
-      <span className="text-gray-700 font-medium">Install ClientHub App</span>
+      <span className="text-gray-700 font-medium">Install SAAS Surface App</span>
       <button
         onClick={handleInstall}
         className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg font-medium transition-colors"

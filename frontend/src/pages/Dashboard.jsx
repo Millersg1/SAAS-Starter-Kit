@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
+import Skeleton from '../components/Skeleton';
 import OnboardingWizard from '../components/OnboardingWizard';
 import OnboardingChecklist from '../components/OnboardingChecklist';
 import { brandAPI, clientAPI, invoiceAPI, projectAPI, clientActivityAPI, auditAPI, pipelineAPI, taskAPI, revenueAnalyticsAPI, churnAPI } from '../services/api';
@@ -317,22 +318,28 @@ const Dashboard = () => {
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          {stats.map((stat) => (
-            <div key={stat.name}
-              onClick={() => stat.href && navigate(stat.href)}
-              className={`bg-white rounded-lg shadow p-5 hover:shadow-lg transition-shadow ${stat.href ? 'cursor-pointer' : ''}`}>
-              <div className="flex items-center justify-between mb-3">
-                <div className={`${stat.color} w-10 h-10 rounded-lg flex items-center justify-center text-xl`}>
-                  {stat.icon}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton.StatCard key={i} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+            {stats.map((stat) => (
+              <div key={stat.name}
+                onClick={() => stat.href && navigate(stat.href)}
+                className={`bg-white rounded-lg shadow p-5 hover:shadow-lg transition-shadow ${stat.href ? 'cursor-pointer' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <div className={`${stat.color} w-10 h-10 rounded-lg flex items-center justify-center text-xl`}>
+                    {stat.icon}
+                  </div>
                 </div>
+                <p className="text-xs font-medium text-gray-600">{stat.name}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-xs text-gray-500 mt-1">{stat.sub}</p>
               </div>
-              <p className="text-xs font-medium text-gray-600">{stat.name}</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-              <p className="text-xs text-gray-500 mt-1">{stat.sub}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* At-Risk Clients */}
         <div className="bg-white rounded-lg shadow">
@@ -397,7 +404,7 @@ const Dashboard = () => {
             </div>
             <div className="p-6">
               {loading ? (
-                <p className="text-gray-500 text-sm">Loading activity...</p>
+                <div className="space-y-1">{Array.from({ length: 4 }).map((_, i) => <Skeleton.Row key={i} />)}</div>
               ) : recentActivity.length === 0 ? (
                 <div className="text-center py-6">
                   <p className="text-gray-400 text-sm">No activity yet. Start by adding a client or creating a project.</p>
@@ -431,7 +438,7 @@ const Dashboard = () => {
             </div>
             <div className="p-6">
               {loading ? (
-                <p className="text-gray-500 text-sm">Loading brands...</p>
+                <div className="space-y-1">{Array.from({ length: 3 }).map((_, i) => <Skeleton.Row key={i} />)}</div>
               ) : brands.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No brands yet</p>

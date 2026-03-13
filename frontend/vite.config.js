@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'ClientHub CRM',
-        short_name: 'ClientHub',
+        name: 'SAAS Surface',
+        short_name: 'SAAS Surface',
         description: 'Manage clients, projects, invoices, and more.',
         theme_color: '#2563eb',
         background_color: '#f9fafb',

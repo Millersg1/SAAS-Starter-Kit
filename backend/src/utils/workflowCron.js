@@ -1,6 +1,7 @@
 import cron from 'node-cron';
 import { getActiveEnrollments, getWorkflowById, completeEnrollment } from '../models/workflowModel.js';
 import { processEnrollment, executeGraphWorkflow } from './workflowEngine.js';
+import { logError } from './errorMonitor.js';
 
 export const startWorkflowCron = () => {
   cron.schedule('* * * * *', async () => {
@@ -19,12 +20,12 @@ export const startWorkflowCron = () => {
             await processEnrollment(enrollment);
           }
         } catch (err) {
-          console.error(`Workflow cron error for enrollment ${enrollment.id}:`, err.message);
+          logError(err, { context: 'workflowCron.enrollment', enrollmentId: enrollment.id, workflowId: enrollment.workflow_id });
         }
       }
     } catch (err) {
-      console.error('Workflow cron error:', err.message);
+      logError(err, { context: 'workflowCron.main' });
     }
   });
-  console.log('✅ Workflow automation cron scheduled (every minute)');
+  console.log('Workflow automation cron scheduled (every minute)');
 };

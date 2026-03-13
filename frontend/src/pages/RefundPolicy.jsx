@@ -10,16 +10,16 @@ export default function RefundPolicy() {
               <div style={{ color: '#5b6478' }}>Effective date: February 21, 2026</div>
             </div>
             <div style={{ display: 'inline-block', fontSize: 12, padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b3b77', border: '1px solid #d7e9ff' }}>
-              Faith Harbor Client Hub
+              SAAS Surface
             </div>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
 
-          <p style={{ lineHeight: 1.55 }}>This Refund &amp; Cancellation Policy applies to all subscriptions purchased through <strong>Faith Harbor Client Hub</strong> (https://faithharborclienthub.com), operated by <strong>Faith Harbor LLC</strong>.</p>
+          <p style={{ lineHeight: 1.55 }}>This Refund &amp; Cancellation Policy applies to all subscriptions purchased through <strong>SAAS Surface</strong> (https://saassurface.com), operated by <strong>Faith Harbor LLC</strong>.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>30-Day Money-Back Guarantee</h2>
-          <p style={{ lineHeight: 1.55 }}>We offer a <strong>30-day money-back guarantee</strong> on all new subscriptions. If you are not satisfied with Faith Harbor Client Hub within the first 30 days of your initial purchase, contact us at <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a> and we will issue a full refund — no questions asked.</p>
+          <p style={{ lineHeight: 1.55 }}>We offer a <strong>30-day money-back guarantee</strong> on all new subscriptions. If you are not satisfied with SAAS Surface within the first 30 days of your initial purchase, contact us at <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a> and we will issue a full refund — no questions asked.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Free Trial</h2>
           <p style={{ lineHeight: 1.55 }}>New accounts receive a <strong>14-day free trial</strong>. No credit card is required to start your trial. You will not be charged until your trial period ends and you choose to subscribe. You may cancel at any time during the trial at no cost.</p>
@@ -47,15 +47,15 @@ export default function RefundPolicy() {
           </ul>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>How to Request a Refund</h2>
-          <p style={{ lineHeight: 1.55 }}>To request a refund within the 30-day guarantee window, email <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a> with your account email and the reason for your request. We will process eligible refunds within 5–10 business days to your original payment method.</p>
+          <p style={{ lineHeight: 1.55 }}>To request a refund within the 30-day guarantee window, email <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a> with your account email and the reason for your request. We will process eligible refunds within 5–10 business days to your original payment method.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Contact</h2>
-          <p style={{ lineHeight: 1.55 }}>For billing or refund questions, contact us at <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>For billing or refund questions, contact us at <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>.</p>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
           <div style={{ color: '#5b6478', fontSize: 12 }}>
             Contact: Faith Harbor LLC • 815 Superior Ave East • Suite 1618 • Cleveland, OH, 44114 • United States •{' '}
-            Email: <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>
+            Email: <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />

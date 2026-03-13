@@ -16,13 +16,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// ── Validate required environment variables on startup ──────────────────────
+const REQUIRED_ENV = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'JWT_SECRET'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length > 0) {
+  console.error(`FATAL: Missing required environment variables: ${missing.join(', ')}`);
+  console.error('Set them in .env or your hosting environment before starting the server.');
+  process.exit(1);
+}
+
 const PORT = process.env.PORT || 5000;
 
 // Start server
 const startServer = async () => {
   try {
     // Test database connection
-    console.log('🔍 Testing database connection... - server.js:22');
+    console.log('Testing database connection...');
     const dbConnected = await testConnection();
     
     if (!dbConnected) {
@@ -282,6 +291,7 @@ const startServer = async () => {
         -- Visual Workflow Builder
         ALTER TABLE automation_workflows ADD COLUMN IF NOT EXISTS workflow_definition JSONB DEFAULT NULL;
         ALTER TABLE automation_enrollments ADD COLUMN IF NOT EXISTS current_node_id VARCHAR(50) DEFAULT NULL;
+        ALTER TABLE automation_enrollments ADD COLUMN IF NOT EXISTS node_visit_count INTEGER DEFAULT 0;
         CREATE INDEX IF NOT EXISTS idx_automation_enrollments_node ON automation_enrollments(current_node_id) WHERE status='active';
 
         -- Google Calendar Sync

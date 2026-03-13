@@ -1,7 +1,7 @@
 # This is a GitHub Actions workflow file that automates the deployment of your application.
 # It will trigger automatically whenever you push changes to your 'main' branch.
 
-name: Deploy ClientHub Application
+name: Deploy SaasSurface Application
 
 on:
   push:
@@ -45,7 +45,7 @@ jobs:
         run: |
           # Exclude the backend folder so it doesn't get deleted!
           # Also exclude standard cPanel folders like cgi-bin and .well-known (SSL)
-          rsync -avz --delete --exclude 'api.faithharborclienthub.com' --exclude '.well-known' --exclude 'cgi-bin' ./frontend/dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/
+          rsync -avz --delete --exclude 'api.saassurface.com' --exclude '.well-known' --exclude 'cgi-bin' ./frontend/dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/
 
   deploy-backend:
     name: Deploy Backend
@@ -68,7 +68,7 @@ jobs:
       - name: 🚀 Sync backend files
         run: |
           # Syncs the backend folder from GitHub to the server
-          rsync -avz --delete --exclude 'node_modules' --exclude '.env' --exclude 'uploads' ./backend/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/api.faithharborclienthub.com/
+          rsync -avz --delete --exclude 'node_modules' --exclude '.env' --exclude 'uploads' ./backend/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/api.saassurface.com/
 
       - name: 🚀 Deploy and restart server
         uses: appleboy/ssh-action@master
@@ -79,7 +79,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             # These commands run ON the server
-            cd ~/public_html/api.faithharborclienthub.com
+            cd ~/public_html/api.saassurface.com
             echo "📦 Installing npm dependencies on server..."
             npm install --production
             
@@ -96,7 +96,7 @@ jobs:
 
       - name: 💚 Ping health check endpoint
         run: |
-          response=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 15 "https://api.faithharborclienthub.com/health")
+          response=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 15 "https://api.saassurface.com/health")
           if [ "$response" -ne 200 ]; then
             echo "Health check failed with status $response!"
             exit 1

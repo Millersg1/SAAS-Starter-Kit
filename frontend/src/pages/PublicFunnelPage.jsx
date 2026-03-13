@@ -67,11 +67,11 @@ export default function PublicFunnelPage() {
   };
 
   // Handle lead form submissions
-  const handleFormSubmit = useCallback(async (stepId, formData) => {
+  const handleFormSubmit = useCallback(async (stepId, formData, redirectUrl, successMessage) => {
     if (submitting) return;
     try {
       setSubmitting(true);
-      const res = await funnelAPI.publicSubmit(stepId, formData);
+      const res = await funnelAPI.publicSubmit(stepId, { formData, redirectUrl, successMessage });
       const data = res.data;
 
       if (data.redirectUrl) {
@@ -148,7 +148,7 @@ export default function PublicFunnelPage() {
             onSelect={null}
             onSubmit={
               block.type === 'lead_form'
-                ? (formData) => handleFormSubmit(step.id, formData)
+                ? (formData, redirectUrl, successMessage) => handleFormSubmit(step.id, formData, redirectUrl, successMessage)
                 : null
             }
           />
@@ -158,7 +158,7 @@ export default function PublicFunnelPage() {
       {/* Powered-by footer (subtle branding — can be removed for white-label) */}
       <footer className="py-4 text-center">
         <p className="text-xs text-gray-300">
-          Powered by <a href="/" className="hover:text-gray-500 transition-colors">ClientHub</a>
+          Powered by <a href="/" className="hover:text-gray-500 transition-colors">SAAS Surface</a>
         </p>
       </footer>
     </div>

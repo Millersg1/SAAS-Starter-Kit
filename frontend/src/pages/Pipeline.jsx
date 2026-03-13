@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
+import Skeleton from '../components/Skeleton';
 import { pipelineAPI, brandAPI, clientAPI, revenueAnalyticsAPI } from '../services/api';
 import { DndContext, DragOverlay, useDroppable, useDraggable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 
@@ -372,7 +373,11 @@ export default function Pipeline() {
         )}
 
         {loading ? (
-          <div className="text-center py-16 text-gray-400">Loading pipeline...</div>
+          <div className="flex gap-4 overflow-x-auto pb-6">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="min-w-[280px] flex-1"><Skeleton.Column /></div>
+            ))}
+          </div>
         ) : (
           <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex gap-4 overflow-x-auto pb-6">

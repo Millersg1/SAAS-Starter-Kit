@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -17,14 +18,14 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
  */
 export const createCustomer = async (email, name, metadata = {}) => {
   try {
-    const customer = await stripe.customers.create({
-      email,
-      name,
-      metadata
-    });
+    const idempotencyKey = `cust_${crypto.createHash('sha256').update(`${email}:${metadata.brand_id || ''}`).digest('hex').slice(0, 32)}`;
+    const customer = await stripe.customers.create(
+      { email, name, metadata },
+      { idempotencyKey }
+    );
     return customer;
   } catch (error) {
-    console.error('Error creating Stripe customer: - stripeUtils.js:23', error);
+    console.error('Error creating Stripe customer: - stripeUtils.js', error);
     throw error;
   }
 };
@@ -50,10 +51,14 @@ export const createSubscription = async (customerId, priceId, paymentMethodId = 
       subscriptionData.trial_period_days = trialDays;
     }
 
-    const subscription = await stripe.subscriptions.create(subscriptionData);
+    const idempotencyKey = `sub_${crypto.createHash('sha256').update(`${customerId}:${priceId}:${Date.now()}`).digest('hex').slice(0, 32)}`;
+    const subscription = await stripe.subscriptions.create(
+      subscriptionData,
+      { idempotencyKey }
+    );
     return subscription;
   } catch (error) {
-    console.error('Error creating subscription: - stripeUtils.js:52', error);
+    console.error('Error creating subscription: - stripeUtils.js', error);
     throw error;
   }
 };
@@ -215,13 +220,14 @@ export const listInvoices = async (customerId, limit = 10) => {
  */
 export const createSetupIntent = async (customerId) => {
   try {
-    const setupIntent = await stripe.setupIntents.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-    });
+    const idempotencyKey = `si_${crypto.createHash('sha256').update(`${customerId}:${Date.now()}`).digest('hex').slice(0, 32)}`;
+    const setupIntent = await stripe.setupIntents.create(
+      { customer: customerId, payment_method_types: ['card'] },
+      { idempotencyKey }
+    );
     return setupIntent;
   } catch (error) {
-    console.error('Error creating setup intent: - stripeUtils.js:220', error);
+    console.error('Error creating setup intent: - stripeUtils.js', error);
     throw error;
   }
 };
@@ -274,18 +280,22 @@ export const retrieveCustomer = async (customerId) => {
  */
 export const createPaymentIntent = async (amount, currency, customerId, metadata = {}) => {
   try {
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // Convert to cents
-      currency,
-      customer: customerId,
-      metadata,
-      automatic_payment_methods: {
-        enabled: true,
+    const idempotencyKey = `pi_${crypto.createHash('sha256').update(`${customerId}:${amount}:${currency}:${Date.now()}`).digest('hex').slice(0, 32)}`;
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: Math.round(amount * 100), // Convert to cents
+        currency,
+        customer: customerId,
+        metadata,
+        automatic_payment_methods: {
+          enabled: true,
+        },
       },
-    });
+      { idempotencyKey }
+    );
     return paymentIntent;
   } catch (error) {
-    console.error('Error creating payment intent: - stripeUtils.js:284', error);
+    console.error('Error creating payment intent: - stripeUtils.js', error);
     throw error;
   }
 };
@@ -299,15 +309,19 @@ export const createPaymentIntent = async (amount, currency, customerId, metadata
  */
 export const createConnectAccount = async (email, metadata = {}) => {
   try {
-    const account = await stripe.accounts.create({
-      type: 'express',
-      email,
-      metadata,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
+    const idempotencyKey = `acct_${crypto.createHash('sha256').update(`${email}:${metadata.brand_id || ''}`).digest('hex').slice(0, 32)}`;
+    const account = await stripe.accounts.create(
+      {
+        type: 'express',
+        email,
+        metadata,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
       },
-    });
+      { idempotencyKey }
+    );
     return account;
   } catch (error) {
     console.error('Error creating Connect account: - stripeUtils.js', error);
@@ -359,6 +373,7 @@ export const createConnectCheckoutSession = async ({
   applicationFeeAmount,
 }) => {
   try {
+    const idempotencyKey = `checkout_${crypto.createHash('sha256').update(`${connectedAccountId}:${JSON.stringify(metadata)}:${Date.now()}`).digest('hex').slice(0, 32)}`;
     const session = await stripe.checkout.sessions.create(
       {
         payment_method_types: ['card'],
@@ -369,7 +384,7 @@ export const createConnectCheckoutSession = async ({
         metadata,
         payment_intent_data: { application_fee_amount: applicationFeeAmount },
       },
-      { stripeAccount: connectedAccountId }
+      { stripeAccount: connectedAccountId, idempotencyKey }
     );
     return session;
   } catch (error) {

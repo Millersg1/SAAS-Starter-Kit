@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { workflowAPI, dripAPI } from '../services/api';
+import { workflowAPI, dripAPI, clientAPI } from '../services/api';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -64,6 +64,29 @@ const CONDITION_OPS = [
   { value: 'greater_than', label: 'Greater than' },
   { value: 'less_than',    label: 'Less than' },
 ];
+
+// ── Cycle detection (DFS-based, mirrors backend) ────────────────────────────
+
+function detectCycles(nodes, connections) {
+  const adj = {};
+  for (const n of nodes) adj[n.id] = [];
+  for (const c of connections) { if (adj[c.from]) adj[c.from].push(c.to); }
+  const WHITE = 0, GRAY = 1, BLACK = 2;
+  const color = {};
+  for (const n of nodes) color[n.id] = WHITE;
+  const cycleNodes = new Set();
+  function dfs(id) {
+    color[id] = GRAY;
+    for (const next of (adj[id] || [])) {
+      if (color[next] === GRAY) { cycleNodes.add(id); cycleNodes.add(next); return true; }
+      if (color[next] === WHITE && dfs(next)) { cycleNodes.add(id); return true; }
+    }
+    color[id] = BLACK;
+    return false;
+  }
+  for (const n of nodes) { if (color[n.id] === WHITE) dfs(n.id); }
+  return cycleNodes;
+}
 
 // ── Auto-layout ───────────────────────────────────────────────────────────────
 
@@ -418,6 +441,12 @@ export default function WorkflowBuilder() {
   const [nameEdit, setNameEdit]         = useState(false);
   const [name, setName]                 = useState('');
   const nameRef = useRef(null);
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [testResult, setTestResult]     = useState(null);
+  const [testRunning, setTestRunning]   = useState(false);
+  const [testClientId, setTestClientId] = useState('');
+  const [clients, setClients]           = useState([]);
+  const [showTestPanel, setShowTestPanel] = useState(false);
 
   // Load workflow
   useEffect(() => {
@@ -439,6 +468,12 @@ export default function WorkflowBuilder() {
     dripAPI?.list?.(activeBrandId).then(r => setSequences(r.data?.data?.sequences || [])).catch(() => {});
   }, [activeBrandId]);
 
+  // Load clients for test mode
+  useEffect(() => {
+    if (!activeBrandId) return;
+    clientAPI.getBrandClients(activeBrandId, { limit: 50 }).then(r => setClients(r.data?.data?.clients || [])).catch(() => {});
+  }, [activeBrandId]);
+
   // Dirty warning
   useEffect(() => {
     const handler = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
@@ -447,6 +482,9 @@ export default function WorkflowBuilder() {
   }, [dirty]);
 
   const laidOut = useMemo(() => computeLayout(nodes, connections), [nodes, connections]);
+
+  // Detect cycles in real-time as user builds the graph
+  const cycleNodeIds = useMemo(() => detectCycles(nodes, connections), [nodes, connections]);
 
   const canvasSize = useMemo(() => ({
     width:  Math.max(...(laidOut.map(n => n.x + NODE_W + 120)), 900),
@@ -502,7 +540,12 @@ export default function WorkflowBuilder() {
   }, [addMenuFor, laidOut]);
 
   const handleSave = async () => {
+    // Warn on cycles before save
+    if (cycleNodeIds.size > 0) {
+      if (!window.confirm('This workflow contains a circular loop. Saving is allowed but you won\'t be able to activate it until the loop is removed. Continue?')) return;
+    }
     setSaving(true);
+    setValidationErrors([]);
     try {
       const finalNodes = computeLayout(nodes, connections);
       const triggerNode = finalNodes.find(n => n.type === 'trigger');
@@ -514,14 +557,36 @@ export default function WorkflowBuilder() {
       });
       setWorkflow(w => ({ ...w, name, trigger_type: triggerType }));
       setDirty(false);
-    } catch { /* silent */ } finally { setSaving(false); }
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Failed to save workflow';
+      setValidationErrors([msg]);
+    } finally { setSaving(false); }
   };
 
   const handleToggleActive = async () => {
+    setValidationErrors([]);
     try {
+      // Save first if dirty
+      if (dirty) await handleSave();
       const updated = await workflowAPI.update(activeBrandId, workflowId, { is_active: !workflow.is_active });
       setWorkflow(updated.data.data.workflow);
-    } catch { /* silent */ }
+    } catch (err) {
+      const errors = err?.response?.data?.errors || [err?.response?.data?.message || 'Activation failed'];
+      setValidationErrors(errors);
+    }
+  };
+
+  const handleTestRun = async () => {
+    setTestRunning(true);
+    setTestResult(null);
+    try {
+      // Save first if dirty
+      if (dirty) await handleSave();
+      const res = await workflowAPI.test(activeBrandId, workflowId, { client_id: testClientId || null });
+      setTestResult(res.data.data);
+    } catch (err) {
+      setTestResult({ steps: [], error: err?.response?.data?.message || 'Test failed' });
+    } finally { setTestRunning(false); }
   };
 
   if (!workflow) {
@@ -567,6 +632,12 @@ export default function WorkflowBuilder() {
 
         <div className="ml-auto flex items-center gap-2">
           <button
+            onClick={() => setShowTestPanel(p => !p)}
+            className={`text-xs px-3 py-1.5 rounded-lg border font-medium ${showTestPanel ? 'border-purple-400 text-purple-700 bg-purple-50 dark:bg-purple-900/20 dark:border-purple-600 dark:text-purple-300' : 'border-gray-300 text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-400'}`}
+          >
+            Test Run
+          </button>
+          <button
             onClick={handleToggleActive}
             className={`text-xs px-3 py-1.5 rounded-lg border font-medium ${
               workflow.is_active
@@ -586,7 +657,27 @@ export default function WorkflowBuilder() {
         </div>
       </div>
 
-      {/* Body: Canvas + Config Panel */}
+      {/* Cycle warning banner */}
+      {cycleNodeIds.size > 0 && (
+        <div className="px-4 py-2 bg-red-50 dark:bg-red-900/30 border-b border-red-200 dark:border-red-800 flex items-center gap-2">
+          <span className="text-red-600 dark:text-red-400 text-sm font-medium">Circular loop detected — workflow cannot be activated until the loop is removed.</span>
+        </div>
+      )}
+
+      {/* Validation errors banner */}
+      {validationErrors.length > 0 && (
+        <div className="px-4 py-2 bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-amber-700 dark:text-amber-300 text-sm font-medium">Validation issues:</span>
+            <button onClick={() => setValidationErrors([])} className="text-amber-400 hover:text-amber-600 text-xs ml-auto">dismiss</button>
+          </div>
+          <ul className="text-xs text-amber-600 dark:text-amber-400 list-disc pl-5 space-y-0.5">
+            {validationErrors.map((e, i) => <li key={i}>{e}</li>)}
+          </ul>
+        </div>
+      )}
+
+      {/* Body: Canvas + Config Panel + Test Panel */}
       <div className="flex flex-1 min-h-0">
         {/* Canvas */}
         <div className="flex-1 overflow-auto bg-gray-50 dark:bg-gray-900 relative">
@@ -599,9 +690,13 @@ export default function WorkflowBuilder() {
                 style={{ position: 'absolute', left: node.x, top: node.y, width: NODE_W }}
                 onClick={() => setSelectedId(node.id === selectedId ? null : node.id)}
               >
-                <div className={`border-2 rounded-xl shadow-sm cursor-pointer transition-shadow group ${nodeColor(node.type)} ${selectedId === node.id ? 'ring-2 ring-blue-500 shadow-md' : 'hover:shadow-md'}`}>
+                <div className={`border-2 rounded-xl shadow-sm cursor-pointer transition-shadow group ${cycleNodeIds.has(node.id) ? 'border-red-500 bg-red-50 dark:bg-red-900/30 ring-2 ring-red-400' : nodeColor(node.type)} ${selectedId === node.id ? 'ring-2 ring-blue-500 shadow-md' : 'hover:shadow-md'}`}>
+                  {/* Cycle badge */}
+                  {cycleNodeIds.has(node.id) && (
+                    <div className="absolute -top-2 -right-2 z-10 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">LOOP</div>
+                  )}
                   {/* Card header */}
-                  <div className={`flex items-center gap-2 px-3 py-2 rounded-t-xl ${nodeHeaderColor(node.type)}`}>
+                  <div className={`flex items-center gap-2 px-3 py-2 rounded-t-xl ${cycleNodeIds.has(node.id) ? 'bg-red-500 text-white' : nodeHeaderColor(node.type)}`}>
                     <span className="text-base leading-none">{nodeIcon(node)}</span>
                     <span className="text-xs font-semibold flex-1 truncate">{nodeLabel(node)}</span>
                     {node.type !== 'trigger' && (
@@ -669,13 +764,91 @@ export default function WorkflowBuilder() {
         </div>
 
         {/* Config panel */}
-        {selectedNode && (
+        {selectedNode && !showTestPanel && (
           <ConfigPanel
             node={selectedNode}
             onChange={updateNode}
             onClose={() => setSelectedId(null)}
             sequences={sequences}
           />
+        )}
+
+        {/* Test Run panel */}
+        {showTestPanel && (
+          <div className="w-80 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col h-full overflow-y-auto">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+              <h3 className="font-semibold text-sm text-gray-900 dark:text-white">Test Run</h3>
+              <button onClick={() => { setShowTestPanel(false); setTestResult(null); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">✕</button>
+            </div>
+
+            <div className="p-4 space-y-4 text-sm">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Simulate this workflow without sending emails, SMS, or making any changes. Conditions are evaluated against real client data.
+              </p>
+
+              <div>
+                <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Test with client (optional)</label>
+                <select
+                  value={testClientId}
+                  onChange={e => setTestClientId(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="">— No client (skip conditions) —</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name || c.email}</option>)}
+                </select>
+              </div>
+
+              <button
+                onClick={handleTestRun}
+                disabled={testRunning}
+                className="w-full py-2 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 text-sm"
+              >
+                {testRunning ? 'Running...' : 'Run Test'}
+              </button>
+
+              {testResult?.error && (
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-3">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">{testResult.error}</p>
+                </div>
+              )}
+
+              {testResult?.steps && testResult.steps.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Execution Path</p>
+                  {testResult.steps.map((step, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-lg p-3 border text-xs ${
+                        step.status === 'error' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-700'
+                          : step.status === 'warning' ? 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700'
+                          : 'bg-gray-50 border-gray-200 dark:bg-gray-700 dark:border-gray-600'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0 ${
+                          step.status === 'error' ? 'bg-red-500' : step.status === 'warning' ? 'bg-amber-500' : 'bg-green-500'
+                        }`}>
+                          {step.status === 'error' ? '✕' : step.status === 'warning' ? '!' : '✓'}
+                        </span>
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">{step.label}</span>
+                        {step.branch && (
+                          <span className={`ml-auto px-1.5 py-0.5 rounded text-[10px] font-bold ${step.branch === 'yes' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : step.branch === 'no' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' : 'bg-gray-200 text-gray-600 dark:bg-gray-600 dark:text-gray-300'}`}>
+                            {step.branch.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      {step.detail && (
+                        <p className="text-gray-500 dark:text-gray-400 pl-7">{step.detail}</p>
+                      )}
+                      {step.delay > 0 && (
+                        <p className="text-gray-400 dark:text-gray-500 pl-7 mt-0.5">After {step.delay} min delay</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>

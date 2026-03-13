@@ -5,7 +5,7 @@ const features = [
   {
     icon: '🏷️',
     title: 'White-Label Client Portal',
-    desc: 'Give every client their own branded login. Your logo, your colors, your domain — clients never see "ClientHub."',
+    desc: 'Give every client their own branded login. Your logo, your colors, your domain — clients never see "SAAS Surface."',
   },
   {
     icon: '📁',
@@ -292,7 +292,7 @@ const testimonials = [
     role: 'Founder, Okonkwo Creative',
     avatar: 'SO',
     quote:
-      "Our clients used to email us daily asking for updates. Since we switched to ClientHub, those emails are almost gone. Clients love seeing their project progress in real time.",
+      "Our clients used to email us daily asking for updates. Since we switched to SAAS Surface, those emails are almost gone. Clients love seeing their project progress in real time.",
   },
   {
     name: 'Marcus Deleon',
@@ -306,7 +306,7 @@ const testimonials = [
     role: 'Operations Director, Nair & Co.',
     avatar: 'PN',
     quote:
-      "Invoice payments used to take 45+ days. Now clients pay directly from the portal and we're averaging 12 days. The ROI paid for ClientHub in the first month.",
+      "Invoice payments used to take 45+ days. Now clients pay directly from the portal and we're averaging 12 days. The ROI paid for SAAS Surface in the first month.",
   },
   {
     name: 'James Whitfield',
@@ -319,8 +319,8 @@ const testimonials = [
 
 const faqs = [
   {
-    q: 'Will my clients ever see the ClientHub name?',
-    a: 'Never. Your clients see only your agency name, your logo, and your colors. ClientHub is completely invisible — even the email notifications come from your domain.',
+    q: 'Will my clients ever see the SAAS Surface name?',
+    a: 'Never. Your clients see only your agency name, your logo, and your colors. SAAS Surface is completely invisible — even the email notifications come from your domain.',
   },
   {
     q: 'Can I use my own domain for the client portal?',
@@ -414,8 +414,8 @@ export default function Landing() {
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">C</div>
-            <span className="font-bold text-xl text-gray-900">ClientHub</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">S</div>
+            <span className="font-bold text-xl text-gray-900">SAAS Surface</span>
           </div>
 
           {/* Desktop nav */}
@@ -510,7 +510,7 @@ export default function Landing() {
             </h1>
 
             <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl mx-auto">
-              ClientHub gives your agency a branded client portal, built-in CRM pipeline, multi-site CMS,
+              SAAS Surface gives your agency a branded client portal, built-in CRM pipeline, multi-site CMS,
               social media scheduling, AI content generation, and revenue analytics — everything to win more business, deliver it beautifully, and grow your clients' presence.
             </p>
 
@@ -672,7 +672,7 @@ export default function Landing() {
             </div>
 
             <div className="bg-green-50 border border-green-100 rounded-2xl p-8">
-              <p className="text-sm font-bold text-green-600 uppercase tracking-widest mb-4">With ClientHub</p>
+              <p className="text-sm font-bold text-green-600 uppercase tracking-widest mb-4">With SAAS Surface</p>
               <ul className="space-y-4">
                 {[
                   'Clients log in and see all files instantly',
@@ -732,7 +732,7 @@ export default function Landing() {
             </div>
             <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Win more clients. Close faster. Track everything.</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Most agency tools help you deliver work. ClientHub also helps you <strong>win</strong> it — with a full CRM pipeline, automated follow-ups, and revenue analytics built right in.
+              Most agency tools help you deliver work. SAAS Surface also helps you <strong>win</strong> it — with a full CRM pipeline, automated follow-ups, and revenue analytics built right in.
             </p>
           </div>
 
@@ -795,7 +795,7 @@ export default function Landing() {
             </div>
             <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Manage content. Publish everywhere.</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              ClientHub is the only agency platform that combines client management, CRM, <strong>website CMS, and social media scheduling</strong> — all in one place, for you and your clients.
+              SAAS Surface is the only agency platform that combines client management, CRM, <strong>website CMS, and social media scheduling</strong> — all in one place, for you and your clients.
             </p>
           </div>
 
@@ -993,7 +993,7 @@ export default function Landing() {
             </div>
           ))}
         </div>
-        <p className="text-center text-blue-300 text-xs mt-8 max-w-xl mx-auto">* Based on customer surveys conducted among ClientHub agency users.</p>
+        <p className="text-center text-blue-300 text-xs mt-8 max-w-xl mx-auto">* Based on customer surveys conducted among SAAS Surface agency users.</p>
       </section>
 
       {/* ── TRUST SIGNALS ── */}
@@ -1119,7 +1119,7 @@ export default function Landing() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">How We Compare</p>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">ClientHub vs. the alternatives</h2>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">SAAS Surface vs. the alternatives</h2>
             <p className="text-lg text-gray-600">See why agencies switch from email chaos and generic tools.</p>
           </div>
 
@@ -1130,7 +1130,7 @@ export default function Landing() {
                   <th className="text-left px-6 py-4 font-semibold text-gray-600">Feature</th>
                   <th className="px-6 py-4 text-center">
                     <div className="inline-flex flex-col items-center">
-                      <span className="font-bold text-blue-600 text-base">ClientHub</span>
+                      <span className="font-bold text-blue-600 text-base">SAAS Surface</span>
                     </div>
                   </th>
                   <th className="px-6 py-4 text-center font-semibold text-gray-500">Email + Sheets</th>
@@ -1169,7 +1169,7 @@ export default function Landing() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Real Results</p>
-            <h2 className="text-4xl font-extrabold text-gray-900">Agencies love ClientHub</h2>
+            <h2 className="text-4xl font-extrabold text-gray-900">Agencies love SAAS Surface</h2>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1270,8 +1270,8 @@ export default function Landing() {
           <div className="grid md:grid-cols-4 gap-8 mb-10">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs">C</div>
-                <span className="font-bold text-white text-lg">ClientHub</span>
+                <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs">S</div>
+                <span className="font-bold text-white text-lg">SAAS Surface</span>
               </div>
               <p className="text-sm leading-relaxed mb-4">
                 The white-label client portal and CRM built for agencies that want to look exceptional and close more deals.
@@ -1311,14 +1311,14 @@ export default function Landing() {
               <p className="font-semibold text-white text-sm mb-4">Contact</p>
               <ul className="space-y-2 text-sm">
                 <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
-                <li><a href="mailto:sales@faithharborclienthub.com" className="hover:text-white transition-colors">sales@faithharborclienthub.com</a></li>
-                <li><a href="mailto:support@faithharborclienthub.com" className="hover:text-white transition-colors">support@faithharborclienthub.com</a></li>
+                <li><a href="mailto:sales@saassurface.com" className="hover:text-white transition-colors">sales@saassurface.com</a></li>
+                <li><a href="mailto:support@saassurface.com" className="hover:text-white transition-colors">support@saassurface.com</a></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm">© {new Date().getFullYear()} ClientHub · faithharborclienthub.com · All rights reserved.</p>
+            <p className="text-sm">© {new Date().getFullYear()} SAAS Surface · saassurface.com · All rights reserved.</p>
             <div className="flex flex-wrap gap-4 text-sm justify-center">
               <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
               <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>

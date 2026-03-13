@@ -1,6 +1,17 @@
 import * as funnelModel from '../models/funnelModel.js';
 import * as brandModel from '../models/brandModel.js';
 
+// Strip HTML tags from form submission values to prevent stored XSS
+const stripTags = (str) => (typeof str === 'string' ? str.replace(/<[^>]*>/g, '').trim() : str);
+const sanitizeFormData = (data) => {
+  if (!data || typeof data !== 'object') return {};
+  const clean = {};
+  for (const [k, v] of Object.entries(data)) {
+    clean[stripTags(k)] = stripTags(v);
+  }
+  return clean;
+};
+
 const auth = async (brandId, userId, res) => {
   const m = await brandModel.getBrandMember(brandId, userId);
   if (!m) { res.status(403).json({ status: 'fail', message: 'Access denied' }); return null; }
@@ -151,7 +162,9 @@ export const publicViewFunnel = async (req, res, next) => {
     // For simplicity, return the first published funnel with this slug and its first step
     const result = await import('../config/database.js').then(m =>
       m.query(
-        `SELECT f.brand_id, fs.slug AS step_slug
+        `SELECT f.id AS funnel_id, f.brand_id, f.name AS funnel_name,
+                f.seo_title AS funnel_seo_title, f.seo_description AS funnel_seo_description,
+                fs.slug AS step_slug
          FROM funnels f
          JOIN funnel_steps fs ON fs.funnel_id = f.id
          WHERE f.slug = $1 AND f.status = 'published'
@@ -166,6 +179,11 @@ export const publicViewFunnel = async (req, res, next) => {
     const step = await funnelModel.getStepBySlug(funnelSlug, row.step_slug);
     if (!step) return res.status(404).json({ status: 'fail', message: 'Funnel not found' });
 
+    const funnel = {
+      id: row.funnel_id, name: row.funnel_name,
+      seo_title: row.funnel_seo_title, seo_description: row.funnel_seo_description,
+    };
+
     funnelModel.recordAnalytics({
       funnel_id: step.funnel_id, step_id: step.id, brand_id: step.brand_id,
       event_type: 'view', visitor_id: req.headers['x-visitor-id'],
@@ -173,7 +191,7 @@ export const publicViewFunnel = async (req, res, next) => {
       utm_medium: req.query.utm_medium, utm_campaign: req.query.utm_campaign,
     }).catch(() => {});
 
-    res.json({ status: 'success', data: { step, funnelSlug, stepSlug: row.step_slug } });
+    res.json({ status: 'success', data: { step, funnel, funnelSlug, stepSlug: row.step_slug } });
   } catch (e) { next(e); }
 };
 
@@ -183,6 +201,14 @@ export const publicViewStep = async (req, res, next) => {
     const step = await funnelModel.getStepBySlug(funnelSlug, stepSlug);
     if (!step) return res.status(404).json({ status: 'fail', message: 'Page not found' });
 
+    // Fetch funnel metadata for SEO/title
+    const { query: dbQuery } = await import('../config/database.js');
+    const funnelRes = await dbQuery(
+      `SELECT id, name, seo_title, seo_description FROM funnels WHERE slug = $1 AND status = 'published' LIMIT 1`,
+      [funnelSlug]
+    );
+    const funnel = funnelRes.rows[0] || null;
+
     funnelModel.recordAnalytics({
       funnel_id: step.funnel_id, step_id: step.id, brand_id: step.brand_id,
       event_type: 'view', visitor_id: req.headers['x-visitor-id'],
@@ -190,14 +216,15 @@ export const publicViewStep = async (req, res, next) => {
       utm_medium: req.query.utm_medium, utm_campaign: req.query.utm_campaign,
     }).catch(() => {});
 
-    res.json({ status: 'success', data: { step, funnelSlug, stepSlug } });
+    res.json({ status: 'success', data: { step, funnel, funnelSlug, stepSlug } });
   } catch (e) { next(e); }
 };
 
 export const publicSubmitForm = async (req, res, next) => {
   try {
     const { stepId } = req.params;
-    const { formData, redirectUrl, successMessage } = req.body;
+    const { formData: rawFormData, redirectUrl, successMessage } = req.body;
+    const formData = sanitizeFormData(rawFormData);
 
     // Get step to find funnel/brand info
     const stepResult = await import('../config/database.js').then(m =>

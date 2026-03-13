@@ -10,16 +10,16 @@ export default function ServiceLevelAgreement() {
               <div style={{ color: '#5b6478' }}>Effective date: February 21, 2026</div>
             </div>
             <div style={{ display: 'inline-block', fontSize: 12, padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b3b77', border: '1px solid #d7e9ff' }}>
-              Faith Harbor Client Hub
+              SAAS Surface
             </div>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
 
-          <p style={{ lineHeight: 1.55 }}>This Service Level Agreement ("SLA") describes the service commitments made by <strong>Faith Harbor LLC</strong> to subscribers of <strong>Faith Harbor Client Hub</strong>. This SLA forms part of the Terms of Service.</p>
+          <p style={{ lineHeight: 1.55 }}>This Service Level Agreement ("SLA") describes the service commitments made by <strong>Faith Harbor LLC</strong> to subscribers of <strong>SAAS Surface</strong>. This SLA forms part of the Terms of Service.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Uptime Commitment</h2>
-          <p style={{ lineHeight: 1.55 }}>Faith Harbor LLC commits to a <strong>99% monthly uptime</strong> for the Faith Harbor Client Hub platform. This allows for approximately 7.3 hours of downtime per month.</p>
+          <p style={{ lineHeight: 1.55 }}>Faith Harbor LLC commits to a <strong>99% monthly uptime</strong> for the SAAS Surface platform. This allows for approximately 7.3 hours of downtime per month.</p>
           <p style={{ lineHeight: 1.55 }}>Uptime is calculated as:</p>
           <div style={{ background: '#f7f8fb', border: '1px solid #e6e8ee', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', margin: '10px 0' }}>
             Uptime % = ((Total minutes in month − Downtime minutes) / Total minutes in month) × 100
@@ -45,25 +45,25 @@ export default function ServiceLevelAgreement() {
             <li><strong>Billing issues:</strong> Response within 72 hours</li>
             <li><strong>Security incidents:</strong> Acknowledged within 24 hours</li>
           </ul>
-          <p style={{ lineHeight: 1.55 }}>To contact support, email <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>To contact support, email <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Incident Communication</h2>
           <p style={{ lineHeight: 1.55 }}>In the event of a significant service disruption, Faith Harbor LLC will communicate status updates via email to affected account holders as promptly as possible.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>SLA Credits</h2>
           <p style={{ lineHeight: 1.55 }}>If we fail to meet the 99% uptime commitment in a given calendar month, affected subscribers may request a service credit equal to one day of their pro-rated subscription fee for each hour of excess downtime, up to a maximum of 30% of that month's subscription fee.</p>
-          <p style={{ lineHeight: 1.55 }}>To request a credit, email <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a> within 30 days of the incident with details of the outage. Credits are applied to future invoices and are not redeemable for cash.</p>
+          <p style={{ lineHeight: 1.55 }}>To request a credit, email <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a> within 30 days of the incident with details of the outage. Credits are applied to future invoices and are not redeemable for cash.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Limitations</h2>
           <p style={{ lineHeight: 1.55 }}>SLA credits are the sole and exclusive remedy for any failure by Faith Harbor LLC to meet the uptime commitment. This SLA does not modify or supersede the limitation of liability provisions in our Terms of Service.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Contact</h2>
-          <p style={{ lineHeight: 1.55 }}>For SLA inquiries, contact us at <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>For SLA inquiries, contact us at <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>.</p>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
           <div style={{ color: '#5b6478', fontSize: 12 }}>
             Contact: Faith Harbor LLC • 815 Superior Ave East • Suite 1618 • Cleveland, OH, 44114 • United States •{' '}
-            Email: <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>
+            Email: <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />

@@ -31,8 +31,8 @@ export default function Contact() {
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">C</div>
-            <span className="font-bold text-xl text-gray-900">ClientHub</span>
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">S</div>
+            <span className="font-bold text-xl text-gray-900">SAAS Surface</span>
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/login" className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Log In</Link>
@@ -67,8 +67,8 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900 text-sm mb-0.5">Email us</p>
-                  <a href="mailto:sales@faithharborclienthub.com" className="text-blue-600 hover:underline text-sm">
-                    sales@faithharborclienthub.com
+                  <a href="mailto:sales@saassurface.com" className="text-blue-600 hover:underline text-sm">
+                    sales@saassurface.com
                   </a>
                   <p className="text-gray-500 text-xs mt-1">We respond within one business day.</p>
                 </div>
@@ -208,10 +208,10 @@ export default function Contact() {
       <footer className="bg-gray-900 text-gray-400 px-6 py-8 mt-16">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs">C</div>
-            <span className="font-bold text-white">ClientHub</span>
+            <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs">S</div>
+            <span className="font-bold text-white">SAAS Surface</span>
           </div>
-          <p className="text-sm">© {new Date().getFullYear()} ClientHub · All rights reserved.</p>
+          <p className="text-sm">© {new Date().getFullYear()} SAAS Surface · All rights reserved.</p>
           <div className="flex gap-4 text-sm">
             <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
             <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms</Link>

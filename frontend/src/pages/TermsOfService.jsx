@@ -10,7 +10,7 @@ export default function TermsOfService() {
               <div style={{ color: '#5b6478' }}>Effective date: February 21, 2026</div>
             </div>
             <div style={{ display: 'inline-block', fontSize: 12, padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b3b77', border: '1px solid #d7e9ff' }}>
-              Faith Harbor Client Hub
+              SAAS Surface
             </div>
           </div>
 
@@ -18,7 +18,7 @@ export default function TermsOfService() {
 
           <p><em>We aim to operate with integrity, honesty, and respect, and we expect respectful communication and ethical conduct on our platforms.</em></p>
 
-          <p style={{ lineHeight: 1.55 }}>These Terms of Service ("Terms") govern your use of <strong>Faith Harbor Client Hub</strong> (https://faithharborclienthub.com). By using this website, you agree to these Terms.</p>
+          <p style={{ lineHeight: 1.55 }}>These Terms of Service ("Terms") govern your use of <strong>SAAS Surface</strong> (https://saassurface.com). By using this website, you agree to these Terms.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Use of the Website</h2>
           <ul style={{ lineHeight: 1.55 }}>
@@ -42,12 +42,12 @@ export default function TermsOfService() {
           <p style={{ lineHeight: 1.55 }}>These Terms are governed by the laws of Ohio, United States.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Contact</h2>
-          <p style={{ lineHeight: 1.55 }}>Questions about these Terms can be sent to <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>.</p>
+          <p style={{ lineHeight: 1.55 }}>Questions about these Terms can be sent to <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>.</p>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
           <div style={{ color: '#5b6478', fontSize: 12 }}>
             Contact: Faith Harbor LLC • 815 Superior Ave East • Suite 1618 • Cleveland, OH, 44114 • United States •{' '}
-            Email: <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>
+            Email: <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />

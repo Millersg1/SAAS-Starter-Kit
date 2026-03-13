@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# deploy.sh — Build and deploy ClientHub
+# deploy.sh — Build and deploy SaasSurface
 #
 # Usage:
 #   ./deploy.sh           # deploy both frontend and backend
@@ -12,11 +12,17 @@ set -euo pipefail # Exit on error, undefined variable, or pipe failure.
 
 # --- Configuration ---
 # SSH and server details for a cPanel-like environment
-SSH_USER="faithharborclien"
-SSH_HOST="faithharborclienthub.com"
+SSH_USER="saassurface"
+SSH_HOST="server.allelitehosting.com"
+SSH_PORT="22"
+SSH_KEY="$HOME/.ssh/id_rsa_deploy"
 FRONTEND_REMOTE_DIR="~/public_html"
-BACKEND_REMOTE_DIR="~/public_html/api.faithharborclienthub.com"
-HEALTH_CHECK_URL="https://api.faithharborclienthub.com/health"
+BACKEND_REMOTE_DIR="~/public_html/api.saassurface.com"
+HEALTH_CHECK_URL="https://api.saassurface.com/health"
+
+# Convenience aliases with key + port baked in
+SSH_CMD="ssh -p $SSH_PORT -i $SSH_KEY"
+RSYNC_SSH="ssh -p $SSH_PORT -i $SSH_KEY"
 
 # --- Project Structure ---
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -37,11 +43,11 @@ deploy_frontend() {
 
   echo "  → Uploading frontend assets..."
   if command -v rsync &>/dev/null; then
-    rsync -avz --delete --exclude 'api.faithharborclienthub.com' --exclude '.well-known' --exclude 'cgi-bin' "$FRONTEND_DIR/dist/" "$SSH_USER@$SSH_HOST:$FRONTEND_REMOTE_DIR/"
+    rsync -avz -e "$RSYNC_SSH" --delete --exclude 'api.saassurface.com' --exclude '.well-known' --exclude 'cgi-bin' "$FRONTEND_DIR/dist/" "$SSH_USER@$SSH_HOST:$FRONTEND_REMOTE_DIR/"
   else
     # rsync not available — use tar pipe over SSH (clears existing assets first)
-    ssh "$SSH_USER@$SSH_HOST" "find $FRONTEND_REMOTE_DIR -maxdepth 1 -not -name 'api.faithharborclienthub.com' -not -name '.well-known' -not -name 'cgi-bin' -not -path '$FRONTEND_REMOTE_DIR' -delete 2>/dev/null; mkdir -p $FRONTEND_REMOTE_DIR"
-    tar -czf - -C "$FRONTEND_DIR/dist" . | ssh "$SSH_USER@$SSH_HOST" "tar -xzf - -C $FRONTEND_REMOTE_DIR"
+    $SSH_CMD "$SSH_USER@$SSH_HOST" "find $FRONTEND_REMOTE_DIR -maxdepth 1 -not -name 'api.saassurface.com' -not -name '.well-known' -not -name 'cgi-bin' -not -path '$FRONTEND_REMOTE_DIR' -delete 2>/dev/null; mkdir -p $FRONTEND_REMOTE_DIR"
+    tar -czf - -C "$FRONTEND_DIR/dist" . | $SSH_CMD "$SSH_USER@$SSH_HOST" "tar -xzf - -C $FRONTEND_REMOTE_DIR"
   fi
   echo "✅ Frontend deployment successful!"
 }
@@ -80,15 +86,15 @@ deploy_backend() {
 
   echo "  → Uploading backend source files..."
   if command -v rsync &>/dev/null; then
-    rsync -avz --delete --exclude 'node_modules' --exclude '.env' --exclude 'uploads' "$BACKEND_DIR/" "$SSH_USER@$SSH_HOST:$BACKEND_REMOTE_DIR/"
+    rsync -avz -e "$RSYNC_SSH" --delete --exclude 'node_modules' --exclude '.env' --exclude 'uploads' "$BACKEND_DIR/" "$SSH_USER@$SSH_HOST:$BACKEND_REMOTE_DIR/"
   else
-    tar --exclude='./node_modules' --exclude='./.env' --exclude='./uploads' -czf - -C "$BACKEND_DIR" . | ssh "$SSH_USER@$SSH_HOST" "mkdir -p $BACKEND_REMOTE_DIR && tar -xzf - -C $BACKEND_REMOTE_DIR"
+    tar --exclude='./node_modules' --exclude='./.env' --exclude='./uploads' -czf - -C "$BACKEND_DIR" . | $SSH_CMD "$SSH_USER@$SSH_HOST" "mkdir -p $BACKEND_REMOTE_DIR && tar -xzf - -C $BACKEND_REMOTE_DIR"
   fi
 
   echo "  → Running remote commands (install dependencies, restart server)..."
   # Use bash -l (login shell) so /etc/profile.d/limits.sh runs and sets ulimit -n 65536.
   # Then kill + restart PM2 daemon so the new daemon inherits the correct fd limit.
-  ssh "$SSH_USER@$SSH_HOST" "bash -l -c '
+  $SSH_CMD "$SSH_USER@$SSH_HOST" "bash -l -c '
     set -e
     cd $BACKEND_REMOTE_DIR
     echo \"    → Installing npm dependencies...\"
@@ -122,4 +128,4 @@ case "$MODE" in
 esac
 
 echo ""
-echo "🎉 Deployment finished. Live at https://faithharborclienthub.com"
+echo "🎉 Deployment finished. Live at https://saassurface.com"

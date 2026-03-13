@@ -1,6 +1,7 @@
 import { query } from '../config/database.js';
 import * as brandModel from '../models/brandModel.js';
 import * as pipelineModel from '../models/pipelineModel.js';
+import { batchProcess } from '../utils/batchProcess.js';
 
 const verifyBrandAccess = async (brandId, userId) => {
   const member = await brandModel.getBrandMember(brandId, userId);
@@ -369,8 +370,8 @@ export const getHealthScores = async (req, res, next) => {
       [brandId]
     );
 
-    // Recalculate stale or missing scores
-    const results = await Promise.all(clients.map(async (c) => {
+    // Recalculate stale or missing scores (batched — max 5 concurrent DB queries)
+    const results = await batchProcess(clients, async (c) => {
       const isStale = !c.health_score_updated_at ||
         (Date.now() - new Date(c.health_score_updated_at).getTime()) > STALE_MS;
 
@@ -383,7 +384,7 @@ export const getHealthScores = async (req, res, next) => {
         }
       }
       return { id: c.id, name: c.name, company: c.company, health_score: c.health_score, health_score_breakdown: c.health_score_breakdown };
-    }));
+    }, 5);
 
     res.json({ status: 'success', data: { scores: results } });
   } catch (error) {
@@ -497,7 +498,7 @@ export const getDealScores = async (req, res, next) => {
       [brandId]
     );
 
-    const results = await Promise.all(dealsResult.rows.map(async (d) => {
+    const results = await batchProcess(dealsResult.rows, async (d) => {
       const isStale = !d.deal_score_updated_at ||
         (Date.now() - new Date(d.deal_score_updated_at).getTime()) > DEAL_SCORE_STALE_MS;
       if (isStale) {
@@ -509,7 +510,7 @@ export const getDealScores = async (req, res, next) => {
         }
       }
       return { id: d.id, title: d.title, deal_score: d.deal_score, breakdown: null };
-    }));
+    }, 5);
 
     res.json({ status: 'success', data: { scores: results } });
   } catch (error) {

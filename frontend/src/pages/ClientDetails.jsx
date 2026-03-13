@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import Layout from '../components/Layout';
 import { clientAPI, brandAPI, uploadAPI, activityAPI, taskAPI, enrichmentAPI, customFieldAPI, workflowAPI, revenueAnalyticsAPI, aiAPI, churnAPI } from '../services/api';
 
@@ -148,6 +149,7 @@ const ClientDetails = () => {
       const url = res.data.data.url;
       await clientAPI.updateClient(client.brand_id, id, { photo_url: url });
       setClient((prev) => ({ ...prev, photo_url: url }));
+      toast.success('Photo updated');
       setSuccessMessage('Photo updated successfully');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to upload photo');
@@ -320,6 +322,7 @@ const ClientDetails = () => {
       }, {});
 
       await clientAPI.updateClient(client.brand_id, id, cleanedData);
+      toast.success('Client updated');
       setSuccessMessage('Client updated successfully');
       setIsEditing(false);
       fetchClient();
@@ -340,6 +343,7 @@ const ClientDetails = () => {
       setSaving(true);
       setError('');
       await clientAPI.enablePortalAccess(client.brand_id, id, portalPassword);
+      toast.success('Portal access enabled');
       setSuccessMessage('Portal access enabled successfully');
       setShowPortalModal(false);
       setPortalPassword('');
@@ -356,6 +360,7 @@ const ClientDetails = () => {
       setSaving(true);
       setError('');
       await clientAPI.disablePortalAccess(client.brand_id, id);
+      toast.success('Portal access disabled');
       setSuccessMessage('Portal access disabled successfully');
       fetchClient();
     } catch (err) {
@@ -370,6 +375,7 @@ const ClientDetails = () => {
       setSaving(true);
       setError('');
       await clientAPI.deleteClient(client.brand_id, id);
+      toast.success('Client deleted');
       navigate('/clients');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete client');
@@ -393,6 +399,7 @@ const ClientDetails = () => {
         facebook_url: updated.facebook_url || prev.facebook_url,
         instagram_url: updated.instagram_url || prev.instagram_url,
       }));
+      toast.success('Contact enriched!');
       setSuccessMessage('Contact enriched successfully!');
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {

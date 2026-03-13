@@ -1,5 +1,6 @@
 import * as workflowModel from '../models/workflowModel.js';
 import * as brandModel from '../models/brandModel.js';
+import { validateWorkflow, testWorkflow } from '../utils/workflowEngine.js';
 
 const auth = async (brandId, userId, res) => {
   const m = await brandModel.getBrandMember(brandId, userId);
@@ -37,6 +38,19 @@ export const createWorkflow = async (req, res, next) => {
 export const updateWorkflow = async (req, res, next) => {
   try {
     if (!await auth(req.params.brandId, req.user.id, res)) return;
+
+    // Validate before activating
+    if (req.body.is_active === true) {
+      const existing = await workflowModel.getWorkflowById(req.params.workflowId);
+      const def = req.body.workflow_definition || existing?.workflow_definition;
+      if (def) {
+        const errors = validateWorkflow(def);
+        if (errors.length > 0) {
+          return res.status(400).json({ status: 'fail', message: 'Workflow has validation errors', errors });
+        }
+      }
+    }
+
     const workflow = await workflowModel.updateWorkflow(req.params.workflowId, req.body);
     if (!workflow) return res.status(404).json({ status: 'fail', message: 'Workflow not found' });
     if (Array.isArray(req.body.steps) && !req.body.workflow_definition) await workflowModel.setSteps(workflow.id, req.body.steps);
@@ -74,5 +88,27 @@ export const manualEnroll = async (req, res, next) => {
       next_step_at: new Date(),
     });
     res.status(201).json({ status: 'success', data: { enrollment } });
+  } catch (e) { next(e); }
+};
+
+export const validateWorkflowEndpoint = async (req, res, next) => {
+  try {
+    if (!await auth(req.params.brandId, req.user.id, res)) return;
+    const wf = await workflowModel.getWorkflowById(req.params.workflowId);
+    if (!wf) return res.status(404).json({ status: 'fail', message: 'Workflow not found' });
+    const errors = validateWorkflow(wf.workflow_definition);
+    res.json({ status: 'success', data: { valid: errors.length === 0, errors } });
+  } catch (e) { next(e); }
+};
+
+export const testWorkflowEndpoint = async (req, res, next) => {
+  try {
+    const { brandId, workflowId } = req.params;
+    if (!await auth(brandId, req.user.id, res)) return;
+    const wf = await workflowModel.getWorkflowById(workflowId);
+    if (!wf) return res.status(404).json({ status: 'fail', message: 'Workflow not found' });
+    const { client_id } = req.body || {};
+    const result = await testWorkflow(wf.workflow_definition, brandId, client_id || null);
+    res.json({ status: 'success', data: result });
   } catch (e) { next(e); }
 };

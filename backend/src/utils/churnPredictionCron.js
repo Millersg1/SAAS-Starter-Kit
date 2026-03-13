@@ -1,6 +1,8 @@
 import { query } from '../config/database.js';
 import { computeClientHealthScore } from '../controllers/analyticsController.js';
 import { triggerWorkflow } from './workflowEngine.js';
+import { batchProcess } from './batchProcess.js';
+import { logError } from './errorMonitor.js';
 
 const computeChurnProbability = async (clientId, brandId) => {
   // 1. Get current health score
@@ -112,7 +114,8 @@ const runChurnPrediction = async () => {
           [brand.id]
         );
 
-        for (const client of clientsRes.rows) {
+        // Process clients in batches of 3 to limit concurrent DB load
+        await batchProcess(clientsRes.rows, async (client) => {
           try {
             const { probability, riskFactors, trend } = await computeChurnProbability(client.id, brand.id);
 
@@ -137,7 +140,6 @@ const runChurnPrediction = async () => {
                   await triggerWorkflow(brand.id, 'churn_risk', client.id, 'client');
                 } catch { /* workflow may not exist */ }
 
-                // Create notification
                 try {
                   await query(
                     `INSERT INTO notifications (brand_id, type, title, message, metadata)
@@ -163,7 +165,6 @@ const runChurnPrediction = async () => {
                 [brand.id, client.id, probability, JSON.stringify(riskFactors), JSON.stringify(trend)]
               );
 
-              // Trigger workflow for newly detected high-risk
               if (probability >= 70) {
                 try {
                   await triggerWorkflow(brand.id, 'churn_risk', client.id, 'client');
@@ -189,15 +190,15 @@ const runChurnPrediction = async () => {
               }
             }
           } catch (err) {
-            console.error(`Churn prediction failed for client ${client.id}:`, err.message);
+            logError(err, { context: 'churnCron.client', clientId: client.id, brandId: brand.id });
           }
-        }
+        }, 3);
       } catch (err) {
-        console.error(`Churn prediction failed for brand ${brand.id}:`, err.message);
+        logError(err, { context: 'churnCron.brand', brandId: brand.id });
       }
     }
   } catch (err) {
-    console.error('Churn prediction cron error:', err.message);
+    logError(err, { context: 'churnCron.main' });
   }
 };
 

@@ -10,13 +10,13 @@ export default function SecurityPolicy() {
               <div style={{ color: '#5b6478' }}>Effective date: February 21, 2026</div>
             </div>
             <div style={{ display: 'inline-block', fontSize: 12, padding: '6px 10px', borderRadius: 999, background: '#eef6ff', color: '#0b3b77', border: '1px solid #d7e9ff' }}>
-              Faith Harbor Client Hub
+              SAAS Surface
             </div>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
 
-          <p style={{ lineHeight: 1.55 }}>At <strong>Faith Harbor LLC</strong>, we take the security of your data seriously. This Security Policy describes the measures we take to protect the information stored and processed through <strong>Faith Harbor Client Hub</strong>.</p>
+          <p style={{ lineHeight: 1.55 }}>At <strong>Faith Harbor LLC</strong>, we take the security of your data seriously. This Security Policy describes the measures we take to protect the information stored and processed through <strong>SAAS Surface</strong>.</p>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Data Encryption</h2>
           <ul style={{ lineHeight: 1.55 }}>
@@ -71,12 +71,12 @@ export default function SecurityPolicy() {
           </ul>
 
           <h2 style={{ margin: '22px 0 10px', fontSize: 18 }}>Reporting Security Vulnerabilities</h2>
-          <p style={{ lineHeight: 1.55 }}>If you discover a security vulnerability in our platform, please report it responsibly to <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>. We take all reports seriously and will respond promptly.</p>
+          <p style={{ lineHeight: 1.55 }}>If you discover a security vulnerability in our platform, please report it responsibly to <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>. We take all reports seriously and will respond promptly.</p>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />
           <div style={{ color: '#5b6478', fontSize: 12 }}>
             Contact: Faith Harbor LLC • 815 Superior Ave East • Suite 1618 • Cleveland, OH, 44114 • United States •{' '}
-            Email: <a href="mailto:support@faithharborclienthub.com" style={{ color: '#2f8cff' }}>support@faithharborclienthub.com</a>
+            Email: <a href="mailto:support@saassurface.com" style={{ color: '#2f8cff' }}>support@saassurface.com</a>
           </div>
 
           <div style={{ height: 1, background: '#e6e8ee', margin: '18px 0' }} />

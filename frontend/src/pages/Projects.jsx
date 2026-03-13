@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
+import Skeleton from '../components/Skeleton';
 import { projectAPI, brandAPI, subscriptionAPI } from '../services/api';
 
 const Projects = () => {
@@ -136,8 +137,8 @@ const Projects = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
-            <p className="text-gray-600 mt-1">Manage your projects and track progress</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Projects</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your projects and track progress</p>
           </div>
           <button
             onClick={() => navigate('/projects/new')}
@@ -186,27 +187,27 @@ const Projects = () => {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">Total Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Projects</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">In Progress</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">In Progress</p>
               <p className="text-2xl font-bold text-yellow-600">{stats.in_progress}</p>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">Completed</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Completed</p>
               <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
             </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <p className="text-sm text-gray-600">Overdue</p>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <p className="text-sm text-gray-600 dark:text-gray-400">Overdue</p>
               <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
             </div>
           </div>
         )}
 
         {/* Filters */}
-        <div className="bg-white rounded-lg shadow p-4 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <input
               type="text"
@@ -261,8 +262,30 @@ const Projects = () => {
 
         {/* Projects List */}
         {loading ? (
-          <div className="flex justify-center items-center h-32">
-            <p className="text-gray-600">Loading projects...</p>
+          <div className="space-y-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-lg shadow p-5 border-l-4 border-gray-200">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 space-y-3">
+                    <Skeleton.Text w="w-48" h="h-5" />
+                    <div className="flex gap-2">
+                      <Skeleton.Text w="w-20" h="h-6" />
+                      <Skeleton.Text w="w-16" h="h-6" />
+                      <Skeleton.Text w="w-16" h="h-6" />
+                    </div>
+                    <div className="flex gap-6">
+                      <Skeleton.Text w="w-28" h="h-4" />
+                      <Skeleton.Text w="w-24" h="h-4" />
+                    </div>
+                  </div>
+                  <div className="ml-4 space-y-2">
+                    <Skeleton.Text w="w-32" h="h-4" />
+                    <Skeleton.Text w="w-32" h="h-2" />
+                    <Skeleton.Text w="w-24" h="h-8" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : projects.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -279,14 +302,14 @@ const Projects = () => {
             {projects.map((project) => (
               <div
                 key={project.id}
-                className={`bg-white rounded-lg shadow p-5 border-l-4 ${
+                className={`bg-white dark:bg-gray-800 rounded-lg shadow p-5 border-l-4 ${
                   isOverdue(project) ? 'border-red-500' : 'border-blue-500'
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{project.name}</h3>
                       {isOverdue(project) && (
                         <span className="px-2 py-0.5 bg-red-100 text-red-700 text-xs rounded-full font-medium">
                           OVERDUE
