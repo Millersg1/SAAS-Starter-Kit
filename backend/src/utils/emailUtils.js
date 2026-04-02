@@ -1,15 +1,18 @@
 import nodemailer from 'nodemailer';
 
 /**
- * Create email transporter
- * In production, configure with real SMTP settings
+ * Singleton email transporter — reuses SMTP connections instead of
+ * creating a new connection per email.
  */
+let _transporter = null;
+
+export const getTransporter = () => createTransporter();
+
 const createTransporter = () => {
-  // For development, use ethereal email (fake SMTP service)
-  // In production, replace with real SMTP credentials from .env
-  
+  if (_transporter) return _transporter;
+
   if (process.env.NODE_ENV === 'production') {
-    return nodemailer.createTransport({
+    _transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT) || 587,
       secure: process.env.SMTP_SECURE === 'true',
@@ -20,20 +23,22 @@ const createTransporter = () => {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
+      pool: true,
+      maxConnections: 5,
     });
+    return _transporter;
   }
-  
+
   // Development mode - log emails to console instead of sending
-  return {
+  _transporter = {
     sendMail: async (mailOptions) => {
-      console.log('\n📧 Email would be sent (Development Mode): - emailUtils.js:26');
-      console.log('To: - emailUtils.js:27', mailOptions.to);
-      console.log('Subject: - emailUtils.js:28', mailOptions.subject);
-      console.log('Content: - emailUtils.js:29', mailOptions.text || mailOptions.html);
-      console.log('\n - emailUtils.js:30');
+      console.log('\n📧 Email would be sent (Development Mode):');
+      console.log('To:', mailOptions.to);
+      console.log('Subject:', mailOptions.subject);
       return { messageId: 'dev-mode-' + Date.now() };
     }
   };
+  return _transporter;
 };
 
 /**

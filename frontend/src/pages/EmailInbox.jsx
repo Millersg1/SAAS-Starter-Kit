@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/Layout';
 import { brandAPI, clientAPI, emailAPI, emailConnectionAPI } from '../services/api';
+import sanitizeHtml from '../utils/sanitizeHtml';
 
 const timeAgo = (date) => {
   const d = new Date(date);
@@ -220,7 +221,7 @@ export default function EmailInbox() {
                           {email.body_html ? (
                             <div
                               className="prose prose-sm max-w-none text-gray-700"
-                              dangerouslySetInnerHTML={{ __html: email.body_html }}
+                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(email.body_html) }}
                             />
                           ) : (
                             <pre className="text-sm text-gray-700 whitespace-pre-wrap font-sans">

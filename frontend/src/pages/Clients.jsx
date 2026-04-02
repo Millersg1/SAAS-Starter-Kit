@@ -20,6 +20,11 @@ const Clients = () => {
   const [showImport, setShowImport] = useState(false);
   const [planLimit, setPlanLimit] = useState(null);
 
+  // Pagination
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 30;
+  const [hasMore, setHasMore] = useState(true);
+
   // Tag filter + bulk selection
   const [activeTag, setActiveTag] = useState('');
   const [selectedIds, setSelectedIds] = useState([]);
@@ -80,11 +85,16 @@ const Clients = () => {
     } catch { setError('Failed to load brands'); }
   };
 
-  const fetchClients = async () => {
+  const fetchClients = async (pageNum = 1) => {
     try {
       setLoading(true);
-      const response = await clientAPI.getBrandClients(selectedBrand.id, {});
-      setClients(response.data.data?.clients || []);
+      const response = await clientAPI.getBrandClients(selectedBrand.id, {
+        limit: PAGE_SIZE,
+        offset: (pageNum - 1) * PAGE_SIZE,
+      });
+      const data = response.data.data?.clients || [];
+      setClients(data);
+      setHasMore(data.length === PAGE_SIZE);
       setError('');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load clients');
@@ -248,7 +258,7 @@ const Clients = () => {
               {!activeTag && <button onClick={() => navigate('/clients/new')} className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Add Your First Client</button>}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-4">
               {filtered.map((client) => (
                 <div key={client.id} className={`bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow overflow-hidden ${selectedIds.includes(client.id) ? 'ring-2 ring-blue-500' : ''}`}>
                   <div className="p-6">
@@ -302,6 +312,27 @@ const Clients = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && filtered.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                onClick={() => { const p = page - 1; setPage(p); fetchClients(p); }}
+                disabled={page <= 1}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-500">Page {page}</span>
+              <button
+                onClick={() => { const p = page + 1; setPage(p); fetchClients(p); }}
+                disabled={!hasMore}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+              >
+                Next
+              </button>
             </div>
           )}
         </div>

@@ -76,7 +76,9 @@ const ClientDetails = () => {
 
   useEffect(() => {
     if (brands.length > 0) {
-      fetchClient();
+      const controller = new AbortController();
+      fetchClient(controller.signal);
+      return () => controller.abort();
     }
   }, [brands, id]);
 

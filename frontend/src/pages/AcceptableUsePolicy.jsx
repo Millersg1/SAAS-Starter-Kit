@@ -1,6 +1,9 @@
+import SEO from '../components/SEO';
+
 export default function AcceptableUsePolicy() {
   return (
     <div style={{ fontFamily: 'Arial, system-ui, -apple-system, Segoe UI, Roboto', margin: 0, background: '#f7f8fb', color: '#0b1220', minHeight: '100vh' }}>
+      <SEO title="Acceptable Use Policy" description="Guidelines for acceptable use of the SAAS Surface platform." url="https://saassurface.com/acceptable-use-policy" />
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '28px 18px' }}>
         <div style={{ background: '#fff', border: '1px solid #e6e8ee', borderRadius: 16, padding: 22 }}>
 

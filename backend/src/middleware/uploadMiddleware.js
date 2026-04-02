@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { fileTypeFromBuffer } from 'file-type';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,14 +16,20 @@ if (!fs.existsSync(uploadsDir)) {
 // Configure storage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Create brand-specific directory
-    const brandId = req.params.brandId;
+    // Sanitize brandId to prevent path traversal (allow only UUID chars)
+    const brandId = (req.params.brandId || 'general').replace(/[^a-zA-Z0-9-]/g, '');
     const brandDir = path.join(uploadsDir, brandId);
-    
+
+    // Verify resolved path is still inside uploads directory
+    const resolved = path.resolve(brandDir);
+    if (!resolved.startsWith(path.resolve(uploadsDir))) {
+      return cb(new Error('Invalid upload path'), null);
+    }
+
     if (!fs.existsSync(brandDir)) {
       fs.mkdirSync(brandDir, { recursive: true });
     }
-    
+
     cb(null, brandDir);
   },
   filename: (req, file, cb) => {
@@ -86,6 +93,39 @@ export const uploadSingle = upload.single('file');
 
 // Middleware for multiple files upload
 export const uploadMultiple = upload.array('files', 10); // Max 10 files
+
+/**
+ * Post-upload middleware: validate actual file content (magic bytes)
+ * to prevent MIME type spoofing attacks.
+ */
+export const validateFileContent = async (req, res, next) => {
+  const files = req.file ? [req.file] : (req.files || []);
+  const dangerousExtensions = ['.php', '.sh', '.exe', '.bat', '.cmd', '.ps1', '.jsp', '.asp', '.aspx'];
+
+  for (const file of files) {
+    // Block dangerous extensions regardless of MIME type
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (dangerousExtensions.includes(ext)) {
+      deleteFile(file.path);
+      return res.status(400).json({ status: 'fail', message: `File extension ${ext} is not allowed.` });
+    }
+
+    // For image files, validate magic bytes match the declared MIME type
+    if (file.mimetype.startsWith('image/')) {
+      try {
+        const buffer = fs.readFileSync(file.path);
+        const detected = await fileTypeFromBuffer(buffer);
+        if (detected && !detected.mime.startsWith('image/')) {
+          deleteFile(file.path);
+          return res.status(400).json({ status: 'fail', message: 'File content does not match its declared type.' });
+        }
+      } catch {
+        // If detection fails, allow — the MIME filter already passed
+      }
+    }
+  }
+  next();
+};
 
 // Error handling middleware
 export const handleUploadError = (err, req, res, next) => {

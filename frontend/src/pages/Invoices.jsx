@@ -15,6 +15,9 @@ const Invoices = () => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 30;
+  const [hasMore, setHasMore] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [aiDraftDesc, setAiDraftDesc] = useState('');
   const [aiDrafting, setAiDrafting] = useState(false);
@@ -51,10 +54,15 @@ const Invoices = () => {
     }
   };
 
-  const fetchInvoices = async () => {
+  const fetchInvoices = async (pageNum = 1) => {
     try {
-      const response = await invoiceAPI.getBrandInvoices(selectedBrand.id);
-      setInvoices(response.data.data?.invoices || []);
+      const response = await invoiceAPI.getBrandInvoices(selectedBrand.id, {
+        limit: PAGE_SIZE,
+        offset: (pageNum - 1) * PAGE_SIZE,
+      });
+      const data = response.data.data?.invoices || [];
+      setInvoices(data);
+      setHasMore(data.length === PAGE_SIZE);
     } catch (err) {
       console.error('Failed to load invoices:', err);
     }

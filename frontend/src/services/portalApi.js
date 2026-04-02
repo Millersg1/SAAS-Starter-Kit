@@ -58,6 +58,9 @@ export const portalAPI = {
   getContracts: () => portalApi.get('/portal/contracts'),
   getContract: (contractId) => portalApi.get(`/portal/contracts/${contractId}`),
   signContract: (contractId, data) => portalApi.post(`/portal/contracts/${contractId}/sign`, data),
+  getVoiceAgents: () => portalApi.get('/portal/voice-agents'),
+  requestVoiceAgentCall: (agentId, data) => portalApi.post(`/portal/voice-agents/${agentId}/request-call`, data),
+  getVoiceAgentCalls: () => portalApi.get('/portal/voice-agent-calls'),
 };
 
 export default portalApi;

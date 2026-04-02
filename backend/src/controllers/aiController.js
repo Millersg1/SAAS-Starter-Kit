@@ -18,8 +18,20 @@ const buildVoiceContext = (voice) => {
   return parts.length ? `\n\nBrand Voice Guidelines:\n${parts.join('\n')}` : '';
 };
 
-// Lazy-load the SDK so the server starts even if @anthropic-ai/sdk is not installed
+// Lazy-load OpenAI (primary) and Anthropic (fallback)
+let _openai = null;
 let _anthropic = null;
+
+const getOpenAIClient = async () => {
+  if (!process.env.OPENAI_API_KEY) return null;
+  if (_openai) return _openai;
+  try {
+    const { default: OpenAI } = await import('openai');
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    return _openai;
+  } catch { return null; }
+};
+
 const getAnthropicClient = async () => {
   if (!process.env.ANTHROPIC_API_KEY) return null;
   if (_anthropic) return _anthropic;
@@ -27,9 +39,41 @@ const getAnthropicClient = async () => {
     const { default: Anthropic } = await import('@anthropic-ai/sdk');
     _anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     return _anthropic;
-  } catch {
-    return null;
+  } catch { return null; }
+};
+
+/**
+ * Unified AI call — tries OpenAI first, falls back to Anthropic.
+ * Returns the text response.
+ */
+const callAI = async (systemPrompt, userMessage) => {
+  // Try OpenAI first (Surf's brain)
+  const openai = await getOpenAIClient();
+  if (openai) {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      max_tokens: 2000,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+    });
+    return completion.choices[0]?.message?.content || '';
   }
+
+  // Fallback to Anthropic
+  const anthropic = await getAnthropicClient();
+  if (anthropic) {
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userMessage }],
+    });
+    return message.content?.[0]?.text || '';
+  }
+
+  throw new Error('No AI provider configured. Set OPENAI_API_KEY or ANTHROPIC_API_KEY.');
 };
 
 /**
@@ -42,8 +86,8 @@ export const draftInvoice = catchAsync(async (req, res, next) => {
   const member = await getBrandMember(brandId, req.user.id);
   if (!member) return next(new AppError('Access denied', 403));
 
-  const aiClient = await getAnthropicClient();
-  if (!aiClient) return next(new AppError('AI drafting is not configured', 503));
+  const aiAvailable = await getOpenAIClient() || await getAnthropicClient();
+  if (!aiAvailable) return next(new AppError('AI is not configured. Set OPENAI_API_KEY.', 503));
 
   const { description, client_id } = req.body;
   if (!description) return next(new AppError('Description is required', 400));
@@ -75,13 +119,7 @@ Rules:
 - unit_price must be a positive number
 - notes should be brief (1-2 sentences) or empty string`;
 
-  const message = await aiClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = message.content[0]?.text?.trim() || '{}';
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
 
   let parsed;
   try {
@@ -106,8 +144,8 @@ export const draftProposal = catchAsync(async (req, res, next) => {
   const member = await getBrandMember(brandId, req.user.id);
   if (!member) return next(new AppError('Access denied', 403));
 
-  const aiClient = await getAnthropicClient();
-  if (!aiClient) return next(new AppError('AI drafting is not configured', 503));
+  const aiAvailable = await getOpenAIClient() || await getAnthropicClient();
+  if (!aiAvailable) return next(new AppError('AI is not configured. Set OPENAI_API_KEY.', 503));
 
   const { description, client_id } = req.body;
   if (!description) return next(new AppError('Description is required', 400));
@@ -139,13 +177,7 @@ Rules:
 - notes: 1-3 sentences describing the scope
 - terms: standard professional terms (payment schedule, revisions policy, etc.)`;
 
-  const message = await aiClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 1500,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = message.content[0]?.text?.trim() || '{}';
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
 
   let parsed;
   try {
@@ -187,13 +219,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
   "seoDescription": "Compelling meta description under 155 characters"
 }`;
 
-  const message = await aiClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 2000,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = message.content[0]?.text?.trim() || '{}';
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
 
   let parsed;
   try {
@@ -244,13 +270,7 @@ Respond ONLY with valid JSON, no markdown, no explanation:
   "hashtags": ["#tag1", "#tag2"]
 }`;
 
-  const message = await aiClient.messages.create({
-    model: 'claude-haiku-4-5',
-    max_tokens: 500,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = message.content[0]?.text?.trim() || '{}';
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
 
   let parsed;
   try {
@@ -268,6 +288,171 @@ Respond ONLY with valid JSON, no markdown, no explanation:
  * GET /api/ai/:brandId/client-insights/:clientId
  * Returns { summary, risks: string[], action } — AI interpretation of health score data.
  */
+/**
+ * POST /api/ai/:brandId/draft-email
+ * Body: { context, recipient_name?, recipient_email?, intent, thread_messages? }
+ * Returns: { subject, body }
+ */
+export const draftEmail = catchAsync(async (req, res, next) => {
+  const { brandId } = req.params;
+  const member = await getBrandMember(brandId, req.user.id);
+  if (!member) return next(new AppError('Access denied', 403));
+
+  const aiClient = await getAnthropicClient();
+  if (!aiClient) return next(new AppError('AI email drafting not configured', 503));
+
+  const { context, recipient_name, recipient_email, intent, thread_messages } = req.body;
+  if (!context && !intent) return next(new AppError('Provide context or intent for the email', 400));
+
+  const brandVoice = await getBrandVoice(brandId).catch(() => ({}));
+  const voiceCtx = buildVoiceContext(brandVoice);
+
+  let threadCtx = '';
+  if (thread_messages?.length) {
+    threadCtx = '\n\nPrevious conversation:\n' + thread_messages
+      .slice(-5)
+      .map(m => `${m.from || 'Unknown'}: ${m.content?.slice(0, 200)}`)
+      .join('\n');
+  }
+
+  const prompt = `You are a professional email writer for a business.${voiceCtx}
+${recipient_name ? `Recipient: ${recipient_name}` : ''}${recipient_email ? ` <${recipient_email}>` : ''}
+Intent: ${intent || 'reply'}
+Context: ${context || 'General business communication'}
+${threadCtx}
+
+Write a professional email. Respond ONLY with JSON:
+{
+  "subject": "Email subject line (skip if this is a reply)",
+  "body": "The email body in plain text. Professional tone. 2-4 paragraphs. Include greeting and sign-off."
+}`;
+
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return next(new AppError('AI returned an unreadable response', 502));
+    parsed = JSON.parse(match[0]);
+  }
+
+  res.json({ status: 'success', data: { subject: parsed.subject || '', body: parsed.body || '' } });
+});
+
+/**
+ * POST /api/ai/:brandId/transcribe-notes
+ * Body: { call_notes, client_name?, duration_minutes? }
+ * Returns: { summary, action_items, follow_up_date?, sentiment }
+ */
+export const transcribeCallNotes = catchAsync(async (req, res, next) => {
+  const { brandId } = req.params;
+  const member = await getBrandMember(brandId, req.user.id);
+  if (!member) return next(new AppError('Access denied', 403));
+
+  const aiClient = await getAnthropicClient();
+  if (!aiClient) return next(new AppError('AI service not configured', 503));
+
+  const { call_notes, client_name, duration_minutes } = req.body;
+  if (!call_notes) return next(new AppError('call_notes is required', 400));
+
+  const prompt = `You are a CRM assistant. Analyze these call/meeting notes and extract structured insights.
+
+Call with: ${client_name || 'Client'}
+Duration: ${duration_minutes ? `${duration_minutes} minutes` : 'Unknown'}
+
+Notes:
+"${call_notes}"
+
+Respond ONLY with JSON:
+{
+  "summary": "2-3 sentence summary of the call",
+  "action_items": ["Action item 1", "Action item 2"],
+  "follow_up_date": "Suggested follow-up date if mentioned, null otherwise",
+  "sentiment": "positive/neutral/negative — overall client sentiment",
+  "key_topics": ["Topic 1", "Topic 2"],
+  "decisions_made": ["Decision 1"]
+}`;
+
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return next(new AppError('AI returned an unreadable response', 502));
+    parsed = JSON.parse(match[0]);
+  }
+
+  res.json({
+    status: 'success',
+    data: {
+      summary: parsed.summary || '',
+      action_items: parsed.action_items || [],
+      follow_up_date: parsed.follow_up_date || null,
+      sentiment: parsed.sentiment || 'neutral',
+      key_topics: parsed.key_topics || [],
+      decisions_made: parsed.decisions_made || [],
+    },
+  });
+});
+
+/**
+ * POST /api/ai/:brandId/pipeline-advice
+ * Body: { deal_id }
+ * Returns: { advice, next_steps, risk_factors }
+ */
+export const getPipelineAdvice = catchAsync(async (req, res, next) => {
+  const { brandId } = req.params;
+  const member = await getBrandMember(brandId, req.user.id);
+  if (!member) return next(new AppError('Access denied', 403));
+
+  const aiClient = await getAnthropicClient();
+  if (!aiClient) return next(new AppError('AI service not configured', 503));
+
+  const { deal_id } = req.body;
+  if (!deal_id) return next(new AppError('deal_id is required', 400));
+
+  const dealResult = await query(
+    `SELECT d.*, c.name AS client_name, c.company AS client_company
+     FROM deals d
+     LEFT JOIN clients c ON c.id = d.client_id
+     WHERE d.id = $1 AND d.brand_id = $2`,
+    [deal_id, brandId]
+  );
+  const deal = dealResult.rows[0];
+  if (!deal) return next(new AppError('Deal not found', 404));
+
+  const daysSinceCreated = Math.floor((Date.now() - new Date(deal.created_at).getTime()) / 86400000);
+
+  const prompt = `You are a sales advisor. Analyze this deal and provide actionable advice.
+
+Deal: ${deal.name}
+Value: $${deal.value || 0}
+Stage: ${deal.stage}
+Client: ${deal.client_name || 'Unknown'}${deal.client_company ? ` at ${deal.client_company}` : ''}
+Days in pipeline: ${daysSinceCreated}
+Status: ${deal.status}
+
+Respond ONLY with JSON:
+{
+  "advice": "1-2 sentences of specific, actionable advice for this deal",
+  "next_steps": ["Step 1", "Step 2", "Step 3"],
+  "risk_factors": ["Risk 1"],
+  "win_probability": "estimated percentage as string, e.g. '65%'"
+}`;
+
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
+  let parsed;
+  try { parsed = JSON.parse(text); } catch {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return next(new AppError('AI error', 502));
+    parsed = JSON.parse(match[0]);
+  }
+
+  res.json({ status: 'success', data: parsed });
+});
+
 export const getClientInsights = catchAsync(async (req, res, next) => {
   const { brandId, clientId } = req.params;
   const member = await getBrandMember(brandId, req.user.id);
@@ -314,13 +499,7 @@ Return ONLY a JSON object with these exact keys:
   "action": "One specific recommended action to take this week to improve this client relationship."
 }`;
 
-  const message = await aiClient.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 512,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const text = message.content[0]?.text?.trim() || '{}';
+  const text = (await callAI('You are Surf, an AI assistant for agencies.', prompt)).trim() || '{}';
   let parsed;
   try {
     parsed = JSON.parse(text);

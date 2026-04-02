@@ -10,6 +10,7 @@ const navItems = [
   { label: 'Proposals', path: '/portal/proposals', icon: '📋' },
   { label: 'Contracts', path: '/portal/contracts', icon: '📝' },
   { label: 'Support', path: '/portal/tickets', icon: '🎫' },
+  { label: 'AI Phone', path: '/portal/voice-agents', icon: '🎙️' },
 ];
 
 const PortalLayout = ({ children }) => {

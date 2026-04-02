@@ -8,7 +8,10 @@
         "build": "vite build",
         "build:dev": "vite build --mode development",
         "lint": "eslint .",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "test:coverage": "vitest run --coverage"
     },
     "dependencies": {
         "@dnd-kit/core": "^6.3.1",
@@ -22,6 +25,7 @@
         "@radix-ui/react-tabs": "^1.1.12",
         "@radix-ui/react-toast": "^1.2.14",
         "@radix-ui/react-tooltip": "^1.2.7",
+        "@sentry/react": "^10.46.0",
         "@supabase/supabase-js": "^2.91.1",
         "@tailwindcss/postcss": "^4.1.18",
         "@tanstack/react-query": "^5.90.20",
@@ -40,9 +44,11 @@
         "papaparse": "^5.4.1",
         "react": "^19.2.3",
         "react-dom": "^19.2.3",
+        "react-helmet-async": "^3.0.0",
         "react-hook-form": "^7.61.1",
         "react-router-dom": "^7.13.0",
         "recharts": "^2.12.0",
+        "socket.io-client": "^4.8.3",
         "sonner": "^2.0.7",
         "tailwind-merge": "^3.4.0",
         "tailwindcss-animate": "^1.0.7",
@@ -51,16 +57,20 @@
     "devDependencies": {
         "@eslint/js": "^9.32.0",
         "@tailwindcss/typography": "^0.5.19",
+        "@testing-library/jest-dom": "^6.9.1",
+        "@testing-library/react": "^16.3.2",
         "@types/node": "^22.16.5",
         "@types/react": "^19",
         "@types/react-dom": "^19",
         "@vitejs/plugin-react-swc": "^4.2.2",
         "autoprefixer": "^10.4.21",
         "eslint": "^9.32.0",
+        "jsdom": "^29.0.1",
         "postcss": "^8.5.6",
         "tailwindcss": "^4.1.18",
         "typescript": "^5.8.3",
         "vite": "^7.3.1",
-        "vite-plugin-pwa": "^1.2.0"
+        "vite-plugin-pwa": "^1.2.0",
+        "vitest": "^4.1.2"
     }
 }

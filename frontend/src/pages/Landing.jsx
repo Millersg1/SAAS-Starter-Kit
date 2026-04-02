@@ -1,11 +1,59 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import SEO from '../components/SEO';
 
-const features = [
+/* ────────────────────────────────────────────────
+   OUTCOME-BASED FEATURE ARRAYS
+   ──────────────────────────────────────────────── */
+
+const winFeatures = [
+  {
+    icon: '📈',
+    title: 'CRM Pipeline',
+    desc: 'Track every deal in one place — and let Surf highlight what needs your attention before opportunities stall.',
+  },
+  {
+    icon: '📊',
+    title: 'Revenue Analytics',
+    desc: 'Monthly revenue bar charts, proposal conversion rates, top clients by spend, and pipeline-by-stage breakdowns — all in one view.',
+  },
+  {
+    icon: '🔄',
+    title: 'Automated Follow-Ups',
+    desc: 'Surf automatically follows up with leads when proposals go unanswered — day 3 and day 7. Accepted proposals cancel the sequence.',
+  },
+  {
+    icon: '📝',
+    title: 'AI Proposal Generator',
+    desc: 'Type a one-line brief and Surf generates a complete proposal — scope, deliverables, timeline, and pricing. One click to save as a draft. Send it in minutes, not hours.',
+  },
+  {
+    icon: '🎯',
+    title: 'Lead Source Tracking',
+    desc: 'Track where every client came from — referral, website, Google Ads, social media. Know which channels drive your best clients.',
+  },
+  {
+    icon: '📝',
+    title: 'Activity Timeline',
+    desc: 'Log calls, emails, meetings, and notes against any client. Full chronological history so your whole team stays in context.',
+  },
+];
+
+const deliverFeatures = [
   {
     icon: '🏷️',
     title: 'White-Label Client Portal',
     desc: 'Give every client their own branded login. Your logo, your colors, your domain — clients never see "SAAS Surface."',
+  },
+  {
+    icon: '💰',
+    title: 'Invoicing & Payments',
+    desc: 'Create, send, and collect payments directly to your Stripe account — while Surf automatically follows up on overdue invoices so cash flow never stalls.',
+  },
+  {
+    icon: '📋',
+    title: 'Proposals & E-Signatures',
+    desc: 'Send professional quotes. Clients sign digitally in-portal. Surf follows up automatically if they haven\'t responded, and accepted proposals auto-convert to invoices.',
   },
   {
     icon: '📁',
@@ -13,175 +61,143 @@ const features = [
     desc: 'Clients see real-time progress updates on their projects. Reduce "what\'s the status?" emails by 90%.',
   },
   {
-    icon: '💰',
-    title: 'Invoicing & Payments',
-    desc: 'Create, send, and collect card payments directly to your Stripe account. Automated overdue reminders keep cash flowing.',
-  },
-  {
-    icon: '📋',
-    title: 'Proposals & E-Signatures',
-    desc: 'Send professional quotes. Clients review, sign digitally, and approve — right inside their portal. Accepted proposals auto-convert to invoices.',
-  },
-  {
-    icon: '⏱️',
-    title: 'Time Tracking & Billing',
-    desc: 'Start a timer, log hours manually, then add billable entries directly to an invoice. Know exactly what to charge every client.',
-  },
-  {
-    icon: '🔗',
-    title: 'Shareable Payment Links',
-    desc: 'Generate a public payment link for any invoice. Clients pay without needing a portal login — perfect for one-off projects.',
-  },
-  {
-    icon: '📄',
-    title: 'Secure Document Sharing',
-    desc: 'Upload contracts, deliverables, and reports. Clients download them from their portal — no more email attachments.',
-  },
-  {
-    icon: '💬',
-    title: 'Centralized Messaging',
-    desc: 'Every client conversation in one thread. No more digging through inboxes. Full history, always searchable.',
-  },
-  {
-    icon: '🏢',
-    title: 'Multi-Brand Management',
-    desc: 'Run multiple agencies or sub-brands from a single account. Each brand has its own portal, team, clients, and Stripe account.',
-  },
-];
-
-const salesFeatures = [
-  {
-    icon: '📈',
-    title: 'CRM Pipeline',
-    desc: 'Visual kanban board to track every deal from Lead to Won. See weighted pipeline value at a glance and never let an opportunity fall through the cracks.',
-    badge: 'New',
-  },
-  {
-    icon: '📊',
-    title: 'Revenue Analytics',
-    desc: 'Monthly revenue bar charts, proposal conversion rates, top clients by spend, and pipeline-by-stage breakdowns — all in one view.',
-    badge: 'New',
-  },
-  {
-    icon: '✅',
-    title: 'Tasks & Reminders',
-    desc: 'Create tasks linked to clients, projects, or deals. Daily email reminders for tasks due today. Never miss a follow-up again.',
-    badge: 'New',
-  },
-  {
-    icon: '📝',
-    title: 'Activity Timeline',
-    desc: 'Log calls, emails, meetings, and notes against any client. Full chronological history so your whole team stays in context.',
-    badge: 'New',
+    icon: '💵',
+    title: 'Expense Tracking',
+    desc: 'Log expenses per project or client. See real-time profitability — revenue from invoices minus expenses — with margin percentages. Know which clients make you money.',
   },
   {
     icon: '🔄',
-    title: 'Automated Email Sequences',
-    desc: 'When you send a proposal, follow-up emails go out automatically at day 3 and day 7 if the client hasn\'t responded. Accepted proposals cancel the sequence.',
-    badge: 'New',
-  },
-  {
-    icon: '🎯',
-    title: 'Lead Source Tracking',
-    desc: 'Track where every client came from — referral, website, Google Ads, social media. Know which channels drive your best clients.',
-    badge: 'New',
+    title: 'Retainer Management',
+    desc: 'Track monthly hours against allocated caps. Visual progress bars show utilization. Log usage, see remaining hours, and catch scope creep before it eats your margin.',
   },
 ];
 
-const contentFeatures = [
+const automateFeatures = [
+  {
+    icon: '⚡',
+    title: 'Visual Workflow Builder',
+    desc: 'Surf reduces repetitive work so your agency runs smoother. 11 trigger types, 10+ action types, if/else branching — set it once and Surf runs it forever.',
+  },
+  {
+    icon: '🎯',
+    title: 'Client Onboarding Automation',
+    desc: 'Build step-by-step onboarding checklists that trigger automatically when a proposal is accepted. Asset collection, welcome emails, task creation — all on autopilot.',
+  },
+  {
+    icon: '📧',
+    title: 'Email Sequences',
+    desc: 'Build multi-step automated email flows with custom delays. Enroll leads automatically or manually, track open rates per step, and stop sending the moment someone unsubscribes.',
+  },
+  {
+    icon: '🔁',
+    title: 'Recurring Invoices',
+    desc: 'Set any invoice to auto-generate on a schedule — weekly, monthly, quarterly, or yearly. Configure the billing day, set an end date, and pause/resume anytime.',
+  },
+  {
+    icon: '📑',
+    title: 'Project Templates',
+    desc: 'Save your best project structures as reusable templates — tasks, priorities, and due dates included. Create a new client project in one click instead of starting from scratch.',
+  },
+  {
+    icon: '🔔',
+    title: 'Slack Integration',
+    desc: 'Get instant Slack notifications when leads come in, invoices get paid, deals close, or proposals are accepted. Your team stays in the loop without leaving Slack.',
+  },
+];
+
+const publishFeatures = [
   {
     icon: '🌐',
-    title: 'Multi-Site CMS',
-    desc: 'Manage every client\'s website from one dashboard. Create pages, blog posts, and landing pages with a powerful rich-text editor. Full SEO title, meta description, and OG image controls on every page.',
-    badge: 'New',
+    title: 'Website Builder & CMS',
+    desc: 'Build, host, and manage client websites without leaving the platform. Pages, blog posts, landing pages, full SEO, custom domains, and managed hosting included.',
   },
   {
     icon: '📲',
     title: 'Social Media Management',
     desc: 'Schedule and publish posts to LinkedIn, Twitter/X, Facebook, and Instagram. Manage both your agency accounts and your clients\' accounts from a single content calendar.',
-    badge: 'New',
   },
   {
     icon: '✨',
     title: 'AI Content Generation',
     desc: 'One-click AI writes full page content, blog posts, and social captions. Platform-aware — LinkedIn gets professional copy, Instagram gets engaging hooks with hashtags, Twitter gets punchy brevity.',
-    badge: 'New',
   },
   {
     icon: '📅',
-    title: 'Visual Content Calendar',
+    title: 'Content Calendar',
     desc: 'See every scheduled social post across all platforms and all clients in a single monthly calendar view. Click any day to preview and manage posts in a slide-out drawer.',
-    badge: 'New',
   },
   {
-    icon: '🖼️',
-    title: 'Centralized Media Library',
-    desc: 'Drag-and-drop image uploads organized per site. Insert directly into page content or attach to social posts. No more hunting across Google Drive for client assets.',
-    badge: 'New',
-  },
-  {
-    icon: '📊',
-    title: 'Content Performance',
-    desc: 'Track likes, comments, shares, and impressions on every published social post. Know which content performs best for each client and channel.',
-    badge: 'New',
-  },
-];
-
-const agencyFeatures = [
-  {
-    icon: '🎨',
-    title: 'Brand Voice Profiles',
-    desc: 'Define tone, target audience, keywords, and writing style once. Every piece of AI-generated content — pages, blog posts, social captions — automatically reflects your brand personality.',
-    badge: 'New',
-  },
-  {
-    icon: '📦',
-    title: 'Service Package Tracker',
-    desc: 'Set monthly hour, post, and page allowances for each client retainer. Log usage each period and instantly see who\'s over, under, or at capacity — before scope creep costs you.',
-    badge: 'New',
-  },
-  {
-    icon: '📋',
-    title: 'AI Client Reports',
-    desc: 'One click generates a full client report with real data: invoices paid, hours logged, projects completed, social reach, and an AI-written executive summary in your brand voice.',
-    badge: 'New',
-  },
-  {
-    icon: '👥',
-    title: 'Team Workload Dashboard',
-    desc: 'See every team member\'s active tasks, in-progress work, and overdue items at a glance. Spot bottlenecks before they blow deadlines.',
-    badge: 'New',
+    icon: '🚀',
+    title: 'Funnel Builder',
+    desc: 'Build high-converting opt-in pages, sales funnels, and lead capture pages with a drag-free block editor. 9 section types, live preview, publish with one click, and built-in analytics.',
   },
   {
     icon: '⭐',
     title: 'Reputation Management',
     desc: 'Auto-request Google, Facebook, and Yelp reviews after invoice payment or project completion. Track requests, monitor star ratings, and respond to reviews — all in one dashboard.',
-    badge: 'New',
   },
   {
-    icon: '🚀',
-    title: 'Funnel & Landing Page Builder',
-    desc: 'Build high-converting opt-in pages, sales funnels, and lead capture pages with a drag-free block editor. 9 section types, live preview, publish with one click, and built-in analytics.',
-    badge: 'New',
+    icon: '🖥️',
+    title: 'Managed Hosting',
+    desc: 'Launch and manage client websites with fast, secure hosting — no separate provider required. NVMe infrastructure, SSL included, easy deployment. Powered by All Elite Hosting.',
+  },
+];
+
+const surfAiFeatures = [
+  {
+    icon: '/images/surf-ui.png',
+    isImage: true,
+    title: 'Surf Autopilot',
+    desc: 'Surf doesn\'t just recommend — it acts. Auto follow-up with stale leads, send invoice reminders, move won deals, create onboarding tasks, and nurture leads. Each action has its own toggle. Your agency runs while you sleep.',
   },
   {
     icon: '💬',
     title: 'AI Chat Widget',
     desc: 'Embed an AI-powered chat bot on any website. Trained on your brand context — answers questions, captures leads with name + email, and routes all conversations to your inbox.',
-    badge: 'New',
   },
   {
-    icon: '📧',
-    title: 'Email Sequences (Drip Campaigns)',
-    desc: 'Build multi-step automated email flows with custom delays. Enroll leads automatically or manually, track open rates per step, and stop sending the moment someone unsubscribes.',
-    badge: 'New',
+    icon: '💬',
+    title: 'Client-Facing Surf Chat',
+    desc: 'Every client gets Surf in their portal. They can ask about project status, invoice balances, and upcoming deadlines — and Surf answers with their real data. Zero effort from your team.',
   },
   {
-    icon: '⚡',
-    title: 'Visual Workflow Builder',
-    desc: 'Build multi-branch automation flows on a visual canvas. 11 trigger types, 10+ action types, if/else branching — set it once and let it run forever. No code, no limits.',
-    badge: 'New',
+    icon: '📥',
+    title: 'Smart Unified Inbox',
+    desc: 'One inbox for email, SMS, chat widget, portal messages, and voice call transcripts — AI-prioritized by urgency. Reply to anything from one place. Never miss a message again.',
   },
+  {
+    icon: '📋',
+    title: 'AI Client Reports',
+    desc: 'One click generates a full client report with real data: invoices paid, hours logged, projects completed, social reach, and an AI-written executive summary in your brand voice.',
+  },
+  {
+    icon: '🎨',
+    title: 'Brand Voice Profiles',
+    desc: 'Define tone, target audience, keywords, and writing style once. Every piece of AI-generated content — pages, blog posts, social captions — automatically reflects your brand personality.',
+  },
+];
+
+const categoryMeta = [
+  { label: 'Capture & Close', heading: 'Capture and close more deals.', body: 'Everything you need to turn leads into paying clients — CRM, pipeline, proposals, contracts, and AI-generated proposals.' },
+  { label: 'Deliver & Get Paid', heading: 'Deliver a premium client experience.', body: 'Give clients a clean, branded experience — white-label portal, invoices, payments, projects, and retainer tracking.' },
+  { label: 'Automate', heading: 'Automate the busywork.', body: 'Let Surf handle the repetitive work — automated follow-ups, workflow automation, email sequences, invoice reminders, and onboarding.' },
+  { label: 'Publish & Grow', heading: 'Communicate from one place.', body: 'No more scattered conversations — email sync, SMS, website chat, social media, funnels, and reputation management.' },
+  { label: 'Surf AI', heading: 'Manage delivery and operations.', body: 'Keep projects, tasks, and teams organized with Surf AI — autopilot, unified inbox, client reports, and brand voice profiles.' },
+];
+
+const agencyBenefits = [
+  { stat: '3x faster', title: 'Invoice payment', desc: 'Clients pay through a branded portal with one-click card payments. Surf sends reminders automatically.', icon: '💰' },
+  { stat: '< 10 minutes', title: 'To go live', desc: 'Add your logo, colors, and first client. Your branded portal is ready before your next meeting.', icon: '🚀' },
+  { stat: '90% fewer', title: '"What\'s the status?" emails', desc: 'Clients log in and see project progress, invoices, and files — no more chasing you for updates.', icon: '📉' },
+  { stat: '8+ tools', title: 'Replaced by one', desc: 'CRM, invoicing, proposals, portal, CMS, social, automation, voice, and even hosting — one login, one bill, one AI assistant.', icon: '🔗' },
+];
+
+const resellerPoints = [
+  'White-label SAAS Surface with your own branding and domain',
+  'Set your own pricing and keep the margin',
+  'Create sub-accounts for each client with their own portal',
+  'Offer hosting to your clients (powered by All Elite Hosting)',
+  'Bundle services, software, and hosting into one recurring revenue package',
 ];
 
 const steps = [
@@ -204,10 +220,11 @@ const steps = [
 
 const plans = [
   {
-    name: 'Basic',
+    name: 'Starter',
     monthly: 29,
     annual: 23,
-    desc: 'Perfect for freelancers and solo agencies.',
+    futureMonthly: 49,
+    desc: 'Everything a solo agency needs to look professional.',
     features: [
       'Up to 5 clients',
       '10 active projects',
@@ -216,104 +233,122 @@ const plans = [
       'White-label client portal',
       'Invoicing & card payments',
       'Proposals & e-signatures',
-      'Time tracking',
+      'Time tracking & billing',
       'Tasks & reminders',
-      'Activity timeline',
+      'Surf AI recommendations',
+      'Mobile app (PWA)',
       'Email support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start Free',
     highlight: false,
   },
   {
-    name: 'Pro',
+    name: 'Professional',
     monthly: 79,
     annual: 63,
-    desc: 'For growing agencies managing more clients.',
+    futureMonthly: 149,
+    desc: 'The full Agency OS with Surf Autopilot and AI.',
+    spotsLeft: 31,
     features: [
       'Up to 25 clients',
       '50 active projects',
-      '25 GB document storage',
+      '25 GB storage',
       '10 team members',
-      'Everything in Basic',
-      'CRM pipeline & deal tracking',
-      'Revenue analytics & reporting',
-      'Automated email sequences',
-      'Lead source tracking',
-      'CMS for up to 3 websites',
-      'Social media scheduling (4 platforms)',
-      'AI content & caption generation',
-      'Brand Voice AI profiles',
-      'Service package retainer tracker',
-      'AI client report generation',
-      'Reputation management & review requests',
+      'Everything in Starter',
+      'Surf Autopilot (auto follow-ups, reminders)',
+      'AI proposal generator',
+      'Smart unified inbox',
+      'CRM pipeline & deal scoring',
+      'Surf Voice (AI phone agent)',
+      'Website builder & CMS',
+      'Social media scheduling',
+      'Email campaigns & drip sequences',
       'Funnel & landing page builder',
-      'AI chat widget (lead capture)',
-      'Email sequences (drip campaigns)',
-      'Visual workflow automation (11 triggers)',
+      'Visual workflow automation',
+      'Client-facing Surf chat in portal',
+      'Expense tracking & profitability',
+      'Retainer management',
+      'Reputation management',
       'Custom portal domain',
-      'Recurring invoices',
-      'Shareable payment links',
-      'Two-factor authentication',
-      'Priority email support',
+      'Priority support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start Free',
     highlight: true,
   },
   {
-    name: 'Enterprise',
+    name: 'Agency',
     monthly: 199,
     annual: 159,
-    desc: 'Unlimited scale for large agencies.',
+    futureMonthly: 349,
+    desc: 'Unlimited scale + reseller program.',
     features: [
       'Unlimited clients',
       'Unlimited projects',
-      '100 GB document storage',
+      '100 GB storage',
       'Unlimited team members',
-      'Everything in Pro',
+      'Everything in Professional',
+      'Reseller program (white-label & resell)',
+      'Revenue share dashboard',
       'Multiple brands',
       'Unlimited CMS websites',
-      'Unlimited social accounts',
       'AI content generation (unlimited)',
-      'Team workload & capacity dashboard',
-      'Audit log & activity tracking',
-      'Client portal activity dashboard',
-      'Proposal view tracking',
-      'Onboarding automation',
+      'QuickBooks & Xero sync',
+      'Slack integration',
+      'Knowledge base / help center',
+      'Project templates',
+      'Client onboarding automation',
+      'Team workload dashboard',
       'Dedicated support',
     ],
-    cta: 'Start Free Trial',
+    cta: 'Start Free',
+    highlight: false,
+  },
+  {
+    name: 'Enterprise',
+    monthly: 499,
+    annual: 399,
+    futureMonthly: 799,
+    desc: 'Custom solutions for large agencies.',
+    features: [
+      'Everything in Agency',
+      'Unlimited everything',
+      'Custom integrations',
+      'Dedicated account manager',
+      'SLA guarantee',
+      'Priority onboarding',
+      'Custom AI training for Surf',
+      'Advanced analytics & reporting',
+      'SSO / SAML support',
+      'Custom data retention',
+      'White-glove migration',
+      'Phone & video support',
+    ],
+    cta: 'Contact Sales',
     highlight: false,
   },
 ];
 
-const testimonials = [
+const whyChoose = [
   {
-    name: 'Sarah Okonkwo',
-    role: 'Founder, Okonkwo Creative',
-    avatar: 'SO',
-    quote:
-      "Our clients used to email us daily asking for updates. Since we switched to SAAS Surface, those emails are almost gone. Clients love seeing their project progress in real time.",
+    icon: '🔄',
+    title: 'Replace 8+ tools with one',
+    desc: 'CRM, invoicing, proposals, email marketing, website builder, booking, voice AI, and automation — one platform, one login, one bill.',
   },
   {
-    name: 'Marcus Deleon',
-    role: 'CEO, Deleon Digital Agency',
-    avatar: 'MD',
-    quote:
-      "The white-label portal is a game-changer. Clients think we built custom software for them. It elevates our entire brand and justifies our premium pricing.",
+    icon: '/images/surf-avatar.png',
+    isImage: true,
+    title: 'AI that actually works for you',
+    desc: 'Surf Autopilot follows up with leads, reminds clients about invoices, generates proposals, and moves deals forward — while you focus on delivery.',
   },
   {
-    name: 'Priya Nair',
-    role: 'Operations Director, Nair & Co.',
-    avatar: 'PN',
-    quote:
-      "Invoice payments used to take 45+ days. Now clients pay directly from the portal and we're averaging 12 days. The ROI paid for SAAS Surface in the first month.",
+    icon: '🏷️',
+    title: '100% white-labeled',
+    desc: 'Your logo, your colors, your domain. Clients never see SAAS Surface. It looks like you built it yourself — because it is yours.',
   },
   {
-    name: 'James Whitfield',
-    role: 'Managing Partner, Whitfield Growth',
-    avatar: 'JW',
-    quote:
-      "The CRM pipeline and automated follow-up sequences alone closed 3 deals we would have lost. We went from manually chasing proposals to watching them close themselves.",
+    icon: '💰',
+    title: 'Fraction of the cost',
+    desc: 'GoHighLevel charges $97-$497/mo for less. SAAS Surface starts at $29/mo with founding member pricing locked in for life.',
   },
 ];
 
@@ -323,81 +358,58 @@ const faqs = [
     a: 'Never. Your clients see only your agency name, your logo, and your colors. SAAS Surface is completely invisible — even the email notifications come from your domain.',
   },
   {
-    q: 'Can I use my own domain for the client portal?',
-    a: 'Yes, on Pro and Enterprise plans. Point your DNS to us (e.g. clients.youragency.com) and we handle the rest. Your clients log in on your domain, not ours.',
-  },
-  {
-    q: 'What happens when my free trial ends?',
-    a: 'You\'ll be prompted to select a plan and add a payment method. Your data is never deleted. If you choose not to continue, you have 30 days to export everything.',
-  },
-  {
-    q: 'Do you take a cut of my invoice payments?',
-    a: 'A small 2% platform fee applies on successful payments — this keeps your monthly subscription price low. Stripe\'s standard processing fee (2.9% + 30¢) also applies. There are no hidden fees, monthly payment add-ons, or per-seat charges.',
-  },
-  {
-    q: 'How does the CRM pipeline work?',
-    a: 'The pipeline is a visual kanban board with 6 stages: Lead → Qualified → Proposal Sent → Negotiation → Won → Lost. Each deal shows the client, value, probability, and expected close date. Weighted pipeline value is automatically calculated across all your deals.',
+    q: 'How does founding member pricing work?',
+    a: 'The first 50 agencies to sign up lock in their subscription rate for life — even when we raise prices later. Your rate never goes up as long as your account stays active.',
   },
   {
     q: 'How long does setup take?',
     a: 'Most agencies are live within 10 minutes. Add your logo and colors, create your first client, and enable their portal access. They get a welcome email automatically.',
   },
   {
-    q: 'Do my clients need to create their own account?',
-    a: 'No. You create the account for them and send a portal invite. They click the link, set a password, and they\'re in. No sign-up friction on their end.',
+    q: 'Do I need to replace all my tools immediately?',
+    a: 'Not at all. Start with the features you need most — maybe invoicing and the client portal — and expand over time. There\'s no pressure to migrate everything on day one.',
+  },
+  {
+    q: 'What\'s in Surf Autopilot?',
+    a: 'Surf Autopilot can auto follow-up with stale leads, send invoice payment reminders, move won deals through your pipeline, create onboarding tasks when proposals are accepted, and nurture leads with email sequences. Each action has its own toggle so you stay in control.',
+  },
+  {
+    q: 'Can I white-label and resell SAAS Surface?',
+    a: 'Yes — on the Agency plan. White-label the entire platform with your branding and domain, set your own pricing, create sub-accounts for clients, and keep the margin. We handle hosting, updates, and support behind the scenes.',
+  },
+  {
+    q: 'Do you take a cut of my invoice payments?',
+    a: 'A small 2% platform fee applies on successful payments — this keeps your monthly subscription price low. Stripe\'s standard processing fee (2.9% + 30¢) also applies. There are no hidden fees, monthly payment add-ons, or per-seat charges.',
   },
   {
     q: 'Can I cancel anytime?',
     a: 'Yes, anytime with no penalty. Cancel from your account settings and you\'ll retain access until the end of your billing period. We also offer a 30-day money-back guarantee.',
   },
-  {
-    q: 'What payment methods can my clients use?',
-    a: 'All major credit and debit cards (Visa, Mastercard, Amex, Discover) via Stripe. Apple Pay and Google Pay are also supported on compatible devices.',
-  },
-  {
-    q: 'How do the automated email sequences work?',
-    a: 'When you send a proposal, two follow-up emails are scheduled automatically — one at 3 days and one at 7 days. If the client accepts the proposal before the follow-up fires, it\'s automatically cancelled. No manual follow-up needed.',
-  },
-  {
-    q: 'How does the CMS work for managing client websites?',
-    a: 'Each brand can manage multiple websites from one dashboard. You create pages, blog posts, and landing pages with a rich-text editor that supports formatting, images, links, and embeds. Every page has a full SEO panel — title, meta description, OG image, and custom slug. Pages can be saved as drafts, published immediately, or scheduled to go live at a future date and time. The underlying content architecture can also be upgraded to a full block editor without any data migration.',
-  },
-  {
-    q: 'Can I manage social media for my clients, not just my agency?',
-    a: 'Yes — that\'s one of the core use cases. You can connect both your agency\'s social accounts and your clients\' accounts. Each account is labeled with the client it belongs to so your team always knows which account they\'re posting from. You can even post to multiple accounts in a single compose action to save time.',
-  },
-  {
-    q: 'Do I need API credentials to use the social media features?',
-    a: 'Not to get started. Without API credentials the app works in "manual assist" mode — it prepares your post content and copies it to your clipboard so you can paste and publish natively. For fully automated scheduling and publishing, you enter your platform developer credentials (available for free from each platform\'s developer console) in your brand settings.',
-  },
 ];
 
 const comparisonRows = [
-  { feature: 'White-label client portal', clienthub: true, email: false, honeybook: false },
-  { feature: 'Custom portal domain', clienthub: true, email: false, honeybook: false },
-  { feature: 'Proposals & e-signatures', clienthub: true, email: false, honeybook: true },
-  { feature: 'Invoicing & card payments', clienthub: true, email: false, honeybook: true },
-  { feature: 'Time tracking & billing', clienthub: true, email: false, honeybook: false },
-  { feature: 'Project progress tracking', clienthub: true, email: false, honeybook: true },
-  { feature: 'CRM pipeline & deal tracking', clienthub: true, email: false, honeybook: false },
-  { feature: 'Revenue analytics dashboard', clienthub: true, email: false, honeybook: false },
-  { feature: 'Automated proposal follow-ups', clienthub: true, email: false, honeybook: false },
-  { feature: 'Multi-brand management', clienthub: true, email: false, honeybook: false },
-  { feature: 'Shareable payment links', clienthub: true, email: false, honeybook: false },
-  { feature: 'Audit log & activity tracking', clienthub: true, email: false, honeybook: false },
-  { feature: 'Multi-site CMS with SEO controls', clienthub: true, email: false, honeybook: false },
-  { feature: 'Social media scheduling (4 platforms)', clienthub: true, email: false, honeybook: false },
-  { feature: 'AI content & caption generation', clienthub: true, email: false, honeybook: false },
-  { feature: 'Brand Voice AI profiles', clienthub: true, email: false, honeybook: false },
-  { feature: 'Service package retainer tracker', clienthub: true, email: false, honeybook: false },
-  { feature: 'AI client report generation', clienthub: true, email: false, honeybook: false },
-  { feature: 'Team workload dashboard', clienthub: true, email: false, honeybook: false },
-  { feature: 'Reputation & review management', clienthub: true, email: false, honeybook: false },
-  { feature: 'Funnel & landing page builder', clienthub: true, email: false, honeybook: false },
-  { feature: 'AI chat widget (lead capture)', clienthub: true, email: false, honeybook: false },
-  { feature: 'Email drip sequences', clienthub: true, email: true, honeybook: false },
-  { feature: 'Visual workflow automation', clienthub: true, email: false, honeybook: false },
-  { feature: 'No per-transaction platform fee', clienthub: false, email: true, honeybook: false },
+  { feature: 'Starting price', us: '$29/mo', ghl: '$97/mo', honeybook: '$19/mo', isText: true },
+  { feature: 'AI assistant (Surf Autopilot)', us: true, ghl: false, honeybook: false },
+  { feature: 'AI voice agent (phone calls)', us: true, ghl: false, honeybook: false },
+  { feature: 'AI proposal generator', us: true, ghl: false, honeybook: false },
+  { feature: 'Client-facing AI chat in portal', us: true, ghl: false, honeybook: false },
+  { feature: 'White-label client portal', us: true, ghl: true, honeybook: false },
+  { feature: 'CRM pipeline & deal tracking', us: true, ghl: true, honeybook: false },
+  { feature: 'Invoicing & card payments', us: true, ghl: true, honeybook: true },
+  { feature: 'Proposals & e-signatures', us: true, ghl: false, honeybook: true },
+  { feature: 'Expense tracking & profitability', us: true, ghl: false, honeybook: false },
+  { feature: 'Retainer management', us: true, ghl: false, honeybook: false },
+  { feature: 'Project management & templates', us: true, ghl: false, honeybook: true },
+  { feature: 'Website builder & CMS', us: true, ghl: true, honeybook: false },
+  { feature: 'Email campaigns & drip sequences', us: true, ghl: true, honeybook: false },
+  { feature: 'Visual workflow automation', us: true, ghl: true, honeybook: false },
+  { feature: 'Smart unified inbox', us: true, ghl: true, honeybook: false },
+  { feature: 'Reseller / revenue share program', us: true, ghl: true, honeybook: false },
+  { feature: 'Reputation management', us: true, ghl: true, honeybook: false },
+  { feature: 'Funnel & landing page builder', us: true, ghl: true, honeybook: false },
+  { feature: 'Knowledge base / help center', us: true, ghl: false, honeybook: false },
+  { feature: 'Founding member lifetime pricing', us: true, ghl: false, honeybook: false },
+  { feature: 'Platform fee', us: '2%', ghl: '2.9%', honeybook: '3%', isText: true },
 ];
 
 export default function Landing() {
@@ -405,10 +417,117 @@ export default function Landing() {
   const [annual, setAnnual] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [testimonials, setTestimonials] = useState([]);
+  const [activeCategory, setActiveCategory] = useState(0);
+  const [surfOpen, setSurfOpen] = useState(false);
+  const [surfStep, setSurfStep] = useState('collect'); // 'collect' | 'chat'
+  const [surfLead, setSurfLead] = useState({ name: '', email: '', phone: '', company: '' });
+  const [surfMessages, setSurfMessages] = useState([]);
+  const [surfInput, setSurfInput] = useState('');
+  const [surfTyping, setSurfTyping] = useState(false);
   const isLoggedIn = !!localStorage.getItem('token');
+
+  const allCategories = [winFeatures, deliverFeatures, automateFeatures, publishFeatures, surfAiFeatures];
+
+  // Fetch approved testimonials
+  useState(() => {
+    fetch('https://api.saassurface.com/api/testimonials/public')
+      .then(r => r.json())
+      .then(data => { if (data.data?.testimonials) setTestimonials(data.data.testimonials); })
+      .catch(() => {});
+  }, []);
+
+  const handleSurfLeadSubmit = async (e) => {
+    e.preventDefault();
+    if (!surfLead.name || !surfLead.email) return;
+
+    // Save lead to backend
+    try {
+      const api = (await import('../services/api')).default;
+      await api.post('/public/surf-lead', {
+        name: surfLead.name,
+        email: surfLead.email,
+        phone: surfLead.phone || '',
+        company: surfLead.company || '',
+      }).catch(() => {});
+    } catch {}
+
+    setSurfStep('chat');
+    setSurfMessages([
+      { from: 'surf', text: `Hey ${surfLead.name.split(' ')[0]}! I'm Surf, your AI agency assistant. Ask me anything about SAAS Surface — features, pricing, setup, or how it can help your agency.` },
+    ]);
+  };
+
+  const handleSurfSend = () => {
+    const q = surfInput.trim();
+    if (!q) return;
+    setSurfMessages(prev => [...prev, { from: 'user', text: q }]);
+    setSurfInput('');
+    setSurfTyping(true);
+
+    // Simple keyword-based responses (no API needed for landing page)
+    setTimeout(() => {
+      let reply = "Great question! SAAS Surface is an all-in-one Agency OS with CRM, invoicing, proposals, client portal, marketing automation, and more. Want to try it free? Head to the registration page!";
+
+      const lower = q.toLowerCase();
+      if (lower.includes('price') || lower.includes('pricing') || lower.includes('cost') || lower.includes('plan')) {
+        reply = "We have 5 plans: Free ($0), Starter ($29/mo), Professional ($79/mo), Agency ($199/mo), and Enterprise ($499/mo). All plans include the core features. The free plan gives you 1 brand, 50 clients, and 500 emails/month. Scroll down to see the full comparison!";
+      } else if (lower.includes('white label') || lower.includes('whitelabel') || lower.includes('brand')) {
+        reply = "Yes! SAAS Surface is fully white-labeled. Your clients see your logo, your colors, and your domain. They never see 'SAAS Surface' anywhere. You can even use a custom domain for the client portal.";
+      } else if (lower.includes('crm') || lower.includes('pipeline') || lower.includes('deal')) {
+        reply = "The CRM includes a visual kanban pipeline, deal scoring, client health scores, churn prediction, and I help highlight which deals need attention. You can track deals from Lead to Won with weighted pipeline value.";
+      } else if (lower.includes('invoice') || lower.includes('payment') || lower.includes('billing')) {
+        reply = "You can create invoices with line items, send them to clients, and collect payments via Stripe. I handle overdue reminders automatically. Recurring invoices, public payment links, and Stripe Connect (so payments go to YOUR Stripe) are all built in.";
+      } else if (lower.includes('email') || lower.includes('campaign') || lower.includes('drip') || lower.includes('sequence')) {
+        reply = "SAAS Surface includes email campaigns with A/B testing, drip sequences with custom delays, IMAP inbox sync, and I automatically follow up on unanswered proposals at day 3 and day 7.";
+      } else if (lower.includes('website') || lower.includes('cms') || lower.includes('builder')) {
+        reply = "Yes! You can build and host client websites directly. Create pages and blog posts, choose from 8 professional templates, set custom domains, and publish with one click. Full SEO controls included.";
+      } else if (lower.includes('portal') || lower.includes('client access')) {
+        reply = "The client portal lets your clients log in and see their projects, invoices, proposals, contracts, documents, and messages. They can pay invoices, sign proposals, and submit support tickets — all branded as your agency.";
+      } else if (lower.includes('automation') || lower.includes('workflow')) {
+        reply = "The visual workflow builder has 11 trigger types and 10+ actions including email, SMS, tasks, tags, pipeline moves, and webhooks. If/else branching is supported. Set it once and I run it forever.";
+      } else if (lower.includes('trial') || lower.includes('free') || lower.includes('start') || lower.includes('sign up') || lower.includes('register')) {
+        reply = "You can start a free trial right now — no credit card required! The free plan includes 1 brand, 50 clients, and 500 emails. Click 'Start Free' at the top of the page.";
+      } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+        reply = "Hey there! I'm Surf, your AI agency assistant. I can tell you about features, pricing, setup, integrations, or anything else about SAAS Surface. What would you like to know?";
+      } else if (lower.includes('integrat') || lower.includes('zapier') || lower.includes('slack') || lower.includes('quickbooks')) {
+        reply = "SAAS Surface integrates with Zapier (triggers + actions), Slack (real-time notifications), QuickBooks/Xero (invoice sync), Google Calendar, Outlook Calendar, Twilio (SMS + voice), and Stripe. Plus a full REST API with 350+ endpoints.";
+      } else if (lower.includes('voice') || lower.includes('call') || lower.includes('phone')) {
+        reply = "AI Voice Agents let you create phone bots that handle inbound and outbound calls. Configure personality, greeting, and knowledge base. Calls are transcribed with sentiment analysis. Powered by Twilio.";
+      }
+
+      setSurfMessages(prev => [...prev, { from: 'surf', text: reply }]);
+      setSurfTyping(false);
+    }, 800 + Math.random() * 700);
+  };
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      { '@type': 'Question', name: 'What is SAAS Surface?', acceptedAnswer: { '@type': 'Answer', text: 'SAAS Surface is an all-in-one Agency OS for managing clients, invoicing, proposals, contracts, email marketing, and workflow automation with a white-label client portal.' } },
+      { '@type': 'Question', name: 'Can I white-label SAAS Surface?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Use your own logo, colors, domain, and branding. Clients never see SAAS Surface.' } },
+      { '@type': 'Question', name: 'Is there a free plan?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. The free plan includes 1 brand, 50 clients, and 500 emails per month.' } },
+    ],
+  };
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
+      <SEO
+        title="Run Your Agency with Surf — Powered by AI"
+        description="SAAS Surface is the all-in-one agency operating system powered by Surf, your AI assistant. CRM, invoicing, proposals, client portal, marketing automation, and workflow automation. White-label ready."
+        url="https://saassurface.com/"
+        structuredData={faqSchema}
+      />
+
+      {/* ── ANNOUNCEMENT BAR ── */}
+      <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 text-center">
+        <p className="text-sm font-semibold text-amber-800">
+          <span className="w-2 h-2 bg-amber-500 rounded-full inline-block mr-2 animate-pulse" />
+          Founding Member Pricing is live — first 50 agencies lock in lifetime rates.{' '}
+          <Link to="/register" className="underline font-bold hover:text-amber-900 transition-colors">Claim your spot →</Link>
+        </p>
+      </div>
 
       {/* ── NAVBAR ── */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">
@@ -416,15 +535,13 @@ export default function Landing() {
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">S</div>
             <span className="font-bold text-xl text-gray-900">SAAS Surface</span>
+            <span className="hidden lg:inline text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Powered by Surf</span>
           </div>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Features</a>
-            <a href="#sales-tools" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Sales Tools</a>
-            <a href="#content-tools" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">CMS & Social</a>
-            <a href="#agency-tools" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Agency Ops</a>
-            <a href="#how-it-works" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">How It Works</a>
+            <a href="#benefits" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Benefits</a>
             <a href="#pricing" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">Pricing</a>
             <a href="#faq" className="text-gray-600 hover:text-gray-900 text-sm font-medium transition-colors">FAQ</a>
           </div>
@@ -446,7 +563,7 @@ export default function Landing() {
                   to="/register"
                   className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  Start Free Trial
+                  Start Free
                 </Link>
               </>
             )}
@@ -470,10 +587,7 @@ export default function Landing() {
         {mobileMenuOpen && (
           <div className="md:hidden px-6 pb-4 flex flex-col gap-3 border-t border-gray-100 pt-4">
             <a href="#features" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Features</a>
-            <a href="#sales-tools" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Sales Tools</a>
-            <a href="#content-tools" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>CMS & Social</a>
-            <a href="#agency-tools" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Agency Ops</a>
-            <a href="#how-it-works" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
+            <a href="#benefits" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Benefits</a>
             <a href="#pricing" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
             <a href="#faq" className="text-sm font-medium text-gray-700" onClick={() => setMobileMenuOpen(false)}>FAQ</a>
             {isLoggedIn ? (
@@ -486,7 +600,7 @@ export default function Landing() {
             ) : (
               <>
                 <Link to="/login" className="text-sm font-medium text-gray-700">Log In</Link>
-                <Link to="/register" className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg text-center">Start Free Trial</Link>
+                <Link to="/register" className="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg text-center">Start Free</Link>
               </>
             )}
           </div>
@@ -498,170 +612,298 @@ export default function Landing() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/5 rounded-full blur-3xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-6">
-              <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse" />
-              White-Label Client Portal + CRM + CMS + Social for Agencies
-            </div>
-
-            <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6 tracking-tight">
-              Stop chasing clients.<br />
-              <span className="text-blue-600">Start impressing them.</span>
-            </h1>
-
-            <p className="text-xl text-gray-600 leading-relaxed mb-10 max-w-2xl mx-auto">
-              SAAS Surface gives your agency a branded client portal, built-in CRM pipeline, multi-site CMS,
-              social media scheduling, AI content generation, and revenue analytics — everything to win more business, deliver it beautifully, and grow your clients' presence.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/register"
-                className="px-8 py-4 bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200 hover:-translate-y-0.5"
-              >
-                Start Your Free Trial →
-              </Link>
-              <a
-                href="#how-it-works"
-                className="px-8 py-4 text-gray-700 font-semibold text-lg rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
-              >
-                See How It Works
-              </a>
-            </div>
-            <p className="text-sm text-gray-400 mt-4">No credit card required · 14-day free trial · 30-day money-back guarantee</p>
-          </div>
-
-          {/* Hero mockup */}
-          <div className="max-w-5xl mx-auto relative">
-            <div className="rounded-2xl shadow-2xl overflow-hidden border border-gray-200">
-              {/* Browser chrome */}
-              <div className="bg-gray-100 px-4 py-3 flex items-center gap-2 border-b border-gray-200">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-red-400" />
-                  <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                  <div className="w-3 h-3 rounded-full bg-green-400" />
-                </div>
-                <div className="flex-1 mx-4 bg-white rounded-md px-3 py-1 text-xs text-gray-400 border border-gray-200">
-                  clients.youragency.com/portal/dashboard
-                </div>
+          <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-12 items-center">
+            {/* Left: Copy */}
+            <div className="text-left">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-full text-sm font-semibold mb-6">
+                <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+                Founding Member Pricing — Limited to 50 agencies
               </div>
 
-              {/* Simulated portal UI */}
-              <div className="bg-white">
-                <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 bg-white">
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs">A</div>
-                    <span className="font-semibold text-sm text-gray-800">Acme Agency</span>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    {['Dashboard', 'Projects', 'Proposals', 'Invoices', 'Documents'].map((tab, i) => (
-                      <span
-                        key={tab}
-                        className={`text-xs font-medium ${i === 0 ? 'text-blue-600 border-b-2 border-blue-600 pb-3' : 'text-gray-500'}`}
-                      >
-                        {tab}
-                      </span>
-                    ))}
-                  </div>
-                  <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-semibold text-xs">JD</div>
-                </div>
+              <h1 className="text-5xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6 tracking-tight">
+                Run your agency<br />
+                <span className="text-blue-600">with Surf.</span>
+              </h1>
 
-                <div className="p-6 bg-gray-50">
-                  <div className="rounded-xl p-5 mb-4 text-white" style={{ background: 'linear-gradient(135deg, #2563eb, #1e40af)' }}>
-                    <p className="text-sm opacity-80 mb-0.5">Welcome back,</p>
-                    <p className="font-bold text-lg">John Davidson</p>
-                  </div>
+              <p className="text-xl text-gray-600 leading-relaxed mb-3 max-w-xl">
+                The AI-powered agency operating system that helps you capture leads, answer calls, automate follow-up, manage clients, send invoices, and grow — all from one platform.
+              </p>
 
-                  <div className="grid grid-cols-4 gap-3 mb-4">
-                    {[
-                      { label: 'Active Projects', value: '3' },
-                      { label: 'Pending Invoices', value: '2' },
-                      { label: 'Documents', value: '14' },
-                      { label: 'Messages', value: '1 new' },
-                    ].map((stat) => (
-                      <div key={stat.label} className="bg-white rounded-lg p-3 border border-gray-100">
-                        <p className="text-xs text-gray-500 mb-1">{stat.label}</p>
-                        <p className="font-bold text-gray-800 text-base">{stat.value}</p>
-                      </div>
-                    ))}
-                  </div>
+              <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-xl">
+                No credit card required. Founding Member pricing available for the first 50 agencies.
+              </p>
 
-                  <div className="bg-white rounded-lg border border-gray-100 p-4">
-                    <p className="text-xs font-semibold text-gray-600 mb-3">YOUR PROJECTS</p>
-                    {[
-                      { name: 'Website Redesign', status: 'In Progress', pct: 65 },
-                      { name: 'Brand Identity', status: 'Review', pct: 90 },
-                    ].map((proj) => (
-                      <div key={proj.name} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-gray-800">{proj.name}</p>
-                          <div className="mt-1 h-1 bg-gray-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full" style={{ width: `${proj.pct}%` }} />
-                          </div>
-                        </div>
-                        <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">{proj.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  to="/register"
+                  className="px-8 py-4 bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200 hover:-translate-y-0.5 text-center"
+                >
+                  Start Free
+                </Link>
+                <a
+                  href="https://calendly.com/saassurface/demo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-8 py-4 text-gray-700 font-semibold text-lg rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all text-center"
+                >
+                  Book a Demo
+                </a>
+              </div>
+
+              <div className="flex flex-wrap gap-x-6 gap-y-2 mt-6">
+                {[
+                  'AI follow-up and workflow automation',
+                  'AI voice agent that answers calls and captures leads',
+                  'CRM, proposals, invoices, and client portal included',
+                  'Built for agencies that want to scale',
+                ].map((t) => (
+                  <span key={t} className="flex items-center gap-1.5 text-sm text-gray-500">
+                    <span className="text-blue-600 font-bold">✓</span> {t}
+                  </span>
+                ))}
               </div>
             </div>
 
-            {/* Floating badges */}
-            <div className="absolute -right-6 top-16 bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg">✓</div>
-              <div>
-                <p className="text-xs font-bold text-gray-800">Invoice Paid</p>
-                <p className="text-xs text-gray-500">$4,200 received</p>
-              </div>
-            </div>
+            {/* Right: Surf visual */}
+            <div className="relative flex justify-center items-center">
+              <div className="absolute inset-[10%] rounded-full" style={{ animation: 'surfGlow 4s ease-in-out infinite' }} />
+              <img
+                src="/images/surf-main.png"
+                alt="Surf AI Assistant"
+                className="w-full max-w-[420px] relative z-10 drop-shadow-2xl"
+                style={{ animation: 'surfFloat 5.5s ease-in-out infinite', filter: 'drop-shadow(0 20px 50px rgba(37,99,235,0.22))' }}
+              />
 
-            <div className="absolute -left-6 top-40 bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-lg">📋</div>
-              <div>
-                <p className="text-xs font-bold text-gray-800">Proposal Signed</p>
-                <p className="text-xs text-gray-500">Project just kicked off</p>
+              {/* Floating Surf cards */}
+              <div className="absolute top-[5%] right-0 bg-white/97 border border-gray-200 rounded-2xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3 backdrop-blur-sm max-w-[250px]">
+                <img src="/images/surf-avatar.png" alt="Surf" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-gray-900">Ask Surf</p>
+                  <p className="text-xs text-gray-500">Your AI assistant is ready to help.</p>
+                </div>
               </div>
-            </div>
 
-            <div className="absolute -left-6 bottom-16 bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg">💬</div>
-              <div>
-                <p className="text-xs font-bold text-gray-800">New Message</p>
-                <p className="text-xs text-gray-500">Revision approved!</p>
+              <div className="absolute left-[-10px] bottom-[8%] bg-white/97 border border-gray-200 rounded-2xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3 backdrop-blur-sm max-w-[250px]">
+                <img src="/images/surf-orb.png" alt="Surf orb" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-gray-900">Surf found 3 leads</p>
+                  <p className="text-xs text-gray-500">They need follow-up this week.</p>
+                </div>
+              </div>
+
+              <div className="absolute right-[-10px] bottom-[26%] bg-white/97 border border-gray-200 rounded-2xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3 backdrop-blur-sm max-w-[260px]">
+                <img src="/images/surf-ui.png" alt="Surf UI" className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-gray-900">Overdue invoice detected</p>
+                  <p className="text-xs text-gray-500">Send a reminder or automate it now.</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
+
+        <style>{`
+          @keyframes surfFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+          }
+          @keyframes surfGlow {
+            0%, 100% { box-shadow: 0 0 0 rgba(37,99,235,0), 0 0 0 rgba(79,70,229,0); }
+            50% { box-shadow: 0 0 36px rgba(37,99,235,0.18), 0 0 70px rgba(79,70,229,0.12); }
+          }
+          @keyframes surfPulse {
+            0%, 100% { transform: scale(1); opacity: 0.96; }
+            50% { transform: scale(1.05); opacity: 1; }
+          }
+        `}</style>
       </section>
 
       {/* ── SOCIAL PROOF BAR ── */}
       <section className="py-12 bg-gray-50 border-y border-gray-100">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-8">Trusted by agencies of all sizes</p>
-          <div className="flex flex-wrap items-center justify-center gap-10">
-            {['Studio North', 'Apex Creative', 'Meridian Group', 'Blueprint Agency', 'Summit Works', 'Focal Point Studio'].map((name) => (
-              <span key={name} className="text-gray-400 font-semibold text-sm">{name}</span>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { value: '50+', label: 'Agencies onboarded' },
+              { value: '8+', label: 'Tools replaced' },
+              { value: '$0', label: 'To start' },
+              { value: '< 10min', label: 'Setup time' },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="text-3xl md:text-4xl font-black text-gray-900 mb-1">{stat.value}</p>
+                <p className="text-gray-500 text-sm font-medium">{stat.label}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── PROBLEM → SOLUTION ── */}
+      {/* ── MEET SURF ── */}
+      <section id="meet-surf" className="py-24 px-6">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+          {/* Surf visual */}
+          <div className="relative flex justify-center">
+            <div className="absolute inset-[10%] rounded-full" style={{ animation: 'surfGlow 4s ease-in-out infinite' }} />
+            <img
+              src="/images/surf-main.png"
+              alt="Surf AI Assistant"
+              className="w-full max-w-[400px] relative z-10"
+              style={{ animation: 'surfFloat 5.5s ease-in-out infinite', filter: 'drop-shadow(0 16px 40px rgba(37,99,235,0.18))' }}
+            />
+          </div>
+
+          {/* Surf copy */}
+          <div>
+            <p className="text-sm font-extrabold text-blue-600 uppercase tracking-widest mb-3">Meet Surf</p>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+              Meet Surf — your AI teammate.
+            </h2>
+            <p className="text-lg text-gray-600 leading-relaxed mb-8">
+              Surf doesn't just assist. It works. Follow-ups, reminders, call handling, and client communication — Surf runs the parts of your agency that slow you down.
+            </p>
+
+            <div className="grid grid-cols-2 gap-4 mb-8">
+              {[
+                { title: 'Surf Autopilot', desc: 'Automatically follows up with leads, sends reminders, updates deals, and keeps your pipeline moving.' },
+                { title: 'Surf Voice', desc: 'Answers calls, captures lead details, books appointments, and logs everything into your CRM.' },
+                { title: 'Ask Surf', desc: 'Get real answers about your business — revenue, clients, pipeline, and performance.' },
+                { title: 'Client Surf Chat', desc: 'Let your clients ask about invoices, projects, and updates directly inside the portal.' },
+              ].map((item) => (
+                <div key={item.title} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md hover:border-blue-200 transition-all">
+                  <h3 className="font-bold text-gray-900 mb-1">{item.title}</h3>
+                  <p className="text-sm text-gray-500">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              {[
+                'Follow up automatically',
+                'Spot stalled deals',
+                'Track activity',
+                'Surface opportunities',
+                'Guide next steps',
+              ].map((text) => (
+                <div key={text} className="flex items-center gap-3">
+                  <span className="text-blue-600 font-bold">✔</span>
+                  <span className="text-gray-700 font-semibold">{text}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-6 font-extrabold text-gray-800">
+              Surf doesn't replace your team — it helps your team move faster.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── SURF IN ACTION (Dashboard Preview) ── */}
+      <section className="py-24 px-6 bg-gray-50">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-sm font-extrabold text-blue-600 uppercase tracking-widest mb-3">Surf in Action</p>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 leading-tight mb-4">
+            Guidance built right into the experience
+          </h2>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto mb-8">
+            Surf gives SAAS Surface a guided, intelligent feel — not just a long list of features. Surface next steps, automate follow-up, and keep every client relationship moving forward.
+          </p>
+
+          {/* Surf chips */}
+          <div className="flex flex-wrap justify-center gap-3 mb-10">
+            {[
+              { img: '/images/surf-avatar.png', text: 'Ask Surf' },
+              { img: '/images/surf-orb.png', text: 'Surf recommends your next step' },
+              { img: '/images/surf-avatar.png', text: 'Surf found 3 leads that need follow-up' },
+              { img: '/images/surf-ui.png', text: 'Surf can automate this workflow' },
+            ].map((chip) => (
+              <div key={chip.text} className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-sm font-bold shadow-sm">
+                <img src={chip.img} alt="" className="w-6 h-6 rounded-full object-cover" />
+                {chip.text}
+              </div>
+            ))}
+          </div>
+
+          {/* Dashboard preview with Surf alerts */}
+          <div className="rounded-2xl overflow-hidden border border-gray-200 shadow-lg bg-white text-left">
+            <div className="bg-gray-100 px-5 py-3 flex items-center gap-2.5 border-b border-gray-200">
+              <div className="flex gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-red-400 inline-block" />
+                <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block" />
+                <span className="w-3 h-3 rounded-full bg-green-400 inline-block" />
+              </div>
+              <div className="flex-1 bg-white rounded-lg px-3 py-1.5 text-xs text-gray-400 border border-gray-200 overflow-hidden whitespace-nowrap text-ellipsis">
+                clients.youragency.com/portal/dashboard
+              </div>
+            </div>
+
+            <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+              <div className="flex flex-wrap justify-between items-center gap-4 mb-5">
+                <h3 className="text-xl font-bold text-gray-900">Agency Dashboard</h3>
+                <div className="flex gap-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-bold">
+                    <img src="/images/surf-avatar.png" alt="" className="w-5 h-5 rounded-full object-cover" /> Ask Surf
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-xs font-bold">
+                    <img src="/images/surf-orb.png" alt="" className="w-5 h-5 rounded-full object-cover" /> Next step
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                {[
+                  { label: 'Active Deals', value: '17' },
+                  { label: 'Pending Invoices', value: '6' },
+                  { label: 'Projects In Progress', value: '9' },
+                  { label: 'Tasks Due Today', value: '4' },
+                ].map((s) => (
+                  <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4">
+                    <p className="text-xs text-gray-500 mb-1">{s.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Surf personality moment */}
+              <div className="flex items-center gap-3 mb-5 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl">
+                <img src="/images/surf-avatar.png" alt="Surf" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                <p className="text-sm text-blue-800 font-semibold">Surf suggests following up with 2 high-value leads today.</p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {[
+                  { img: '/images/surf-ui.png', title: 'Surf noticed this invoice is overdue', desc: 'Send a reminder now or automate follow-up so cash flow keeps moving.' },
+                  { img: '/images/surf-avatar.png', title: 'Surf found 3 leads needing follow-up', desc: 'Reach out today or let Surf trigger the next email sequence automatically.' },
+                  { img: '/images/surf-orb.png', title: 'Surf can automate this workflow', desc: 'Proposal sent → follow-up day 3 → reminder day 7 → invoice on acceptance.' },
+                  { img: '/images/surf-avatar.png', title: 'Surf recommends your next step', desc: 'Two high-value deals are waiting on proposals. Send them today.' },
+                ].map((alert) => (
+                  <div key={alert.title} className="flex items-start gap-3.5 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                    <img src={alert.img} alt="" className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                    <div>
+                      <p className="font-bold text-gray-900 text-sm mb-1">{alert.title}</p>
+                      <p className="text-sm text-gray-600">{alert.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── PROBLEM / SOLUTION ── */}
       <section className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="bg-red-50 border border-red-100 rounded-2xl p-8">
-              <p className="text-sm font-bold text-red-500 uppercase tracking-widest mb-4">The Old Way</p>
+              <p className="text-sm font-bold text-red-500 uppercase tracking-widest mb-4">Most agencies are stuck managing tools</p>
               <ul className="space-y-4">
                 {[
-                  '"Can you send me the latest version again?"',
-                  '"Did you get my invoice from two weeks ago?"',
-                  '"Where are we on the project?"',
-                  'Status updates buried in email threads',
-                  'Proposals sent and never followed up on',
-                  'No idea which deals are close to closing',
-                  'Chasing payments for 60+ days',
+                  'Leads slip through the cracks',
+                  'Follow-ups don\'t happen consistently',
+                  'Calls get missed',
+                  'Tools don\'t talk to each other',
+                  'Admin work eats your time',
+                  'Growth becomes harder, not easier',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <span className="text-red-400 mt-0.5 font-bold">✗</span>
@@ -672,16 +914,15 @@ export default function Landing() {
             </div>
 
             <div className="bg-green-50 border border-green-100 rounded-2xl p-8">
-              <p className="text-sm font-bold text-green-600 uppercase tracking-widest mb-4">With SAAS Surface</p>
+              <p className="text-sm font-bold text-green-600 uppercase tracking-widest mb-4">Replace the chaos with one system</p>
               <ul className="space-y-4">
                 {[
-                  'Clients log in and see all files instantly',
-                  'Send proposals — clients sign digitally in-portal',
-                  'Invoices sent, tracked, and paid by card',
-                  'Real-time project progress with % complete',
-                  'Proposals auto-followed up at day 3 and day 7',
-                  'CRM pipeline shows every deal and its value',
-                  'Time tracked and billed to the right client',
+                  'Capture leads automatically',
+                  'Follow up instantly with AI',
+                  'Answer calls with Surf Voice',
+                  'Manage clients, projects, and billing in one place',
+                  'Deliver a premium client experience',
+                  'Scale without hiring more staff',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-3">
                     <span className="text-green-500 mt-0.5 font-bold">✓</span>
@@ -694,196 +935,84 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── FEATURES ── */}
+      {/* ── CTA BAND 1 ── */}
+      <section className="py-16 bg-blue-600 px-6">
+        <div className="max-w-4xl mx-auto text-center text-white">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Replace 8+ tools with one AI-powered platform</h2>
+          <p className="text-blue-200 text-lg mb-8 max-w-2xl mx-auto">CRM, invoicing, proposals, client portal, website builder, social media, email marketing, and automation — powered by Surf.</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/register"
+              className="px-8 py-4 bg-white text-blue-700 font-bold text-lg rounded-xl hover:bg-blue-50 transition-all shadow-lg"
+            >
+              Start Free
+            </Link>
+            <a
+              href="https://calendly.com/saassurface/demo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-4 border border-white/30 text-white font-semibold text-lg rounded-xl hover:bg-white/10 transition-all"
+            >
+              Book a Demo
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ── OUTCOME FEATURES (Tabbed) ── */}
       <section id="features" className="py-24 px-6 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Client Management</p>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Built for agencies. Loved by clients.</h2>
+          <div className="text-center mb-12">
+            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Everything You Need</p>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">One platform. Five outcomes.</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Every feature was designed around one goal: making your agency look exceptional to clients.
+              Every feature maps to a result your agency actually cares about.
             </p>
           </div>
 
+          {/* Category pills */}
+          <div className="flex overflow-x-auto gap-3 pb-4 mb-8 justify-center scrollbar-hide">
+            {categoryMeta.map((cat, i) => (
+              <button
+                key={cat.label}
+                onClick={() => setActiveCategory(i)}
+                className={`px-5 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                  activeCategory === i
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:border-blue-200 hover:text-blue-600'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Active category heading */}
+          <div className="text-center mb-10">
+            <h3 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3">{categoryMeta[activeCategory].heading}</h3>
+            <p className="text-gray-600 max-w-2xl mx-auto">{categoryMeta[activeCategory].body}</p>
+          </div>
+
+          {/* Feature cards grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f) => (
+            {allCategories[activeCategory].map((f) => (
               <div
                 key={f.title}
-                className="bg-white rounded-2xl p-6 border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group"
+                className="relative bg-white rounded-2xl p-6 border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl mb-4 group-hover:bg-blue-100 transition-colors">
-                  {f.icon}
+                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-2xl mb-4 group-hover:bg-blue-100 transition-colors overflow-hidden">
+                  {f.isImage ? <img src={f.icon} alt={f.title} className="w-10 h-10 object-contain" /> : f.icon}
                 </div>
                 <h3 className="font-bold text-gray-900 text-lg mb-2">{f.title}</h3>
                 <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SALES POWER PACK ── */}
-      <section id="sales-tools" className="py-24 px-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-100 text-indigo-700 rounded-full text-sm font-bold mb-4">
-              <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
-              Sales Power Pack — Included in Pro & Enterprise
-            </div>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Win more clients. Close faster. Track everything.</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Most agency tools help you deliver work. SAAS Surface also helps you <strong>win</strong> it — with a full CRM pipeline, automated follow-ups, and revenue analytics built right in.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {salesFeatures.map((f) => (
-              <div
-                key={f.title}
-                className="relative bg-gradient-to-br from-indigo-50 to-white rounded-2xl p-6 border border-indigo-100 hover:border-indigo-300 hover:shadow-md transition-all group"
-              >
-                <div className="absolute top-4 right-4 bg-indigo-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {f.badge}
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-2xl mb-4 group-hover:bg-indigo-200 transition-colors">
-                  {f.icon}
-                </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">{f.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* CRM Pipeline visual */}
-          <div className="mt-16 rounded-2xl border border-indigo-100 overflow-hidden shadow-lg">
-            <div className="bg-indigo-600 px-6 py-4 text-white">
-              <p className="text-sm font-bold opacity-80 uppercase tracking-widest">CRM Pipeline — Live Preview</p>
-            </div>
-            <div className="bg-gray-50 p-6">
-              <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-                {[
-                  { stage: 'Lead', count: 4, value: '$12,000', color: 'bg-gray-100 text-gray-700', bar: 'bg-gray-400' },
-                  { stage: 'Qualified', count: 3, value: '$28,500', color: 'bg-blue-100 text-blue-700', bar: 'bg-blue-400' },
-                  { stage: 'Proposal', count: 2, value: '$18,000', color: 'bg-yellow-100 text-yellow-700', bar: 'bg-yellow-400' },
-                  { stage: 'Negotiate', count: 2, value: '$22,000', color: 'bg-orange-100 text-orange-700', bar: 'bg-orange-400' },
-                  { stage: 'Won', count: 5, value: '$64,200', color: 'bg-green-100 text-green-700', bar: 'bg-green-400' },
-                  { stage: 'Lost', count: 1, value: '$5,000', color: 'bg-red-100 text-red-700', bar: 'bg-red-300' },
-                ].map((col) => (
-                  <div key={col.stage} className="bg-white rounded-xl p-4 border border-gray-100 text-center">
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${col.color} block mb-3`}>{col.stage}</span>
-                    <p className="text-2xl font-black text-gray-900">{col.count}</p>
-                    <p className="text-xs text-gray-500 mt-1">{col.value}</p>
-                    <div className={`mt-3 h-1 rounded-full ${col.bar} opacity-60`} />
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 text-center">
-                <p className="text-xs text-gray-400">Weighted pipeline value: <strong className="text-indigo-600">$87,350</strong> · Across 17 active deals</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CONTENT & SOCIAL PACK ── */}
-      <section id="content-tools" className="py-24 px-6 bg-purple-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-purple-100 text-purple-700 rounded-full text-sm font-bold mb-4">
-              <span className="w-1.5 h-1.5 bg-purple-600 rounded-full" />
-              Content & Social Pack — Included in Pro & Enterprise
-            </div>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Manage content. Publish everywhere.</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              SAAS Surface is the only agency platform that combines client management, CRM, <strong>website CMS, and social media scheduling</strong> — all in one place, for you and your clients.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {contentFeatures.map((f) => (
-              <div
-                key={f.title}
-                className="relative bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 border border-purple-100 hover:border-purple-300 hover:shadow-md transition-all group"
-              >
-                <div className="absolute top-4 right-4 bg-purple-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {f.badge}
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center text-2xl mb-4 group-hover:bg-purple-200 transition-colors">
-                  {f.icon}
-                </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">{f.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Content calendar visual */}
-          <div className="mt-16 rounded-2xl border border-purple-100 overflow-hidden shadow-lg">
-            <div className="bg-purple-600 px-6 py-4 text-white flex items-center justify-between">
-              <p className="text-sm font-bold opacity-80 uppercase tracking-widest">Social Content Calendar — Live Preview</p>
-              <div className="flex items-center gap-3 text-xs font-semibold opacity-80">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-300 inline-block" /> LinkedIn</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-300 inline-block" /> Twitter</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500 inline-block" /> Facebook</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-pink-400 inline-block" /> Instagram</span>
-              </div>
-            </div>
-            <div className="bg-white p-6">
-              <div className="grid grid-cols-7 gap-1 text-center mb-2">
-                {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
-                  <div key={d} className="text-xs font-semibold text-gray-400 py-1">{d}</div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {[
-                  { day: 1,  posts: [] },
-                  { day: 2,  posts: ['linkedin', 'twitter'] },
-                  { day: 3,  posts: [] },
-                  { day: 4,  posts: ['instagram'] },
-                  { day: 5,  posts: ['linkedin', 'facebook', 'instagram'] },
-                  { day: 6,  posts: [] },
-                  { day: 7,  posts: [] },
-                  { day: 8,  posts: ['twitter'] },
-                  { day: 9,  posts: ['linkedin'] },
-                  { day: 10, posts: [] },
-                  { day: 11, posts: ['facebook', 'instagram'] },
-                  { day: 12, posts: ['linkedin', 'twitter'] },
-                  { day: 13, posts: [] },
-                  { day: 14, posts: [] },
-                  { day: 15, posts: ['linkedin', 'twitter', 'facebook', 'instagram'], today: true },
-                  { day: 16, posts: ['linkedin'] },
-                  { day: 17, posts: [] },
-                  { day: 18, posts: ['instagram'] },
-                  { day: 19, posts: ['linkedin', 'twitter'] },
-                  { day: 20, posts: [] },
-                  { day: 21, posts: [] },
-                ].map((cell) => {
-                  const colors = { linkedin: 'bg-blue-400', twitter: 'bg-sky-400', facebook: 'bg-blue-600', instagram: 'bg-pink-400' };
-                  return (
-                    <div
-                      key={cell.day}
-                      className={`rounded-lg p-2 min-h-16 border ${cell.today ? 'border-purple-400 bg-purple-50' : 'border-gray-100 hover:border-purple-200'} transition-colors cursor-pointer`}
-                    >
-                      <p className={`text-xs font-bold mb-1.5 ${cell.today ? 'text-purple-700' : 'text-gray-500'}`}>{cell.day}</p>
-                      <div className="flex flex-wrap gap-0.5">
-                        {cell.posts.map((p, i) => (
-                          <div key={i} className={`w-2 h-2 rounded-full ${colors[p]}`} title={p} />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-4 text-center">
-                <p className="text-xs text-gray-400">18 posts scheduled this month · across 4 platforms · 3 client accounts</p>
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section id="how-it-works" className="py-24 px-6 bg-gray-50">
+      <section id="how-it-works" className="py-24 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Simple Setup</p>
@@ -916,104 +1045,169 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── AGENCY OPERATIONS PACK ── */}
-      <section id="agency-tools" className="py-24 px-6 bg-emerald-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold mb-4">
-              <span className="w-1.5 h-1.5 bg-emerald-600 rounded-full" />
-              Agency Operations — Included in Pro &amp; Enterprise
-            </div>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Run your agency like a machine.</h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              The tools enterprise agencies pay for separately — brand consistency, retainer management, client reporting, and team capacity — all built in.
+      {/* ── SURF VOICE ── */}
+      <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-indigo-800 text-white">
+        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-sm font-extrabold uppercase tracking-widest text-blue-200 mb-3">Surf Voice Agent</p>
+            <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">
+              Give Surf a voice.
+            </h2>
+            <p className="text-lg text-blue-100 leading-relaxed mb-8">
+              Let AI answer calls, capture leads, confirm details, and book appointments — even when you're unavailable.
             </p>
-          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {agencyFeatures.map((f) => (
-              <div
-                key={f.title}
-                className="relative bg-gradient-to-br from-emerald-50 to-white rounded-2xl p-6 border border-emerald-100 hover:border-emerald-300 hover:shadow-md transition-all group"
-              >
-                <div className="absolute top-4 right-4 bg-emerald-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {f.badge}
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-2xl mb-4 group-hover:bg-emerald-200 transition-colors">
-                  {f.icon}
-                </div>
-                <h3 className="font-bold text-gray-900 text-lg mb-2">{f.title}</h3>
-                <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Sample report preview strip */}
-          <div className="mt-16 bg-white rounded-2xl border border-emerald-100 shadow-lg overflow-hidden">
-            <div className="bg-emerald-600 px-6 py-4 flex items-center justify-between">
-              <p className="text-white text-sm font-bold uppercase tracking-widest opacity-80">AI Client Report — Live Preview</p>
-              <span className="text-white text-xs opacity-60">Generated in &lt; 5 seconds</span>
-            </div>
-            <div className="p-6 grid md:grid-cols-4 gap-4 border-b border-gray-100">
+            <div className="space-y-4 mb-8">
               {[
-                { label: 'Revenue', value: '$12,400', sub: '3 invoices paid', color: 'text-emerald-600' },
-                { label: 'Hours Logged', value: '47.5 hrs', sub: '38 billable', color: 'text-blue-600' },
-                { label: 'Projects', value: '4 active', sub: '2 completed', color: 'text-purple-600' },
-                { label: 'Social Reach', value: '18,240', sub: '↑ 23% vs last month', color: 'text-orange-500' },
-              ].map(stat => (
-                <div key={stat.label} className="text-center p-4 bg-gray-50 rounded-xl">
-                  <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-1">{stat.label}</p>
-                  <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-                  <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>
+                'Answers inbound calls automatically',
+                'Captures name, email, and intent',
+                'Books consultations',
+                'Saves call transcripts and summaries',
+                'Handles conversations naturally',
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-3">
+                  <span className="text-blue-200 font-bold text-lg">✓</span>
+                  <span className="font-semibold">{item}</span>
                 </div>
               ))}
             </div>
-            <div className="p-6">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">AI Executive Summary</p>
-              <p className="text-sm text-gray-700 leading-relaxed italic">
-                "Acme Corp had a strong month, generating $12,400 in revenue across 3 paid invoices. The team delivered 47.5 hours of work with a 80% billable rate. Social media performance increased 23% month-over-month, driven by 4 LinkedIn posts and 8 Instagram stories. Two projects reached completion this period with all deliverables signed off. Recommended focus for next month: close the remaining outstanding invoice ($3,200) and maintain the social posting cadence that drove the engagement spike."
-              </p>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <a
+                href="https://calendly.com/saassurface/demo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block px-8 py-4 bg-white text-blue-700 font-bold text-lg rounded-xl hover:bg-blue-50 transition-all shadow-lg"
+              >
+                Book Demo
+              </a>
+              <a href="tel:+18554558182" className="text-blue-200 hover:text-white font-semibold text-sm transition-colors">
+                Or call us: 1 (855) 455-8182
+              </a>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <div className="relative">
+              <img
+                src="/images/surf-main.png"
+                alt="Surf Voice"
+                className="w-full max-w-[350px] relative z-10"
+                style={{ filter: 'drop-shadow(0 20px 50px rgba(0,0,0,0.3))', animation: 'surfFloat 5.5s ease-in-out infinite' }}
+              />
+              {/* Floating call cards */}
+              <div className="absolute -right-4 top-[10%] bg-white/95 text-gray-900 rounded-2xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3 backdrop-blur-sm max-w-[240px]">
+                <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-lg flex-shrink-0">📞</div>
+                <div>
+                  <p className="text-sm font-bold">Surf is calling this lead</p>
+                  <p className="text-xs text-gray-500">Following up automatically</p>
+                </div>
+              </div>
+              <div className="absolute -left-4 bottom-[15%] bg-white/95 text-gray-900 rounded-2xl shadow-lg px-4 py-3 hidden lg:flex items-center gap-3 backdrop-blur-sm max-w-[240px]">
+                <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-lg flex-shrink-0">✅</div>
+                <div>
+                  <p className="text-sm font-bold">Surf confirmed appointment</p>
+                  <p className="text-xs text-gray-500">Client confirmed for Thursday</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── STATS STRIP ── */}
-      <section className="py-16 bg-blue-600 px-6">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white">
-          {[
-            { value: '< 10min', label: 'Average setup time' },
-            { value: '90%', label: 'Fewer status emails*' },
-            { value: '3×', label: 'Faster invoice payment*' },
-            { value: '100%', label: 'White-labeled' },
-          ].map((stat) => (
-            <div key={stat.label}>
-              <p className="text-3xl md:text-4xl font-black mb-1">{stat.value}</p>
-              <p className="text-blue-200 text-sm font-medium">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-        <p className="text-center text-blue-300 text-xs mt-8 max-w-xl mx-auto">* Based on customer surveys conducted among SAAS Surface agency users.</p>
-      </section>
+      {/* ── AGENCY BENEFITS ── */}
+      <section id="benefits" className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Agency Benefits</p>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Built for agencies that want more than another CRM.</h2>
+            <p className="text-lg text-gray-600">Replace multiple tools, deliver white-label services, automate follow-up, and scale without adding complexity.</p>
+          </div>
 
-      {/* ── TRUST SIGNALS ── */}
-      <section className="py-14 px-6 border-b border-gray-100">
-        <div className="max-w-4xl mx-auto text-center">
-          <p className="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-8">Built with security and reliability in mind</p>
-          <div className="flex flex-wrap items-center justify-center gap-10">
-            {[
-              { label: 'Payments by Stripe', icon: '💳' },
-              { label: 'SSL Encrypted', icon: '🔒' },
-              { label: 'GDPR Ready', icon: '🛡️' },
-              { label: '99.9% Uptime SLA', icon: '⚡' },
-              { label: 'Daily Backups', icon: '☁️' },
-              { label: '2FA Available', icon: '🔑' },
-            ].map((item) => (
-              <div key={item.label} className="flex items-center gap-2 text-gray-500 font-semibold text-sm">
-                <span className="text-xl">{item.icon}</span>
-                <span>{item.label}</span>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {agencyBenefits.map((b) => (
+              <div key={b.title} className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all text-center">
+                <div className="text-3xl mb-4">{b.icon}</div>
+                <p className="text-3xl font-black text-blue-600 mb-1">{b.stat}</p>
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{b.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{b.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── RESELLER SECTION ── */}
+      <section className="py-24 px-6 bg-gray-900 text-white">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-16 items-center">
+          <div>
+            <p className="text-sm font-extrabold uppercase tracking-widest text-blue-400 mb-3">Reseller Program</p>
+            <h2 className="text-4xl md:text-5xl font-extrabold leading-tight mb-6">
+              Launch your own SaaS under your brand.
+            </h2>
+            <p className="text-gray-400 text-lg leading-relaxed mb-8">
+              Use SAAS Surface internally or resell it to clients for recurring revenue. White-label branding, custom domains, client accounts, and built-in billing — all included.
+            </p>
+
+            <div className="space-y-4 mb-10">
+              {resellerPoints.map((point) => (
+                <div key={point} className="flex items-start gap-3">
+                  <span className="text-blue-400 font-bold text-lg mt-0.5">✓</span>
+                  <span className="text-gray-300 font-semibold">{point}</span>
+                </div>
+              ))}
+            </div>
+
+            <Link
+              to="/register"
+              className="inline-block px-8 py-4 bg-blue-600 text-white font-bold text-lg rounded-xl hover:bg-blue-700 transition-all shadow-lg"
+            >
+              Start Free
+            </Link>
+            <p className="text-gray-500 text-sm mt-4">Available on the Agency plan.</p>
+          </div>
+
+          <div className="flex justify-center">
+            <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 max-w-sm w-full">
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Your Reseller Dashboard</p>
+              <div className="space-y-4">
+                {[
+                  { label: 'Active Sub-Accounts', value: '12' },
+                  { label: 'Monthly Recurring', value: '$2,940' },
+                  { label: 'Your Margin', value: '68%' },
+                  { label: 'Avg. Client LTV', value: '$4,200' },
+                ].map((s) => (
+                  <div key={s.label} className="flex items-center justify-between py-3 border-b border-gray-700">
+                    <span className="text-gray-400 text-sm">{s.label}</span>
+                    <span className="text-white font-bold text-lg">{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA BAND 2 ── */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-700 px-6">
+        <div className="max-w-4xl mx-auto text-center text-white">
+          <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Ready to stop duct-taping tools together?</h2>
+          <p className="text-blue-200 text-lg mb-8 max-w-2xl mx-auto">Join the agencies replacing scattered tools with one AI-powered platform.</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/register"
+              className="px-8 py-4 bg-white text-blue-700 font-bold text-lg rounded-xl hover:bg-blue-50 transition-all shadow-lg"
+            >
+              Start Free
+            </Link>
+            <a
+              href="https://calendly.com/saassurface/demo"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-4 border border-white/30 text-white font-semibold text-lg rounded-xl hover:bg-white/10 transition-all"
+            >
+              Book a Demo
+            </a>
           </div>
         </div>
       </section>
@@ -1022,9 +1216,14 @@ export default function Landing() {
       <section id="pricing" className="py-24 px-6 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Simple Pricing</p>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Pay for what you need</h2>
-            <p className="text-lg text-gray-600 mb-8">Start free for 14 days. No credit card required.</p>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-200 rounded-full text-amber-800 font-bold text-sm mb-6">
+              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
+              Founding Member Pricing — First 50 agencies get this rate locked in for life
+            </div>
+            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Pricing</p>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Founding Member Pricing — lock it in for life.</h2>
+            <p className="text-lg text-gray-600 mb-4">Only the first 50 agencies get these rates. After that, pricing increases.</p>
+            <p className="text-sm text-amber-700 font-semibold mb-8">Early adopters keep their pricing forever.</p>
 
             <div className="inline-flex items-center gap-3 bg-white border border-gray-200 rounded-full px-2 py-1.5">
               <button
@@ -1045,7 +1244,7 @@ export default function Landing() {
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {plans.map((plan) => (
               <div
                 key={plan.name}
@@ -1057,7 +1256,7 @@ export default function Landing() {
               >
                 {plan.highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-amber-400 text-amber-900 text-xs font-black px-4 py-1 rounded-full">
-                    MOST POPULAR
+                    BEST VALUE — FOUNDING MEMBER
                   </div>
                 )}
 
@@ -1068,14 +1267,33 @@ export default function Landing() {
                   {plan.desc}
                 </p>
 
-                <div className="mb-6">
-                  <span className={`text-5xl font-black ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
-                    ${annual ? plan.annual : plan.monthly}
-                  </span>
-                  <span className={`text-sm font-medium ml-1 ${plan.highlight ? 'text-blue-200' : 'text-gray-500'}`}>
-                    /month{annual ? ', billed annually' : ''}
-                  </span>
+                <div className="mb-2">
+                  {plan.futureMonthly && (
+                    <div className="mb-1">
+                      <span className={`text-base line-through ${plan.highlight ? 'text-blue-300' : 'text-gray-400'}`}>
+                        ${plan.futureMonthly}/mo
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-baseline gap-1 flex-wrap">
+                    <span className={`text-4xl font-black ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
+                      ${annual ? plan.annual : plan.monthly}
+                    </span>
+                    <span className={`text-sm font-medium ${plan.highlight ? 'text-blue-200' : 'text-gray-500'}`}>
+                      /mo{annual ? ' (annual)' : ''}
+                    </span>
+                  </div>
                 </div>
+                {plan.futureMonthly && (
+                  <p className={`text-xs font-semibold mb-2 ${plan.highlight ? 'text-blue-200' : 'text-amber-600'}`}>
+                    Founding price — locks in at ${annual ? plan.annual : plan.monthly}/mo forever
+                  </p>
+                )}
+                {plan.spotsLeft && (
+                  <p className={`text-xs font-bold mb-4 ${plan.highlight ? 'text-amber-300' : 'text-amber-600'}`}>
+                    Only {plan.spotsLeft} founding spots remaining
+                  </p>
+                )}
 
                 <Link
                   to="/register"
@@ -1118,8 +1336,8 @@ export default function Landing() {
       <section className="py-24 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">How We Compare</p>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">SAAS Surface vs. the alternatives</h2>
+            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Compare</p>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Why agencies switch to SAAS Surface.</h2>
             <p className="text-lg text-gray-600">See why agencies switch from email chaos and generic tools.</p>
           </div>
 
@@ -1133,8 +1351,8 @@ export default function Landing() {
                       <span className="font-bold text-blue-600 text-base">SAAS Surface</span>
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-center font-semibold text-gray-500">Email + Sheets</th>
-                  <th className="px-6 py-4 text-center font-semibold text-gray-500">HoneyBook / Dubsado</th>
+                  <th className="px-6 py-4 text-center font-semibold text-gray-500">GoHighLevel</th>
+                  <th className="px-6 py-4 text-center font-semibold text-gray-500">HoneyBook</th>
                 </tr>
               </thead>
               <tbody>
@@ -1142,55 +1360,86 @@ export default function Landing() {
                   <tr key={row.feature} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
                     <td className="px-6 py-4 text-gray-700 font-medium">{row.feature}</td>
                     <td className="px-6 py-4 text-center">
-                      {row.clienthub
-                        ? <span className="text-green-500 font-bold text-lg">✓</span>
-                        : <span className="text-gray-300 font-bold text-lg">✗</span>}
+                      {row.isText
+                        ? <span className="font-bold text-blue-600">{row.us}</span>
+                        : row.us
+                          ? <span className="text-green-500 font-bold text-lg">✓</span>
+                          : <span className="text-gray-300 font-bold text-lg">✗</span>}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {row.email
-                        ? <span className="text-green-500 font-bold text-lg">✓</span>
-                        : <span className="text-gray-300 font-bold text-lg">✗</span>}
+                      {row.isText
+                        ? <span className="font-semibold text-gray-600">{row.ghl}</span>
+                        : row.ghl
+                          ? <span className="text-green-500 font-bold text-lg">✓</span>
+                          : <span className="text-gray-300 font-bold text-lg">✗</span>}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      {row.honeybook
-                        ? <span className="text-green-500 font-bold text-lg">✓</span>
-                        : <span className="text-gray-300 font-bold text-lg">✗</span>}
+                      {row.isText
+                        ? <span className="font-semibold text-gray-600">{row.honeybook}</span>
+                        : row.honeybook
+                          ? <span className="text-green-500 font-bold text-lg">✓</span>
+                          : <span className="text-gray-300 font-bold text-lg">✗</span>}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          <p className="text-center text-xs text-gray-400 mt-4">Pricing and feature data last verified March 2026. Competitor features may change.</p>
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
+      {/* ── WHY CHOOSE / TESTIMONIALS ── */}
       <section className="py-24 px-6 bg-gray-50">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Real Results</p>
-            <h2 className="text-4xl font-extrabold text-gray-900">Agencies love SAAS Surface</h2>
+            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">The Switch</p>
+            <h2 className="text-4xl font-extrabold text-gray-900">Four reasons agencies make the switch</h2>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
-                <div className="flex items-center gap-1 text-amber-400 mb-4">
-                  {[...Array(5)].map((_, i) => <span key={i}>★</span>)}
-                </div>
-                <p className="text-gray-700 text-sm leading-relaxed mb-6">"{t.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900 text-sm">{t.name}</p>
-                    <p className="text-gray-500 text-xs">{t.role}</p>
-                  </div>
-                </div>
+            {whyChoose.map((item) => (
+              <div key={item.title} className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm hover:shadow-md transition-all">
+                <div className="text-3xl mb-4">{item.isImage ? <img src={item.icon} alt={item.title} className="w-10 h-10 object-contain" /> : item.icon}</div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2">{item.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
+
+          {/* Real testimonials (shown when available) */}
+          {testimonials.length > 0 && (
+            <div className="mt-16">
+              <h3 className="text-center text-2xl font-extrabold text-gray-900 mb-8">What our users are saying</h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {testimonials.slice(0, 6).map((t) => (
+                  <div key={t.id} className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                    <div className="flex items-center gap-1 text-amber-400 mb-3">
+                      {[...Array(t.rating || 5)].map((_, i) => <span key={i}>★</span>)}
+                    </div>
+                    <p className="text-gray-700 text-sm leading-relaxed mb-4">"{t.quote}"</p>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {t.name?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 text-sm">{t.name}</p>
+                        <p className="text-gray-500 text-xs">{t.role}{t.company ? `, ${t.company}` : ''}</p>
+                      </div>
+                    </div>
+                    {t.video_url && (
+                      <a href={t.video_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-blue-600 hover:underline">
+                        ▶ Watch video review
+                      </a>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="text-center mt-8">
+                <Link to="/testimonial" className="text-sm font-semibold text-blue-600 hover:underline">Share your experience →</Link>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1198,8 +1447,8 @@ export default function Landing() {
       <section id="faq" className="py-24 px-6">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
-            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Questions Answered</p>
-            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Frequently asked questions</h2>
+            <p className="text-sm font-bold text-blue-600 uppercase tracking-widest mb-3">Before You Sign Up</p>
+            <h2 className="text-4xl font-extrabold text-gray-900 mb-4">Common questions before signing up</h2>
             <p className="text-lg text-gray-600">Everything you need to know before getting started.</p>
           </div>
 
@@ -1240,41 +1489,42 @@ export default function Landing() {
       <section className="py-24 px-6 bg-gradient-to-br from-blue-600 to-indigo-800">
         <div className="max-w-3xl mx-auto text-center text-white">
           <h2 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
-            Your clients deserve<br />a better experience.
+            Stop juggling tools.<br />Start running smarter.
           </h2>
           <p className="text-blue-200 text-lg mb-10 max-w-xl mx-auto">
-            Join agencies delivering a professional, branded client experience — and winning
-            more business with built-in CRM and automated follow-ups.
+            Capture leads, automate follow-up, answer calls, manage clients, and grow your agency with Surf. Founding Member pricing available for the first 50 agencies.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to="/register"
               className="px-8 py-4 bg-white text-blue-700 font-bold text-lg rounded-xl hover:bg-blue-50 transition-all shadow-lg"
             >
-              Start Your Free Trial →
+              Start Free
             </Link>
             <a
-              href="#pricing"
+              href="https://calendly.com/saassurface/demo"
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-8 py-4 border border-white/30 text-white font-semibold text-lg rounded-xl hover:bg-white/10 transition-all"
             >
-              View Pricing
+              Book a Demo
             </a>
           </div>
-          <p className="text-blue-300 text-sm mt-6">14-day free trial · No credit card · 30-day money-back guarantee</p>
+          <p className="text-blue-300 text-sm mt-6">No credit card required · Founding member pricing · 30-day money-back guarantee</p>
         </div>
       </section>
 
       {/* ── FOOTER ── */}
       <footer className="bg-gray-900 text-gray-400 px-6 py-12">
         <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-10">
-            <div>
+          <div className="grid md:grid-cols-5 gap-8 mb-10">
+            <div className="md:col-span-2">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-7 h-7 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs">S</div>
                 <span className="font-bold text-white text-lg">SAAS Surface</span>
               </div>
               <p className="text-sm leading-relaxed mb-4">
-                The white-label client portal and CRM built for agencies that want to look exceptional and close more deals.
+                The all-in-one agency operating system powered by Surf. CRM, client portal, invoicing, marketing automation, AI voice, and managed hosting — everything your agency needs.
               </p>
               <div className="flex items-center gap-3">
                 <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors" aria-label="Twitter">
@@ -1290,20 +1540,24 @@ export default function Landing() {
               <p className="font-semibold text-white text-sm mb-4">Product</p>
               <ul className="space-y-2 text-sm">
                 <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#sales-tools" className="hover:text-white transition-colors">Sales Tools</a></li>
-                <li><a href="#content-tools" className="hover:text-white transition-colors">CMS & Social</a></li>
-                <li><a href="#agency-tools" className="hover:text-white transition-colors">Agency Ops</a></li>
                 <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
                 <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
                 <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
+                <li><Link to="/login" className="hover:text-white transition-colors">Log In</Link></li>
+                <li><Link to="/register" className="hover:text-white transition-colors">Get Started Free</Link></li>
               </ul>
             </div>
 
             <div>
-              <p className="font-semibold text-white text-sm mb-4">Account</p>
+              <p className="font-semibold text-white text-sm mb-4">Legal</p>
               <ul className="space-y-2 text-sm">
-                <li><Link to="/login" className="hover:text-white transition-colors">Log In</Link></li>
-                <li><Link to="/register" className="hover:text-white transition-colors">Start Free Trial</Link></li>
+                <li><Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link to="/sms-terms" className="hover:text-white transition-colors">SMS Terms</Link></li>
+                <li><Link to="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link></li>
+                <li><Link to="/refund-policy" className="hover:text-white transition-colors">Refund Policy</Link></li>
+                <li><Link to="/security-policy" className="hover:text-white transition-colors">Security</Link></li>
+                <li><Link to="/service-level-agreement" className="hover:text-white transition-colors">SLA</Link></li>
               </ul>
             </div>
 
@@ -1311,28 +1565,161 @@ export default function Landing() {
               <p className="font-semibold text-white text-sm mb-4">Contact</p>
               <ul className="space-y-2 text-sm">
                 <li><Link to="/contact" className="hover:text-white transition-colors">Contact Us</Link></li>
-                <li><a href="mailto:sales@saassurface.com" className="hover:text-white transition-colors">sales@saassurface.com</a></li>
+                <li><a href="tel:+18554558182" className="hover:text-white transition-colors">1 (855) 455-8182</a></li>
                 <li><a href="mailto:support@saassurface.com" className="hover:text-white transition-colors">support@saassurface.com</a></li>
               </ul>
             </div>
           </div>
 
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm">© {new Date().getFullYear()} SAAS Surface · saassurface.com · All rights reserved.</p>
+            <p className="text-sm">© {new Date().getFullYear()} SAAS Surface — Powered by Surf · Hosting by All Elite Hosting · All rights reserved.</p>
             <div className="flex flex-wrap gap-4 text-sm justify-center">
-              <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
-              <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
-              <Link to="/cookie-policy" className="hover:text-white transition-colors">Cookie Policy</Link>
-              <Link to="/acceptable-use-policy" className="hover:text-white transition-colors">Acceptable Use</Link>
-              <Link to="/refund-policy" className="hover:text-white transition-colors">Refund Policy</Link>
-              <Link to="/billing-terms" className="hover:text-white transition-colors">Billing Terms</Link>
-              <Link to="/security-policy" className="hover:text-white transition-colors">Security</Link>
-              <Link to="/service-level-agreement" className="hover:text-white transition-colors">SLA</Link>
-              <Link to="/data-processing-agreement" className="hover:text-white transition-colors">DPA</Link>
+              <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms</Link>
+              <Link to="/sms-terms" className="hover:text-white transition-colors">SMS</Link>
+              <Link to="/cookie-policy" className="hover:text-white transition-colors">Cookies</Link>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* ── FLOATING SURF CHATBOT ── */}
+      <div className="fixed right-6 bottom-6 z-50">
+        {/* Chat window */}
+        {surfOpen && (
+          <div className="mb-3 w-[370px] max-h-[520px] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-in">
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white flex-shrink-0">
+              <img src="/images/surf-avatar.png" alt="Surf" className="w-9 h-9 rounded-full object-cover" />
+              <div className="flex-1">
+                <p className="font-bold text-sm">Surf</p>
+                <p className="text-xs opacity-80">AI Agency Assistant</p>
+              </div>
+              <button onClick={() => setSurfOpen(false)} className="text-white/80 hover:text-white text-lg font-bold">✕</button>
+            </div>
+
+            {surfStep === 'collect' ? (
+              /* Lead capture form */
+              <div className="p-5 flex-1">
+                <div className="flex items-center gap-3 mb-4">
+                  <img src="/images/surf-avatar.png" alt="Surf" className="w-10 h-10 rounded-full object-cover" />
+                  <div className="bg-gray-100 rounded-2xl rounded-bl-md px-3.5 py-2.5 text-sm text-gray-800">
+                    Hi! I'm Surf. Before we chat, let me know who I'm talking to so I can help you better.
+                  </div>
+                </div>
+
+                <form onSubmit={handleSurfLeadSubmit} className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Your name *"
+                    value={surfLead.name}
+                    onChange={(e) => setSurfLead(prev => ({ ...prev, name: e.target.value }))}
+                    required
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  />
+                  <input
+                    type="email"
+                    placeholder="Work email *"
+                    value={surfLead.email}
+                    onChange={(e) => setSurfLead(prev => ({ ...prev, email: e.target.value }))}
+                    required
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Phone number *"
+                    value={surfLead.phone}
+                    onChange={(e) => setSurfLead(prev => ({ ...prev, phone: e.target.value }))}
+                    required
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Company (optional)"
+                    value={surfLead.company}
+                    onChange={(e) => setSurfLead(prev => ({ ...prev, company: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                  />
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors"
+                  >
+                    Start Chatting with Surf →
+                  </button>
+                </form>
+                <p className="text-xs text-gray-400 mt-3 text-center">We'll never spam you. Just helpful info.</p>
+              </div>
+            ) : (
+              <>
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[280px] max-h-[360px]" style={{ scrollbarWidth: 'thin' }}>
+                  {surfMessages.map((msg, i) => (
+                    <div key={i} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                        msg.from === 'user'
+                          ? 'bg-blue-600 text-white rounded-br-md'
+                          : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                      }`}>
+                        {msg.text}
+                      </div>
+                    </div>
+                  ))}
+                  {surfTyping && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 text-gray-500 px-4 py-2.5 rounded-2xl rounded-bl-md text-sm">
+                        <span className="inline-flex gap-1">
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input */}
+                <div className="p-3 border-t border-gray-100 flex-shrink-0">
+                  <form onSubmit={(e) => { e.preventDefault(); handleSurfSend(); }} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={surfInput}
+                      onChange={(e) => setSurfInput(e.target.value)}
+                      placeholder="Ask about features, pricing, setup..."
+                      className="flex-1 px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100"
+                    />
+                    <button
+                      type="submit"
+                      className="px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors flex-shrink-0"
+                    >
+                      Send
+                    </button>
+                  </form>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Toggle button */}
+        <button
+          className="flex items-center gap-3 px-4 py-2.5 bg-white/95 border border-gray-200 rounded-full shadow-lg backdrop-blur-sm hover:-translate-y-1 transition-all"
+          aria-label="Ask Surf"
+          onClick={() => setSurfOpen(!surfOpen)}
+        >
+          <div className="relative w-11 h-11 flex-shrink-0">
+            <div className="absolute inset-0 rounded-full" style={{ animation: 'surfGlow 4s ease-in-out infinite' }} />
+            <img
+              src="/images/surf-avatar.png"
+              alt="Surf"
+              className="relative w-11 h-11 rounded-full object-cover"
+              style={{ animation: 'surfPulse 3s ease-in-out infinite' }}
+            />
+          </div>
+          <span className="font-extrabold text-gray-800 text-sm hidden sm:inline">
+            {surfOpen ? 'Close' : 'Need help? Ask Surf'}
+          </span>
+        </button>
+      </div>
     </div>
   );
 }

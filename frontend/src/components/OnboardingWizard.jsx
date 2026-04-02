@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { brandAPI, clientAPI, projectAPI, invoiceAPI } from '../services/api';
 
 const STEPS = [
-  { id: 1, title: 'Create your brand', subtitle: 'A brand represents your agency or business identity', skippable: false },
-  { id: 2, title: 'Add your first client', subtitle: 'Who do you work with?', skippable: true },
-  { id: 3, title: 'Start a project', subtitle: 'Track the work you do for your clients', skippable: true },
-  { id: 4, title: 'Create an invoice', subtitle: 'Get paid for your work', skippable: true },
-  { id: 5, title: "You're all set!", subtitle: 'Your workspace is ready to use', skippable: false },
+  { id: 0, title: 'Welcome to SAAS Surface', subtitle: 'Meet Surf — your AI agency assistant', skippable: false },
+  { id: 1, title: 'Connect your brand', subtitle: 'Add your logo, colors, and domain', skippable: false },
+  { id: 2, title: 'Set up your pipeline', subtitle: 'Define your stages and let Surf track what needs attention', skippable: true },
+  { id: 3, title: 'Turn on automations', subtitle: 'Activate follow-ups, reminders, and workflows', skippable: true },
+  { id: 4, title: 'Invite your team', subtitle: 'Bring your team into one organized system', skippable: true },
+  { id: 5, title: 'Start winning with Surf', subtitle: 'Track deals, tasks, invoices, and projects', skippable: false },
 ];
 
 const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent';
 
 export default function OnboardingWizard({ onComplete }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -62,9 +63,12 @@ export default function OnboardingWizard({ onComplete }) {
     }
   };
 
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleStep2 = async (e) => {
     e.preventDefault();
     if (!clientName.trim() || !clientEmail.trim() || !brandId) { advance(); return; }
+    if (!isValidEmail(clientEmail.trim())) { setError('Please enter a valid email address.'); return; }
     setLoading(true);
     setError('');
     try {
@@ -152,6 +156,52 @@ export default function OnboardingWizard({ onComplete }) {
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
               {error}
+            </div>
+          )}
+
+          {/* Step 0 — Welcome / Meet Surf */}
+          {step === 0 && (
+            <div className="text-center space-y-6">
+              <img
+                src="/images/surf-main.png"
+                alt="Surf AI Assistant"
+                className="w-48 h-48 mx-auto object-contain"
+                style={{ filter: 'drop-shadow(0 12px 30px rgba(37,99,235,0.2))' }}
+              />
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to SAAS Surface</h2>
+                <p className="text-blue-600 font-bold mb-3">Meet Surf — your AI agency assistant</p>
+                <p className="text-gray-600 max-w-md mx-auto">
+                  Surf helps your agency stay organized, automate follow-ups, and keep everything moving behind the scenes.
+                </p>
+              </div>
+              <div className="text-left max-w-sm mx-auto space-y-3">
+                {[
+                  'Keep deals moving',
+                  'Automate follow-ups',
+                  'Stay on top of projects',
+                  'Catch missed revenue opportunities',
+                ].map((text) => (
+                  <div key={text} className="flex items-center gap-3">
+                    <span className="text-blue-600 font-bold">✔</span>
+                    <span className="text-gray-700 font-semibold">{text}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-3 pt-2">
+                <button
+                  onClick={advance}
+                  className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700"
+                >
+                  Get Started with Surf →
+                </button>
+                <button
+                  onClick={onComplete}
+                  className="w-full py-2 text-gray-500 hover:text-gray-700 font-medium text-sm"
+                >
+                  Explore Dashboard
+                </button>
+              </div>
             </div>
           )}
 
@@ -299,12 +349,18 @@ export default function OnboardingWizard({ onComplete }) {
             </form>
           )}
 
-          {/* Step 5 — Done */}
+          {/* Step 5 — Done / Start winning with Surf */}
           {step === 5 && (
             <div className="text-center space-y-6">
-              <div className="text-6xl">🎉</div>
+              <img
+                src="/images/surf-main.png"
+                alt="Surf"
+                className="w-32 h-32 mx-auto object-contain"
+                style={{ filter: 'drop-shadow(0 8px 20px rgba(37,99,235,0.18))' }}
+              />
               <div className="space-y-2">
-                <p className="text-gray-600">Your workspace has been set up. You're ready to manage clients, projects, and invoices.</p>
+                <h2 className="text-2xl font-bold text-gray-900">You're ready to win with Surf</h2>
+                <p className="text-gray-600">Your workspace is set up. Surf will help you track deals, tasks, invoices, and projects — and surface what needs your attention.</p>
               </div>
               <button
                 onClick={onComplete}

@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSocket } from '../context/SocketContext';
 import { brandAPI, notificationAPI, searchAPI } from '../services/api';
+import SurfWidget from './SurfWidget';
 
 const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { connected, unreadCount: socketUnread, joinRoom } = useSocket();
   const location = useLocation();
   const navigate = useNavigate();
   const [brandId, setBrandId] = useState(null);
@@ -35,9 +38,21 @@ const Layout = ({ children }) => {
       .catch(() => {});
   }, []);
 
-  // Poll unread count every 60s
+  // Join brand room for real-time notifications
   useEffect(() => {
-    if (!brandId) return;
+    if (brandId && connected) {
+      joinRoom(`brand:${brandId}`);
+    }
+  }, [brandId, connected]);
+
+  // Use real-time count from WebSocket, fall back to polling
+  useEffect(() => {
+    setUnreadCount(socketUnread);
+  }, [socketUnread]);
+
+  // Fallback poll unread count every 60s (only if WebSocket disconnected)
+  useEffect(() => {
+    if (!brandId || connected) return;
     const fetchCount = () => {
       notificationAPI.getUnreadCount(brandId)
         .then((res) => setUnreadCount(res.data.data?.count || 0))
@@ -46,7 +61,7 @@ const Layout = ({ children }) => {
     fetchCount();
     const interval = setInterval(fetchCount, 60000);
     return () => clearInterval(interval);
-  }, [brandId]);
+  }, [brandId, connected]);
 
   // Fetch full notifications when bell opens
   useEffect(() => {
@@ -141,6 +156,7 @@ const Layout = ({ children }) => {
     { name: 'Tasks',     href: '/tasks',     icon: '✅' },
     { name: 'Time', href: '/time', icon: '⏱' },
     { name: 'Call Logs', href: '/call-logs', icon: '📞' },
+    { name: 'Voice Agents', href: '/voice-agents', icon: '🎙️' },
     { name: 'Calendar', href: '/calendar', icon: '📅' },
     { name: 'Booking', href: '/booking-pages', icon: '🗓️' },
     { name: 'Tickets', href: '/tickets', icon: '🎫' },
@@ -170,6 +186,13 @@ const Layout = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+      {/* Skip to content — keyboard accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg"
+      >
+        Skip to main content
+      </a>
       {/* Sidebar */}
       <div
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out ${
@@ -189,7 +212,7 @@ const Layout = ({ children }) => {
         </div>
 
         {/* Navigation */}
-        <nav aria-label="Main navigation" className="mt-6 px-3 pb-24 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
+        <nav data-tour="sidebar" aria-label="Main navigation" className="mt-6 px-3 pb-24 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 180px)' }}>
           {navigation.map((item) => (
             <Link
               key={item.name}
@@ -263,7 +286,7 @@ const Layout = ({ children }) => {
             </button>
 
             {/* Global Search */}
-            <div className="relative flex-1 max-w-md mx-4" ref={searchRef}>
+            <div data-tour="search" className="relative flex-1 max-w-md mx-4" ref={searchRef}>
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -333,16 +356,22 @@ const Layout = ({ children }) => {
             </div>
 
             <div className="flex items-center space-x-4">
+              {/* Connection indicator */}
+              {connected && (
+                <span title="Real-time connected" className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              )}
               {/* Dark Mode Toggle */}
               <button
+                data-tour="theme"
                 onClick={toggleTheme}
                 title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-lg"
               >
                 {theme === 'dark' ? '☀️' : '🌙'}
               </button>
               {/* Notification Bell */}
-              <div className="relative" ref={bellRef}>
+              <div data-tour="notifications" className="relative" ref={bellRef}>
                 <button
                   onClick={() => setBellOpen((o) => !o)}
                   className="relative text-gray-500 hover:text-gray-700"
@@ -416,7 +445,8 @@ const Layout = ({ children }) => {
         </header>
 
         {/* Page Content */}
-        <main className="p-6 dark:text-gray-100" role="main">
+        <main id="main-content" className="p-6 dark:text-gray-100" role="main">
+          <SurfWidget />
           {children}
         </main>
       </div>

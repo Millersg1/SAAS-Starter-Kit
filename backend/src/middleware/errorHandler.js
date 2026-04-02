@@ -21,10 +21,13 @@ export const errorHandler = (err, req, res, next) => {
     let error = { ...err };
     error.message = err.message;
 
-    // Handle specific error types
+    // Handle specific error types (PostgreSQL codes)
     if (err.code === '23505') error = handleDuplicateFieldsDB(err);
     if (err.code === '23503') error = handleForeignKeyViolationDB(err);
+    if (err.code === '23502') error = handleNotNullViolationDB(err);
     if (err.code === '22P02') error = handleInvalidInputDB(err);
+    if (err.code === '42703') error = new AppError('A required field is missing or invalid.', 400);
+    if (err.code === '42P01') error = new AppError('A system resource is temporarily unavailable.', 500);
     if (err.name === 'JsonWebTokenError') error = handleJWTError();
     if (err.name === 'TokenExpiredError') error = handleJWTExpiredError();
     if (err.name === 'ValidationError') error = handleValidationError(err);
@@ -73,6 +76,12 @@ const handleDuplicateFieldsDB = (err) => {
 const handleForeignKeyViolationDB = (err) => {
   const message = 'Invalid reference. The referenced record does not exist.';
   return new AppError(message, 400);
+};
+
+// Handle PostgreSQL NOT NULL violation
+const handleNotNullViolationDB = (err) => {
+  const col = err.column || 'unknown';
+  return new AppError(`Required field "${col}" is missing.`, 400);
 };
 
 // Handle PostgreSQL invalid input

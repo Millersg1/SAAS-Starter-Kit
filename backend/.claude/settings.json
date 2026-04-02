@@ -3,7 +3,12 @@
     "allow": [
       "Bash(chmod 600 /c/Users/shawn/.ssh/id_rsa_deploy)",
       "Bash(mv postcss.config.js postcss.config.cjs)",
-      "Bash(mv tailwind.config.js tailwind.config.cjs)"
+      "Bash(mv tailwind.config.js tailwind.config.cjs)",
+      "Bash(SSH_KEY=\"$HOME/.ssh/id_rsa_deploy\")",
+      "Read(//c/Users/shawn/OneDrive/Desktop/SAAS Starter Kit/saas-starter-kit/backend/**)",
+      "Bash(grep -rn \"query\\(\\\\`\" \"src/controllers/*.js\")",
+      "Bash(wc -l \"c:/Users/shawn/OneDrive/Desktop/SAAS Starter Kit/saas-starter-kit/frontend/src/pages\"/*.jsx)",
+      "Bash(node -e \":*)"
     ]
   }
 }

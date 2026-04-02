@@ -1,5 +1,6 @@
 import app from './src/app.js';
 import { testConnection, closePool, query } from './src/config/database.js';
+import { closeRedis } from './src/config/redis.js';
 import { startRecurringInvoiceCron } from './src/utils/recurringInvoices.js';
 import { startOverdueReminderCron } from './src/utils/overdueReminders.js';
 import { startEmailSequencesCron } from './src/utils/emailSequencesCron.js';
@@ -11,10 +12,17 @@ import { startGoogleCalendarCron } from './src/utils/googleCalendarCron.js';
 import { startOutlookCalendarCron } from './src/utils/outlookCalendarCron.js';
 import { startDripCron } from './src/utils/dripCron.js';
 import { startChurnPredictionCron } from './src/utils/churnPredictionCron.js';
+import { startDunningCron } from './src/utils/dunningCron.js';
+import { startElevenLabsSyncCron } from './src/utils/elevenlabsSyncCron.js';
+import { startSurfAutopilotCron } from './src/utils/surfAutopilotEngine.js';
 import { setupWebSocket } from './src/utils/websocket.js';
+import { setupVoiceAgentWebSocket } from './src/utils/voiceAgentWsHandler.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
+
+// Note: unhandledRejection and uncaughtException handlers are registered inside startServer()
+// after the HTTP server is available, so they can trigger graceful shutdown.
 
 // ── Validate required environment variables on startup ──────────────────────
 const REQUIRED_ENV = ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD', 'JWT_SECRET'];
@@ -40,6 +48,30 @@ const startServer = async () => {
     }
 
     // Run pending schema migrations (idempotent — uses IF NOT EXISTS)
+    // Each statement runs independently so one failure doesn't block others
+    const runMigration = async (label, sql) => {
+      try {
+        await query(sql);
+      } catch (err) {
+        console.error(`⚠️ Migration "${label}" failed:`, err.message);
+      }
+    };
+
+    // Run migration files
+    try {
+      const { readFileSync } = await import('fs');
+      const { join, dirname } = await import('path');
+      const { fileURLToPath } = await import('url');
+      const __dirname = dirname(fileURLToPath(import.meta.url));
+      for (const [num, label] of [['031_new_features', 'New features'], ['032_accounting_connections', 'Accounting']]) {
+        try {
+          const sql = readFileSync(join(__dirname, `src/migrations/${num}.sql`), 'utf-8');
+          await query(sql);
+          console.log(`✅ Migration ${num} applied`);
+        } catch (e) { console.log(`Migration ${num} skipped:`, e.message); }
+      }
+    } catch {}
+
     try {
       await query(`
         CREATE TABLE IF NOT EXISTS webhook_endpoints (
@@ -975,8 +1007,22 @@ const startServer = async () => {
       `);
       console.log('✅ Schema migrations applied - server.js:280');
     } catch (migErr) {
-      console.error('⚠️ Schema migration warning: - server.js:282', migErr.message);
+      // If the single large query fails, try running migration files individually
+      console.error('⚠️ Bulk migration failed, attempting individual statements:', migErr.message);
+      // Individual ALTER TABLE statements that commonly fail independently
+      const alterStatements = [
+        ['drip_steps.step_type', `ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS step_type VARCHAR(20) DEFAULT 'email'`],
+        ['drip_steps.condition_config', `ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS condition_config JSONB`],
+        ['drip_steps.yes_next_step', `ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS yes_next_step INTEGER`],
+        ['drip_steps.no_next_step', `ALTER TABLE drip_steps ADD COLUMN IF NOT EXISTS no_next_step INTEGER`],
+      ];
+      for (const [label, sql] of alterStatements) {
+        await runMigration(label, sql);
+      }
     }
+
+    // Track cron intervals for graceful shutdown
+    const cronIntervals = [];
 
     // Start recurring invoice cron job
     startRecurringInvoiceCron();
@@ -1011,16 +1057,26 @@ const startServer = async () => {
     // Start churn prediction cron (daily)
     startChurnPredictionCron();
 
+    // Start dunning management cron (daily)
+    const cron = await import('node-cron');
+    startDunningCron(cron.default || cron);
+
+    // ElevenLabs conversation sync (every 2 minutes)
+    startElevenLabsSyncCron();
+
+    // Surf Autopilot engine (every 5 minutes)
+    startSurfAutopilotCron();
+
     // Publish CMS scheduled pages (every 60 seconds)
     const { publishScheduledPages } = await import('./src/models/cmsModel.js');
-    setInterval(async () => {
+    cronIntervals.push(setInterval(async () => {
       try { await publishScheduledPages(); } catch(e) { /* non-critical */ }
-    }, 60_000);
+    }, 60_000));
 
     // Publish scheduled social posts (every 60 seconds)
     const { getScheduledDuePosts, markPublished, markFailed } = await import('./src/models/socialModel.js');
     const { publishPost } = await import('./src/controllers/socialController.js');
-    setInterval(async () => {
+    cronIntervals.push(setInterval(async () => {
       try {
         const posts = await getScheduledDuePosts();
         for (const post of posts) {
@@ -1031,7 +1087,7 @@ const startServer = async () => {
           }
         }
       } catch(e) { /* non-critical */ }
-    }, 60_000);
+    }, 60_000));
 
     // Start Express server
     const server = app.listen(PORT, () => {
@@ -1048,23 +1104,34 @@ const startServer = async () => {
     // Initialize WebSocket server
     setupWebSocket(server);
 
-    // Graceful shutdown
+    // Initialize Voice Agent WebSocket handler (Twilio Media Streams)
+    setupVoiceAgentWebSocket(server);
+
+    // Graceful shutdown — stop crons before closing DB
     const gracefulShutdown = async (signal) => {
-      console.log(`\n${signal} received. Starting graceful shutdown... - server.js:326`);
-      
+      console.log(`\n${signal} received. Starting graceful shutdown...`);
+
+      // Stop all cron intervals/timers
+      for (const id of cronIntervals) { clearInterval(id); }
+      cronIntervals.length = 0;
+      console.log('✅ Cron jobs stopped');
+
       server.close(async () => {
-        console.log('✅ HTTP server closed - server.js:329');
-        
+        console.log('✅ HTTP server closed');
+
+        await closeRedis();
+        console.log('✅ Redis connections closed');
+
         await closePool();
-        console.log('✅ Database connections closed - server.js:332');
-        
-        console.log('👋 Server shutdown complete - server.js:334');
+        console.log('✅ Database connections closed');
+
+        console.log('👋 Server shutdown complete');
         process.exit(0);
       });
 
       // Force shutdown after 10 seconds
       setTimeout(() => {
-        console.error('⚠️  Forced shutdown after timeout - server.js:340');
+        console.error('⚠️  Forced shutdown after timeout');
         process.exit(1);
       }, 10000);
     };

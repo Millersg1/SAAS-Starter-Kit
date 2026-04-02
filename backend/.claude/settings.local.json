@@ -1,5 +1,13 @@
 {
   "permissions": {
+    "allow": [
+      "Bash(gh auth:*)",
+      "Bash(git --version)",
+      "Bash(sshpass -p 'mAnT6roXJUGYy7vbByrK' ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 root@server.allelitehosting.com \"echo ''Connected!'' && hostname\")",
+      "Bash(rsync -avz --exclude 'node_modules' --exclude '.git' --exclude 'dist' -e \"ssh -i $HOME/.ssh/allelite_root\" \"c:/Users/shawn/OneDrive/Desktop/allelitehosting-billing/\" root@server.allelitehosting.com:/var/www/allelitehosting-billing/)",
+      "Bash(tar --exclude='node_modules' --exclude='.git' --exclude='dist' -czf /tmp/aeh-billing.tar.gz .)",
+      "Bash(tar --exclude='node_modules' --exclude='.git' -czf /tmp/aeh-billing.tar.gz .)"
+    ],
     "additionalDirectories": [
       "c:\\Users\\shawn\\OneDrive\\Desktop\\SAAS Starter Kit\\saas-starter-kit\\frontend\\src\\pages",
       "c:\\Users\\shawn\\OneDrive\\Desktop\\SAAS Starter Kit\\saas-starter-kit\\frontend\\src\\components"

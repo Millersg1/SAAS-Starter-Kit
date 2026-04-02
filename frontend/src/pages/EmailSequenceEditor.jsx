@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { dripAPI } from '../services/api';
+import sanitizeHtml from '../utils/sanitizeHtml';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -93,7 +94,7 @@ function StepForm({ step, onSave, onCancel }) {
         {preview ? (
           <div
             className="min-h-48 p-3 border border-gray-200 rounded-lg text-sm bg-white prose max-w-none"
-            dangerouslySetInnerHTML={{ __html: form.html_content || '<p class="text-gray-400">Nothing to preview</p>' }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(form.html_content || '<p class="text-gray-400">Nothing to preview</p>') }}
           />
         ) : (
           <textarea

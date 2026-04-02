@@ -9,6 +9,11 @@ import { fileURLToPath } from 'url';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { testConnection } from './config/database.js';
 import { errorMonitorMiddleware } from './utils/errorMonitor.js';
+import logger from './utils/logger.js';
+import { initSentry, sentryErrorHandler } from './utils/sentry.js';
+import { getRedis } from './config/redis.js';
+import RedisStore from 'rate-limit-redis';
+import { setupSwagger } from './config/swagger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +21,9 @@ const __dirname = path.dirname(__filename);
 dotenv.config();
 
 const app = express();
+
+// Initialize Sentry (must be before routes)
+initSentry(app);
 
 // Trust the reverse proxy (Apache) — required for rate limiting and IP detection
 app.set('trust proxy', 1);
@@ -32,14 +40,42 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Rate limiting (disabled in development)
+// Uses Redis store in production for PM2 cluster compatibility; falls back to in-memory
 if (process.env.NODE_ENV !== 'development') {
+  const redisClient = getRedis();
+  const storeOpts = redisClient
+    ? { store: new RedisStore({ sendCommand: (...args) => redisClient.call(...args) }) }
+    : {};
+
   const limiter = rateLimit({
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
-    message: { status: 'fail', message: 'Too many requests from this IP, please try again later.' },
-    skip: (req) => req.ip === '127.0.0.1' || req.ip === '::1' || req.ip === '::ffff:127.0.0.1',
+    message: { status: 'fail', message: 'Too many requests, please try again later.' },
+    keyGenerator: (req) => {
+      if (req.user?.id) return `user:${req.user.id}`;
+      if (req.headers['x-api-key']) return `key:${req.headers['x-api-key'].slice(0, 12)}`;
+      return req.ip;
+    },
+    ...storeOpts,
   });
   app.use('/api/', limiter);
+
+  const publicLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    message: { status: 'fail', message: 'Too many requests, please try again later.' },
+    ...storeOpts,
+  });
+  app.use('/api/public', publicLimiter);
+
+  // Auth endpoints: stricter to prevent brute force
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { status: 'fail', message: 'Too many login attempts, please try again later.' },
+  });
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
 }
 
 // Webhook routes (MUST be before body parser middleware)
@@ -51,12 +87,10 @@ app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoute
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Logging middleware
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined'));
-}
+// HTTP request logging via pino
+app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined', {
+  stream: { write: (msg) => logger.info(msg.trim()) },
+}));
 
 // Health check endpoint — deep checks for DB, Stripe, email, memory
 app.get('/health', async (req, res) => {
@@ -166,6 +200,36 @@ import surveyRoutes from './routes/surveyRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
 import outlookCalendarRoutes from './routes/outlookCalendarRoutes.js';
 import churnRoutes from './routes/churnRoutes.js';
+import apiKeyRoutes from './routes/apiKeyRoutes.js';
+import whiteLabelRoutes from './routes/whiteLabelRoutes.js';
+import zapierRoutes from './routes/zapierRoutes.js';
+import gdprRoutes from './routes/gdprRoutes.js';
+import activityFeedRoutes from './routes/activityFeedRoutes.js';
+import bulkRoutes from './routes/bulkRoutes.js';
+import emailDeliverabilityRoutes from './routes/emailDeliverabilityRoutes.js';
+import voiceAgentRoutes from './routes/voiceAgentRoutes.js';
+import expenseRoutes from './routes/expenseRoutes.js';
+import retainerRoutes from './routes/retainerRoutes.js';
+import projectTemplateRoutes from './routes/projectTemplateRoutes.js';
+import onboardingRoutes from './routes/onboardingRoutes.js';
+import knowledgeBaseRoutes from './routes/knowledgeBaseRoutes.js';
+import slackRoutes from './routes/slackRoutes.js';
+import accountingRoutes from './routes/accountingRoutes.js';
+import siteRenderRoutes from './routes/siteRenderRoutes.js';
+import surfRoutes from './routes/surfRoutes.js';
+import surfAutopilotRoutes from './routes/surfAutopilotRoutes.js';
+import proposalGeneratorRoutes from './routes/proposalGeneratorRoutes.js';
+import resellerRoutes from './routes/resellerRoutes.js';
+import unifiedInboxRoutes from './routes/unifiedInboxRoutes.js';
+import testimonialRoutes from './routes/testimonialRoutes.js';
+import { apiKeyAuth } from './middleware/apiKeyAuth.js';
+import { enforcePlan } from './middleware/planEnforcement.js';
+
+// API key auth middleware (before routes, after body parser)
+app.use(apiKeyAuth);
+
+// Plan enforcement middleware (after auth, before routes)
+app.use(enforcePlan);
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -223,6 +287,33 @@ app.use('/api/surveys', surveyRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/outlook-calendar', outlookCalendarRoutes);
 app.use('/api/churn', churnRoutes);
+app.use('/api/api-keys', apiKeyRoutes);
+app.use('/api/white-label', whiteLabelRoutes);
+app.use('/api/zapier', zapierRoutes);
+app.use('/api/gdpr', gdprRoutes);
+app.use('/api/activity-feed', activityFeedRoutes);
+app.use('/api/bulk', bulkRoutes);
+app.use('/api/email-health', emailDeliverabilityRoutes);
+app.use('/api/voice-agents', voiceAgentRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/retainers', retainerRoutes);
+app.use('/api/project-templates', projectTemplateRoutes);
+app.use('/api/onboarding', onboardingRoutes);
+app.use('/api/kb', knowledgeBaseRoutes);
+app.use('/api/slack', slackRoutes);
+app.use('/api/accounting', accountingRoutes);
+app.use('/api/surf', surfRoutes);
+app.use('/api/surf-autopilot', surfAutopilotRoutes);
+app.use('/api/proposal-generator', proposalGeneratorRoutes);
+app.use('/api/reseller', resellerRoutes);
+app.use('/api/unified-inbox', unifiedInboxRoutes);
+app.use('/api/testimonials', testimonialRoutes);
+
+// CMS website rendering (public — serves full HTML pages)
+app.use(siteRenderRoutes);
+
+// Swagger API documentation
+setupSwagger(app);
 
 // Welcome route
 app.get('/', (req, res) => {
@@ -236,6 +327,9 @@ app.get('/', (req, res) => {
 
 // 404 handler
 app.use(notFound);
+
+// Sentry error handler (must be before other error handlers)
+app.use(sentryErrorHandler());
 
 // Structured error logging (before generic error handler)
 app.use(errorMonitorMiddleware);

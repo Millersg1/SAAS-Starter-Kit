@@ -1,8 +1,11 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { PortalAuthProvider } from './context/PortalAuthContext';
+import { SocketProvider } from './context/SocketContext';
+import { I18nProvider } from './context/I18nContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import PortalProtectedRoute from './components/PortalProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -10,11 +13,14 @@ import OfflineBanner from './components/OfflineBanner';
 import CookieBanner from './components/CookieBanner';
 import ScrollToTop from './components/ScrollToTop';
 import PwaInstallPrompt from './components/PwaInstallPrompt';
+import CommandPalette from './components/CommandPalette';
+import ProductTour from './components/ProductTour';
 
 // Eagerly loaded — needed immediately on first paint
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import NotFound from './pages/NotFound';
 
 // Lazy loaded — only fetched when the route is visited
 const Dashboard       = lazy(() => import('./pages/Dashboard'));
@@ -45,6 +51,7 @@ const Contact         = lazy(() => import('./pages/Contact'));
 const Contracts          = lazy(() => import('./pages/Contracts'));
 const ContractDetails    = lazy(() => import('./pages/ContractDetails'));
 const CallLogs           = lazy(() => import('./pages/CallLogs'));
+const VoiceAgents        = lazy(() => import('./pages/VoiceAgents'));
 const Calendar           = lazy(() => import('./pages/Calendar'));
 const BookingPages       = lazy(() => import('./pages/BookingPages'));
 const PublicBooking      = lazy(() => import('./pages/PublicBooking'));
@@ -81,6 +88,12 @@ const Surveys                = lazy(() => import('./pages/Surveys'));
 const SurveyResponse         = lazy(() => import('./pages/SurveyResponse'));
 const EmailInbox             = lazy(() => import('./pages/EmailInbox'));
 const TeamPerformance        = lazy(() => import('./pages/TeamPerformance'));
+const Expenses               = lazy(() => import('./pages/Expenses'));
+const Retainers              = lazy(() => import('./pages/Retainers'));
+const ProjectTemplates       = lazy(() => import('./pages/ProjectTemplates'));
+const KnowledgeBase          = lazy(() => import('./pages/KnowledgeBase'));
+const RecurringInvoices      = lazy(() => import('./pages/RecurringInvoices'));
+const EmailTemplates         = lazy(() => import('./pages/EmailTemplates'));
 
 // Policy pages — rarely visited, no reason to be in main bundle
 const PrivacyPolicy           = lazy(() => import('./pages/PrivacyPolicy'));
@@ -92,6 +105,8 @@ const DataProcessingAgreement = lazy(() => import('./pages/DataProcessingAgreeme
 const BillingTerms            = lazy(() => import('./pages/BillingTerms'));
 const SecurityPolicy          = lazy(() => import('./pages/SecurityPolicy'));
 const ServiceLevelAgreement   = lazy(() => import('./pages/ServiceLevelAgreement'));
+const SmsTerms                = lazy(() => import('./pages/SmsTerms'));
+const SubmitTestimonial       = lazy(() => import('./pages/SubmitTestimonial'));
 
 // Portal pages — separate user flow, no reason to include in agency bundle
 const PortalLogin     = lazy(() => import('./pages/portal/PortalLogin'));
@@ -103,6 +118,7 @@ const PortalMessages  = lazy(() => import('./pages/portal/PortalMessages'));
 const PortalProposals  = lazy(() => import('./pages/portal/PortalProposals'));
 const PortalContracts  = lazy(() => import('./pages/portal/PortalContracts'));
 const PortalTickets    = lazy(() => import('./pages/portal/PortalTickets'));
+const PortalVoiceAgents = lazy(() => import('./pages/portal/PortalVoiceAgents'));
 
 const PageLoader = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -120,10 +136,15 @@ const SuperAdminRoute = ({ children }) => {
 function App() {
   return (
     <ErrorBoundary>
+    <HelmetProvider>
+    <I18nProvider>
     <Router>
       <PortalAuthProvider>
         <AuthProvider>
+          <SocketProvider>
           <OfflineBanner />
+          <CommandPalette />
+          <ProductTour />
           <Toaster position="top-right" richColors closeButton duration={4000} />
           <Suspense fallback={<PageLoader />}>
             <Routes>
@@ -183,6 +204,7 @@ function App() {
 
               {/* CRM Features */}
               <Route path="/call-logs"             element={<ProtectedRoute><CallLogs /></ProtectedRoute>} />
+              <Route path="/voice-agents"          element={<ProtectedRoute><VoiceAgents /></ProtectedRoute>} />
               <Route path="/calendar"              element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
               <Route path="/booking-pages"         element={<ProtectedRoute><BookingPages /></ProtectedRoute>} />
               <Route path="/tickets"               element={<ProtectedRoute><Tickets /></ProtectedRoute>} />
@@ -219,6 +241,14 @@ function App() {
               <Route path="/sequences/:sequenceId" element={<ProtectedRoute><EmailSequenceEditor /></ProtectedRoute>} />
               <Route path="/chat-widget"        element={<ProtectedRoute><ChatWidget /></ProtectedRoute>} />
 
+              {/* New Features */}
+              <Route path="/expenses"           element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
+              <Route path="/retainers"          element={<ProtectedRoute><Retainers /></ProtectedRoute>} />
+              <Route path="/project-templates"  element={<ProtectedRoute><ProjectTemplates /></ProtectedRoute>} />
+              <Route path="/knowledge-base"     element={<ProtectedRoute><KnowledgeBase /></ProtectedRoute>} />
+              <Route path="/recurring-invoices" element={<ProtectedRoute><RecurringInvoices /></ProtectedRoute>} />
+              <Route path="/email-templates"    element={<ProtectedRoute><EmailTemplates /></ProtectedRoute>} />
+
               {/* ── Public (no auth) ── */}
               <Route path="/review/cms/:token"    element={<PublicContentReview type="cms" />} />
               <Route path="/review/social/:token" element={<PublicContentReview type="social" />} />
@@ -236,7 +266,9 @@ function App() {
               <Route path="/billing-terms" element={<BillingTerms />} />
               <Route path="/security-policy" element={<SecurityPolicy />} />
               <Route path="/service-level-agreement" element={<ServiceLevelAgreement />} />
+              <Route path="/sms-terms" element={<SmsTerms />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/testimonial" element={<SubmitTestimonial />} />
 
               {/* ── Client Portal Routes ── */}
               <Route path="/portal/login" element={<PortalLogin />} />
@@ -248,6 +280,7 @@ function App() {
               <Route path="/portal/proposals" element={<PortalProtectedRoute><PortalProposals /></PortalProtectedRoute>} />
               <Route path="/portal/contracts" element={<PortalProtectedRoute><PortalContracts /></PortalProtectedRoute>} />
               <Route path="/portal/tickets"   element={<PortalProtectedRoute><PortalTickets /></PortalProtectedRoute>} />
+              <Route path="/portal/voice-agents" element={<PortalProtectedRoute><PortalVoiceAgents /></PortalProtectedRoute>} />
               <Route path="/portal" element={<Navigate to="/portal/dashboard" replace />} />
 
               {/* ── Superadmin (hidden, no nav link) ── */}
@@ -255,15 +288,18 @@ function App() {
 
               {/* ── Default / 404 ── */}
               <Route path="/" element={<Landing />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           <ScrollToTop />
           <CookieBanner />
           <PwaInstallPrompt />
+          </SocketProvider>
         </AuthProvider>
       </PortalAuthProvider>
     </Router>
+    </I18nProvider>
+    </HelmetProvider>
     </ErrorBoundary>
   );
 }

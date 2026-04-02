@@ -25,19 +25,30 @@ const Dashboard = () => {
   const [atRiskClients, setAtRiskClients] = useState([]);
   const [churnMap, setChurnMap] = useState({});
 
-  useEffect(() => { fetchBrands(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    fetchBrands().then(() => { if (cancelled) return; });
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (brands.length > 0) {
-      fetchClientStats();
-      fetchInvoiceStats();
-      fetchProjectStats();
-      fetchRecentActivity();
-      fetchPortalActivity();
-      fetchPipelineStats();
-      fetchTasksDueToday();
-      fetchAtRiskClients();
-      fetchChurnPredictions();
+      Promise.allSettled([
+        fetchClientStats(),
+        fetchInvoiceStats(),
+        fetchProjectStats(),
+        fetchRecentActivity(),
+        fetchPortalActivity(),
+        fetchPipelineStats(),
+        fetchTasksDueToday(),
+        fetchAtRiskClients(),
+        fetchChurnPredictions(),
+      ]).then(results => {
+        const failures = results.filter(r => r.status === 'rejected');
+        if (failures.length > 0) {
+          console.warn(`Dashboard: ${failures.length} data fetches failed`, failures.map(f => f.reason?.message));
+        }
+      });
     }
   }, [brands]);
 

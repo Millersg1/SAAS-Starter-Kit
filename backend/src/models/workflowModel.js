@@ -1,4 +1,4 @@
-import { query } from '../config/database.js';
+import { query, getClient } from '../config/database.js';
 
 export const getWorkflows = async (brandId) =>
   (await query(
@@ -42,13 +42,31 @@ export const deleteWorkflow = async (id) =>
   query(`DELETE FROM automation_workflows WHERE id = $1`, [id]);
 
 export const setSteps = async (workflowId, steps) => {
-  await query(`DELETE FROM automation_steps WHERE workflow_id = $1`, [workflowId]);
-  for (let i = 0; i < steps.length; i++) {
-    const s = steps[i];
-    await query(
-      `INSERT INTO automation_steps (workflow_id, step_type, step_config, delay_minutes, position) VALUES ($1,$2,$3,$4,$5)`,
-      [workflowId, s.step_type, s.step_config || {}, s.delay_minutes || 0, i]
-    );
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    await client.query(`DELETE FROM automation_steps WHERE workflow_id = $1`, [workflowId]);
+
+    if (steps.length > 0) {
+      const values = [];
+      const params = [];
+      steps.forEach((s, i) => {
+        const offset = i * 5;
+        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5})`);
+        params.push(workflowId, s.step_type, s.step_config || {}, s.delay_minutes || 0, i);
+      });
+      await client.query(
+        `INSERT INTO automation_steps (workflow_id, step_type, step_config, delay_minutes, position) VALUES ${values.join(', ')}`,
+        params
+      );
+    }
+
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
   }
 };
 

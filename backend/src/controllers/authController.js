@@ -1,12 +1,16 @@
 import { catchAsync, AppError } from '../middleware/errorHandler.js';
 import * as userModel from '../models/userModel.js';
-import { generateTokens, verifyToken } from '../utils/jwtUtils.js';
+import { generateTokens, verifyRefreshToken } from '../utils/jwtUtils.js';
 import { sendVerificationEmail, sendPasswordResetEmail, sendWelcomeEmail } from '../utils/emailUtils.js';
 import jwt from 'jsonwebtoken';
 import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set. Exiting.');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * Register a new user
@@ -135,10 +139,10 @@ export const refreshToken = catchAsync(async (req, res, next) => {
     return next(new AppError('Refresh token is required', 400));
   }
 
-  // Verify refresh token
-  const decoded = verifyToken(refreshToken);
+  // Verify refresh token with dedicated secret
+  const decoded = verifyRefreshToken(refreshToken);
 
-  // Find user by refresh token
+  // Find user by refresh token (compared as SHA256 hash)
   const user = await userModel.findUserByRefreshToken(refreshToken);
 
   if (!user) {
@@ -347,10 +351,12 @@ export const enable2FA = catchAsync(async (req, res, next) => {
 
   if (!verified) return next(new AppError('Invalid verification code. Please try again.', 400));
 
-  // Generate 8 single-use backup codes
-  const backupCodes = Array.from({ length: 8 }, () =>
-    `${Math.random().toString(36).slice(2, 6)}-${Math.random().toString(36).slice(2, 6)}`
-  );
+  // Generate 8 single-use backup codes (cryptographically secure)
+  const { randomBytes } = await import('crypto');
+  const backupCodes = Array.from({ length: 8 }, () => {
+    const bytes = randomBytes(4);
+    return `${bytes.toString('hex').slice(0, 4)}-${randomBytes(4).toString('hex').slice(0, 4)}`;
+  });
 
   await userModel.saveTotpSecret(req.user.id, secret, backupCodes);
 

@@ -102,7 +102,19 @@ const computeChurnProbability = async (clientId, brandId) => {
   return { probability, riskFactors, trend };
 };
 
+let churnRunning = false;
+let churnStartedAt = null;
+const CHURN_MAX_DURATION = 30 * 60 * 1000; // 30 minute max runtime
+
 const runChurnPrediction = async () => {
+  // Stale-lock release: if previous run has been stuck for over 30 minutes, reset
+  if (churnRunning && churnStartedAt && (Date.now() - churnStartedAt > CHURN_MAX_DURATION)) {
+    console.warn('[ChurnCron] Previous run exceeded max duration — releasing stale lock');
+    churnRunning = false;
+  }
+  if (churnRunning) return;
+  churnRunning = true;
+  churnStartedAt = Date.now();
   try {
     // Get all brands
     const brandsRes = await query(`SELECT id FROM brands WHERE is_active = TRUE`);
@@ -110,7 +122,7 @@ const runChurnPrediction = async () => {
       try {
         // Get all active clients for this brand
         const clientsRes = await query(
-          `SELECT id, name FROM clients WHERE brand_id = $1 AND is_active = TRUE`,
+          `SELECT id, name FROM clients WHERE brand_id = $1 AND is_active = TRUE LIMIT 5000`,
           [brand.id]
         );
 
@@ -119,75 +131,45 @@ const runChurnPrediction = async () => {
           try {
             const { probability, riskFactors, trend } = await computeChurnProbability(client.id, brand.id);
 
-            // Upsert prediction
-            const existing = await query(
-              `SELECT auto_action_taken FROM churn_predictions WHERE brand_id = $1 AND client_id = $2`,
-              [brand.id, client.id]
+            // Atomic upsert — eliminates TOCTOU race between SELECT and UPDATE/INSERT
+            const upsertRes = await query(
+              `INSERT INTO churn_predictions (brand_id, client_id, churn_probability, risk_factors, health_score_trend)
+               VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (brand_id, client_id) DO UPDATE SET
+                 churn_probability = $3,
+                 risk_factors = $4,
+                 health_score_trend = $5,
+                 predicted_at = NOW(),
+                 auto_action_taken = CASE WHEN $3 < 70 THEN FALSE ELSE churn_predictions.auto_action_taken END
+               RETURNING auto_action_taken`,
+              [brand.id, client.id, probability, JSON.stringify(riskFactors), JSON.stringify(trend)]
             );
 
-            if (existing.rows.length > 0) {
-              await query(
-                `UPDATE churn_predictions
-                 SET churn_probability = $1, risk_factors = $2, health_score_trend = $3, predicted_at = NOW(),
-                     auto_action_taken = CASE WHEN $1 < 70 THEN FALSE ELSE auto_action_taken END
-                 WHERE brand_id = $4 AND client_id = $5`,
-                [probability, JSON.stringify(riskFactors), JSON.stringify(trend), brand.id, client.id]
-              );
+            const actionTaken = upsertRes.rows[0]?.auto_action_taken;
 
-              // Trigger workflow if newly high-risk and action not yet taken
-              if (probability >= 70 && !existing.rows[0].auto_action_taken) {
-                try {
-                  await triggerWorkflow(brand.id, 'churn_risk', client.id, 'client');
-                } catch { /* workflow may not exist */ }
+            // Trigger workflow if high-risk and action not yet taken
+            if (probability >= 70 && !actionTaken) {
+              try {
+                await triggerWorkflow(brand.id, 'churn_risk', client.id, 'client');
+              } catch (wfErr) { logError(wfErr, { context: 'churnCron.workflow', brandId: brand.id, clientId: client.id }); }
 
-                try {
-                  await query(
-                    `INSERT INTO notifications (brand_id, type, title, message, metadata)
-                     VALUES ($1, 'churn_alert', $2, $3, $4)`,
-                    [
-                      brand.id,
-                      `Churn Risk: ${client.name}`,
-                      `${client.name} has a ${probability}% churn probability. Review their account and consider a win-back campaign.`,
-                      JSON.stringify({ client_id: client.id, churn_probability: probability }),
-                    ]
-                  );
-                } catch { /* non-critical */ }
-
+              try {
                 await query(
-                  `UPDATE churn_predictions SET auto_action_taken = TRUE WHERE brand_id = $1 AND client_id = $2`,
-                  [brand.id, client.id]
+                  `INSERT INTO notifications (brand_id, type, title, message, metadata)
+                   VALUES ($1, 'churn_alert', $2, $3, $4)`,
+                  [
+                    brand.id,
+                    `Churn Risk: ${client.name}`,
+                    `${client.name} has a ${probability}% churn probability. Review their account and consider a win-back campaign.`,
+                    JSON.stringify({ client_id: client.id, churn_probability: probability }),
+                  ]
                 );
-              }
-            } else {
+              } catch (notifErr) { logError(notifErr, { context: 'churnCron.notification', brandId: brand.id, clientId: client.id }); }
+
               await query(
-                `INSERT INTO churn_predictions (brand_id, client_id, churn_probability, risk_factors, health_score_trend)
-                 VALUES ($1, $2, $3, $4, $5)`,
-                [brand.id, client.id, probability, JSON.stringify(riskFactors), JSON.stringify(trend)]
+                `UPDATE churn_predictions SET auto_action_taken = TRUE WHERE brand_id = $1 AND client_id = $2`,
+                [brand.id, client.id]
               );
-
-              if (probability >= 70) {
-                try {
-                  await triggerWorkflow(brand.id, 'churn_risk', client.id, 'client');
-                } catch { /* workflow may not exist */ }
-
-                try {
-                  await query(
-                    `INSERT INTO notifications (brand_id, type, title, message, metadata)
-                     VALUES ($1, 'churn_alert', $2, $3, $4)`,
-                    [
-                      brand.id,
-                      `Churn Risk: ${client.name}`,
-                      `${client.name} has a ${probability}% churn probability. Review their account and consider a win-back campaign.`,
-                      JSON.stringify({ client_id: client.id, churn_probability: probability }),
-                    ]
-                  );
-                } catch { /* non-critical */ }
-
-                await query(
-                  `UPDATE churn_predictions SET auto_action_taken = TRUE WHERE brand_id = $1 AND client_id = $2`,
-                  [brand.id, client.id]
-                );
-              }
             }
           } catch (err) {
             logError(err, { context: 'churnCron.client', clientId: client.id, brandId: brand.id });
@@ -199,13 +181,16 @@ const runChurnPrediction = async () => {
     }
   } catch (err) {
     logError(err, { context: 'churnCron.main' });
+  } finally {
+    churnRunning = false;
   }
 };
 
 export const startChurnPredictionCron = () => {
-  // Run every 24 hours
-  setInterval(runChurnPrediction, 24 * 60 * 60 * 1000);
+  // Run every 24 hours — return interval ID for graceful shutdown
+  const intervalId = setInterval(runChurnPrediction, 24 * 60 * 60 * 1000);
   // Also run once 30 seconds after startup
   setTimeout(runChurnPrediction, 30000);
   console.log('🔮 Churn prediction cron started (every 24 hours)');
+  return intervalId;
 };

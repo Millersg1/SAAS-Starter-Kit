@@ -26,19 +26,70 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle errors
+// Response interceptor — auto-refresh token on 401
+let isRefreshing = false;
+let refreshQueue = [];
+
+const processQueue = (error, token = null) => {
+  refreshQueue.forEach(({ resolve, reject }) => (error ? reject(error) : resolve(token)));
+  refreshQueue = [];
+};
+
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Attempt token refresh on 401 (skip if already retrying or on auth endpoints)
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/auth/')) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          refreshQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const res = await api.post('/auth/refresh');
+        const newToken = res.data.data?.token || res.data.token;
+        if (newToken) {
+          localStorage.setItem('token', newToken);
+          api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+          processQueue(null, newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        processQueue(refreshError);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
     if (error.response?.status === 401) {
-      // Token expired or invalid
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
-    } else if (error.response?.status >= 500) {
-      toast.error('Server error — please try again in a moment');
-    } else if (!error.response && error.message === 'Network Error') {
-      toast.error('Network error — check your connection');
+    } else if (error.response?.status >= 500 || (!error.response && error.message === 'Network Error')) {
+      // Auto-retry once for transient failures (5xx / network error) on GET requests
+      if (!originalRequest._retryTransient && originalRequest.method === 'get') {
+        originalRequest._retryTransient = true;
+        await new Promise(r => setTimeout(r, 1500));
+        return api(originalRequest);
+      }
+      const msg = error.response?.status >= 500
+        ? 'Server error — please try again in a moment'
+        : 'Network error — check your connection';
+      toast.error(msg);
     }
     return Promise.reject(error);
   }
@@ -320,6 +371,12 @@ export const superadminAPI = {
   updateSubscription: (id, data) => api.patch(`/superadmin/subscriptions/${id}`, data),
   getAuditLogs:       ()        => api.get('/superadmin/audit'),
   runFix:             (operation) => api.post('/superadmin/fix', { operation }),
+  getPlatformOverview:()        => api.get('/superadmin/platform-overview'),
+  getFoundingMembers: ()        => api.get('/superadmin/founding-members'),
+  getTestimonials:    ()        => api.get('/superadmin/testimonials'),
+  updateTestimonial:  (id, data) => api.patch(`/superadmin/testimonials/${id}`, data),
+  getVoiceCalls:      ()        => api.get('/superadmin/voice-calls'),
+  getAutopilotLog:    ()        => api.get('/superadmin/autopilot-log'),
 };
 
 export const pipelineAPI = {
@@ -378,9 +435,54 @@ export const webhookAPI = {
 };
 
 export const aiAPI = {
-  draftInvoice:   (brandId, data)         => api.post(`/ai/${brandId}/draft-invoice`, data),
-  draftProposal:  (brandId, data)         => api.post(`/ai/${brandId}/draft-proposal`, data),
-  clientInsights: (brandId, clientId)     => api.get(`/ai/${brandId}/client-insights/${clientId}`),
+  draftInvoice:      (brandId, data)         => api.post(`/ai/${brandId}/draft-invoice`, data),
+  draftProposal:     (brandId, data)         => api.post(`/ai/${brandId}/draft-proposal`, data),
+  draftEmail:        (brandId, data)         => api.post(`/ai/${brandId}/draft-email`, data),
+  transcribeNotes:   (brandId, data)         => api.post(`/ai/${brandId}/transcribe-notes`, data),
+  pipelineAdvice:    (brandId, data)         => api.post(`/ai/${brandId}/pipeline-advice`, data),
+  clientInsights:    (brandId, clientId)     => api.get(`/ai/${brandId}/client-insights/${clientId}`),
+};
+
+export const apiKeyAPI = {
+  list:   (brandId)          => api.get(`/api-keys/${brandId}`),
+  create: (brandId, data)    => api.post(`/api-keys/${brandId}`, data),
+  update: (brandId, id, d)   => api.patch(`/api-keys/${brandId}/${id}`, d),
+  remove: (brandId, id)      => api.delete(`/api-keys/${brandId}/${id}`),
+};
+
+export const whiteLabelAPI = {
+  get:          (brandId)       => api.get(`/white-label/${brandId}`),
+  update:       (brandId, data) => api.patch(`/white-label/${brandId}`, data),
+  verifyDomain: (brandId)       => api.post(`/white-label/${brandId}/verify-domain`),
+};
+
+export const gdprAPI = {
+  requestExport: ()            => api.post('/gdpr/export'),
+  requestDelete: (data)        => api.post('/gdpr/delete', data),
+  cancelDelete:  ()            => api.delete('/gdpr/delete'),
+  getRequests:   ()            => api.get('/gdpr/requests'),
+  getRetention:  (brandId)     => api.get(`/gdpr/retention/${brandId}`),
+  setRetention:  (brandId, d)  => api.put(`/gdpr/retention/${brandId}`, d),
+};
+
+export const activityFeedAPI = {
+  get:     (brandId, params) => api.get(`/activity-feed/${brandId}`, { params }),
+  summary: (brandId)         => api.get(`/activity-feed/${brandId}/summary`),
+};
+
+export const bulkAPI = {
+  sendInvoices:    (brandId, ids)  => api.post(`/bulk/${brandId}/invoices/send`, { invoice_ids: ids }),
+  deleteInvoices:  (brandId, ids)  => api.post(`/bulk/${brandId}/invoices/delete`, { invoice_ids: ids }),
+  deleteClients:   (brandId, ids)  => api.post(`/bulk/${brandId}/clients/delete`, { client_ids: ids }),
+  updateDeals:     (brandId, ids, d) => api.post(`/bulk/${brandId}/deals/update`, { deal_ids: ids, ...d }),
+  completeTasks:   (brandId, ids)  => api.post(`/bulk/${brandId}/tasks/complete`, { task_ids: ids }),
+  deleteTasks:     (brandId, ids)  => api.post(`/bulk/${brandId}/tasks/delete`, { task_ids: ids }),
+  sendEmail:       (brandId, d)    => api.post(`/bulk/${brandId}/email`, d),
+};
+
+export const emailHealthAPI = {
+  checkDomain: (brandId, domain) => api.get(`/email-health/${brandId}/check/${domain}`),
+  getBounces:  (brandId)         => api.get(`/email-health/${brandId}/bounces`),
 };
 
 export const contractAPI = {
@@ -484,6 +586,19 @@ export const smsBroadcastAPI = {
 
 export const voipAPI = {
   initiateCall: (brandId, data) => api.post(`/voip/${brandId}/call`, data),
+};
+
+export const voiceAgentAPI = {
+  listAgents:     (brandId)           => api.get(`/voice-agents/${brandId}/agents`),
+  getAgent:       (brandId, id)       => api.get(`/voice-agents/${brandId}/agents/${id}`),
+  createAgent:    (brandId, data)     => api.post(`/voice-agents/${brandId}/agents`, data),
+  updateAgent:    (brandId, id, d)    => api.patch(`/voice-agents/${brandId}/agents/${id}`, d),
+  deleteAgent:    (brandId, id)       => api.delete(`/voice-agents/${brandId}/agents/${id}`),
+  listCalls:      (brandId, params)   => api.get(`/voice-agents/${brandId}/calls`, { params }),
+  getCall:        (brandId, id)       => api.get(`/voice-agents/${brandId}/calls/${id}`),
+  getActiveCalls: (brandId)           => api.get(`/voice-agents/${brandId}/calls/active`),
+  getStats:       (brandId)           => api.get(`/voice-agents/${brandId}/stats`),
+  initiateCall:   (brandId, agentId, data) => api.post(`/voice-agents/${brandId}/agents/${agentId}/call`, data),
 };
 
 export const workflowAPI = {
@@ -666,6 +781,16 @@ export const surveyAPI = {
 export const publicSurveyAPI = {
   get:    (token)       => api.get(`/public/survey/${token}`),
   submit: (token, data) => api.post(`/public/survey/${token}`, data),
+};
+
+export const expenseAPI = {
+  list:              (brandId, params) => api.get(`/expenses/${brandId}`, { params }),
+  get:               (brandId, id)     => api.get(`/expenses/${brandId}/${id}`),
+  create:            (brandId, data)   => api.post(`/expenses/${brandId}`, data),
+  update:            (brandId, id, d)  => api.patch(`/expenses/${brandId}/${id}`, d),
+  remove:            (brandId, id)     => api.delete(`/expenses/${brandId}/${id}`),
+  getStats:          (brandId, params) => api.get(`/expenses/${brandId}/stats`, { params }),
+  getProfitability:  (brandId, params) => api.get(`/expenses/${brandId}/profitability`, { params }),
 };
 
 export default api;

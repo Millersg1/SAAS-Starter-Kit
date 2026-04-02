@@ -1,12 +1,28 @@
 import express from 'express';
 import { protect } from '../middleware/authMiddleware.js';
 import * as cmsController from '../controllers/cmsController.js';
+import { PAGE_TEMPLATES, getTemplateById, getTemplatesByCategory } from '../utils/pageTemplates.js';
 
 const router = express.Router();
 
 // ── Public review routes (no auth) ───────────────────────────────────────────
 router.get('/review/:token',  cmsController.publicGetPageForReview);
 router.post('/review/:token', cmsController.publicSubmitPageReview);
+
+// ── Page templates (no auth needed — just template data) ─────────────────────
+router.get('/templates', (req, res) => {
+  const { category } = req.query;
+  const templates = getTemplatesByCategory(category);
+  res.json({
+    status: 'success',
+    data: { templates: templates.map(({ id, name, category, description }) => ({ id, name, category, description })) },
+  });
+});
+router.get('/templates/:templateId', (req, res) => {
+  const template = getTemplateById(req.params.templateId);
+  if (!template) return res.status(404).json({ status: 'fail', message: 'Template not found' });
+  res.json({ status: 'success', data: { template } });
+});
 
 // ── Protected routes ──────────────────────────────────────────────────────────
 router.use(protect);

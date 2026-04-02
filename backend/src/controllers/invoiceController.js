@@ -14,7 +14,7 @@ import { query } from '../config/database.js';
 /**
  * Create a new invoice
  */
-export const createInvoice = async (req, res) => {
+export const createInvoice = async (req, res, next) => {
   try {
     const { brandId } = req.params;
     const userId = req.user.id;
@@ -40,7 +40,7 @@ export const createInvoice = async (req, res) => {
       project_id: req.body.project_id,
       invoice_number: invoiceNumber,
       issue_date: req.body.issue_date || new Date().toISOString().split('T')[0],
-      due_date: req.body.due_date,
+      due_date: req.body.due_date || new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
       status: req.body.status || 'draft',
       currency: req.body.currency || 'USD',
       notes: req.body.notes,
@@ -51,20 +51,20 @@ export const createInvoice = async (req, res) => {
 
     const invoice = await invoiceModel.createInvoice(invoiceData);
 
-    // Add items if provided
-    if (req.body.items && Array.isArray(req.body.items)) {
-      for (let i = 0; i < req.body.items.length; i++) {
-        const item = req.body.items[i];
-        
-        await invoiceModel.addInvoiceItem({
-          invoice_id: invoice.id,
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: item.unit_price,
-          tax_rate: item.tax_rate || 0,
-          sort_order: i
-        });
-      }
+    // Add items if provided (batch insert for performance)
+    if (req.body.items && Array.isArray(req.body.items) && req.body.items.length > 0) {
+      const values = [];
+      const params = [];
+      req.body.items.forEach((item, i) => {
+        const offset = i * 6;
+        values.push(`($${offset+1}, $${offset+2}, $${offset+3}, $${offset+4}, $${offset+5}, $${offset+6})`);
+        params.push(invoice.id, item.description, item.quantity, item.unit_price, item.tax_rate || 0, i);
+      });
+      await query(
+        `INSERT INTO invoice_items (invoice_id, description, quantity, unit_price, tax_rate, sort_order)
+         VALUES ${values.join(', ')} RETURNING *`,
+        params
+      );
     }
 
     // Get the complete invoice with items
@@ -80,19 +80,14 @@ export const createInvoice = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error creating invoice: - invoiceController.js:77', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to create invoice',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Get all invoices for a brand
  */
-export const getBrandInvoices = async (req, res) => {
+export const getBrandInvoices = async (req, res, next) => {
   try {
     const { brandId } = req.params;
     const userId = req.user.id;
@@ -123,19 +118,14 @@ export const getBrandInvoices = async (req, res) => {
       data: { invoices }
     });
   } catch (error) {
-    console.error('Error getting brand invoices: - invoiceController.js:120', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to retrieve invoices',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Get single invoice by ID
  */
-export const getInvoice = async (req, res) => {
+export const getInvoice = async (req, res, next) => {
   try {
     const { brandId, invoiceId } = req.params;
     const userId = req.user.id;
@@ -181,19 +171,14 @@ export const getInvoice = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting invoice: - invoiceController.js:178', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to retrieve invoice',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Update invoice
  */
-export const updateInvoice = async (req, res) => {
+export const updateInvoice = async (req, res, next) => {
   try {
     const { brandId, invoiceId } = req.params;
     const userId = req.user.id;
@@ -254,19 +239,14 @@ export const updateInvoice = async (req, res) => {
       data: { invoice }
     });
   } catch (error) {
-    console.error('Error updating invoice: - invoiceController.js:228', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to update invoice',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Delete invoice
  */
-export const deleteInvoice = async (req, res) => {
+export const deleteInvoice = async (req, res, next) => {
   try {
     const { brandId, invoiceId } = req.params;
     const userId = req.user.id;
@@ -303,12 +283,7 @@ export const deleteInvoice = async (req, res) => {
       message: 'Invoice cancelled successfully'
     });
   } catch (error) {
-    console.error('Error deleting invoice: - invoiceController.js:277', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to delete invoice',
-      error: error.message
-    });
+    next(error);
   }
 };
 
@@ -319,7 +294,7 @@ export const deleteInvoice = async (req, res) => {
 /**
  * Add item to invoice
  */
-export const addInvoiceItem = async (req, res) => {
+export const addInvoiceItem = async (req, res, next) => {
   try {
     const { brandId, invoiceId } = req.params;
     const userId = req.user.id;
@@ -373,19 +348,14 @@ export const addInvoiceItem = async (req, res) => {
       data: { item }
     });
   } catch (error) {
-    console.error('Error adding invoice item: - invoiceController.js:340', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to add item',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Update invoice item
  */
-export const updateInvoiceItem = async (req, res) => {
+export const updateInvoiceItem = async (req, res, next) => {
   try {
     const { brandId, invoiceId, itemId } = req.params;
     const userId = req.user.id;
@@ -437,19 +407,14 @@ export const updateInvoiceItem = async (req, res) => {
       data: { item }
     });
   } catch (error) {
-    console.error('Error updating invoice item: - invoiceController.js:397', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to update item',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Delete invoice item
  */
-export const deleteInvoiceItem = async (req, res) => {
+export const deleteInvoiceItem = async (req, res, next) => {
   try {
     const { brandId, invoiceId, itemId } = req.params;
     const userId = req.user.id;
@@ -486,12 +451,7 @@ export const deleteInvoiceItem = async (req, res) => {
       message: 'Item deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting invoice item: - invoiceController.js:446', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to delete item',
-      error: error.message
-    });
+    next(error);
   }
 };
 
@@ -502,7 +462,7 @@ export const deleteInvoiceItem = async (req, res) => {
 /**
  * Record a payment
  */
-export const recordPayment = async (req, res) => {
+export const recordPayment = async (req, res, next) => {
   try {
     const { brandId, invoiceId } = req.params;
     const userId = req.user.id;
@@ -598,19 +558,14 @@ export const recordPayment = async (req, res) => {
       data: { payment }
     });
   } catch (error) {
-    console.error('Error recording payment: - invoiceController.js:514', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to record payment',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Get payment history for an invoice
  */
-export const getInvoicePayments = async (req, res) => {
+export const getInvoicePayments = async (req, res, next) => {
   try {
     const { brandId, invoiceId } = req.params;
     const userId = req.user.id;
@@ -632,12 +587,7 @@ export const getInvoicePayments = async (req, res) => {
       data: { payments }
     });
   } catch (error) {
-    console.error('Error getting invoice payments: - invoiceController.js:548', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to retrieve payments',
-      error: error.message
-    });
+    next(error);
   }
 };
 
@@ -648,7 +598,7 @@ export const getInvoicePayments = async (req, res) => {
 /**
  * Get invoice statistics
  */
-export const getInvoiceStats = async (req, res) => {
+export const getInvoiceStats = async (req, res, next) => {
   try {
     const { brandId } = req.params;
     const userId = req.user.id;
@@ -669,19 +619,14 @@ export const getInvoiceStats = async (req, res) => {
       data: { stats }
     });
   } catch (error) {
-    console.error('Error getting invoice stats: - invoiceController.js:585', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to retrieve statistics',
-      error: error.message
-    });
+    next(error);
   }
 };
 
 /**
  * Get overdue invoices
  */
-export const getOverdueInvoices = async (req, res) => {
+export const getOverdueInvoices = async (req, res, next) => {
   try {
     const { brandId } = req.params;
     const userId = req.user.id;
@@ -703,12 +648,7 @@ export const getOverdueInvoices = async (req, res) => {
       data: { invoices }
     });
   } catch (error) {
-    console.error('Error getting overdue invoices: - invoiceController.js:619', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to retrieve overdue invoices',
-      error: error.message
-    });
+    next(error);
   }
 };
 
@@ -720,7 +660,7 @@ export const getOverdueInvoices = async (req, res) => {
  * POST /api/invoices/:brandId/:invoiceId/share-link
  * Generate a public payment link token for an invoice.
  */
-export const generateShareLink = async (req, res) => {
+export const generateShareLink = async (req, res, next) => {
   try {
     const { brandId, invoiceId } = req.params;
     const userId = req.user.id;

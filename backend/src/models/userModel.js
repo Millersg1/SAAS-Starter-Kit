@@ -70,14 +70,15 @@ export const comparePassword = async (candidatePassword, hashedPassword) => {
 };
 
 /**
- * Update user's refresh token
+ * Update user's refresh token (stored as SHA256 hash)
  * @param {string} userId - User ID
- * @param {string} refreshToken - Refresh token
+ * @param {string} refreshToken - Refresh token (plain)
  */
 export const updateRefreshToken = async (userId, refreshToken) => {
+  const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
   await query(
     'UPDATE users SET refresh_token = $1, last_login = CURRENT_TIMESTAMP WHERE id = $2',
-    [refreshToken, userId]
+    [hashedToken, userId]
   );
 };
 
@@ -93,16 +94,17 @@ export const clearRefreshToken = async (userId) => {
 };
 
 /**
- * Find user by refresh token
- * @param {string} refreshToken - Refresh token
+ * Find user by refresh token (compares SHA256 hash)
+ * @param {string} refreshToken - Refresh token (plain)
  * @returns {Object|null} User object or null
  */
 export const findUserByRefreshToken = async (refreshToken) => {
+  const hashedToken = crypto.createHash('sha256').update(refreshToken).digest('hex');
   const result = await query(
     'SELECT id, name, email, role, email_verified FROM users WHERE refresh_token = $1',
-    [refreshToken]
+    [hashedToken]
   );
-  
+
   return result.rows[0] || null;
 };
 

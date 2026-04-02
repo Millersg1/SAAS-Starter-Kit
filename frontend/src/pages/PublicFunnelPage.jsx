@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import BlockRenderer from '../components/funnel/BlockRenderer';
 import { funnelAPI } from '../services/api';
+import SEO from '../components/SEO';
 
 export default function PublicFunnelPage() {
   const { funnelSlug, stepSlug } = useParams();
@@ -37,24 +38,7 @@ export default function PublicFunnelPage() {
         return;
       }
 
-      // Set page title
-      if (data.step?.seo_title) {
-        document.title = data.step.seo_title;
-      } else if (data.funnel?.name) {
-        document.title = data.funnel.name;
-      }
-
-      // Set meta description
-      const metaDesc = data.step?.seo_description || data.funnel?.seo_description;
-      if (metaDesc) {
-        let meta = document.querySelector('meta[name="description"]');
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.name = 'description';
-          document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', metaDesc);
-      }
+      // SEO is now handled via the <SEO /> component in the render output
     } catch (err) {
       if (err.response?.status === 404) {
         setError('This page does not exist or is no longer available.');
@@ -75,9 +59,22 @@ export default function PublicFunnelPage() {
       const data = res.data;
 
       if (data.redirectUrl) {
-        // Navigate to next step or external URL
-        if (data.redirectUrl.startsWith('/') || data.redirectUrl.startsWith('http')) {
-          window.location.href = data.redirectUrl;
+        // Navigate to next step or external URL (validate to prevent open redirects)
+        if (data.redirectUrl.startsWith('/')) {
+          navigate(data.redirectUrl);
+        } else if (data.redirectUrl.startsWith('http')) {
+          try {
+            const url = new URL(data.redirectUrl);
+            const currentHost = window.location.hostname;
+            if (url.hostname === currentHost || url.hostname.endsWith('.' + currentHost)) {
+              window.location.href = data.redirectUrl;
+            } else {
+              // External redirect — open in new tab for safety
+              window.open(data.redirectUrl, '_blank', 'noopener,noreferrer');
+            }
+          } catch {
+            navigate('/');
+          }
         } else {
           navigate(data.redirectUrl);
         }
@@ -127,7 +124,12 @@ export default function PublicFunnelPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* OG image / SEO meta set via document API above */}
+      <SEO
+        title={step?.seo_title || funnel?.name || 'Landing Page'}
+        description={step?.seo_description || funnel?.seo_description || ''}
+        url={`https://saassurface.com/lp/${funnelSlug}${stepSlug ? '/' + stepSlug : ''}`}
+        image={step?.og_image_url || funnel?.og_image_url || undefined}
+      />
 
       {/* Render each block */}
       {blocks.length === 0 ? (

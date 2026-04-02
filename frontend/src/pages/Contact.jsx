@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
+import SEO from '../components/SEO';
 
 export default function Contact() {
   const [form, setForm] = useState({ name: '', email: '', company: '', message: '' });
@@ -26,6 +27,11 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-white text-gray-900 font-sans">
+      <SEO
+        title="Contact Us"
+        description="Get in touch with the SAAS Surface team. Questions about client management, white-label portals, or agency automation? We're here to help."
+        url="https://saassurface.com/contact"
+      />
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100 shadow-sm">

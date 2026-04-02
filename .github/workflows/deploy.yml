@@ -1,76 +1,125 @@
-# This is a GitHub Actions workflow file that automates the deployment of your application.
-# It will trigger automatically whenever you push changes to your 'main' branch.
+# Deploys to production on push to main, or manually via workflow_dispatch.
+# Staging can be triggered manually with environment=staging.
 
-name: Deploy SaasSurface Application
+name: Deploy SAAS Surface
 
 on:
   push:
-    branches:
-      - main # Or your primary branch, e.g., master
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment target'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
 
 jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: saassurface_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: ./backend
+      - run: npm test
+        working-directory: ./backend
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: saassurface_test
+          DB_USER: test
+          DB_PASSWORD: test
+          JWT_SECRET: test-secret-key
+          NODE_ENV: test
+
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
+    needs: test
     steps:
-      - name: 🚚 Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: ⚙️ Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '20' # Use a version compatible with your project
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
-      - name: 📦 Install frontend dependencies
-        run: npm install
+      - run: npm ci
         working-directory: ./frontend
 
-      - name: 🏗️ Build frontend assets
-        run: npm run build
+      - run: npm run build
         working-directory: ./frontend
 
-      - name: 🔑 Setup SSH Agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: 🔍 Add Host Key
+      - name: Add Host Key
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: 🚀 Deploy to server with rsync
+      - name: Deploy to server
         run: |
-          # Exclude the backend folder so it doesn't get deleted!
-          # Also exclude standard cPanel folders like cgi-bin and .well-known (SSL)
-          rsync -avz --delete --exclude 'api.saassurface.com' --exclude '.well-known' --exclude 'cgi-bin' ./frontend/dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/
+          rsync -avz --delete \
+            --exclude 'api.saassurface.com' \
+            --exclude '.well-known' \
+            --exclude 'cgi-bin' \
+            ./frontend/dist/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/
 
   deploy-backend:
     name: Deploy Backend
     runs-on: ubuntu-latest
-    needs: deploy-frontend # Optional: Run after frontend deployment
+    needs: test
     steps:
-      - name: 🚚 Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: 🔑 Setup SSH Agent
-        uses: webfactory/ssh-agent@v0.9.0
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: 🔍 Add Host Key
+      - name: Add Host Key
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -p ${{ secrets.SSH_PORT }} -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: 🚀 Sync backend files
+      - name: Sync backend files
         run: |
-          # Syncs the backend folder from GitHub to the server
-          rsync -avz --delete --exclude 'node_modules' --exclude '.env' --exclude 'uploads' ./backend/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/api.saassurface.com/
+          rsync -avz --delete \
+            --exclude 'node_modules' \
+            --exclude '.env' \
+            --exclude 'uploads' \
+            --exclude 'logs' \
+            ./backend/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/public_html/api.saassurface.com/
 
-      - name: 🚀 Deploy and restart server
+      - name: Install deps and restart
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}
@@ -78,27 +127,27 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            # These commands run ON the server
             cd ~/public_html/api.saassurface.com
-            echo "📦 Installing npm dependencies on server..."
             npm install --production
-            
-            echo "🔄 Restarting application with PM2..."
-            pm2 restart clienthub-api --update-env 2>/dev/null || pm2 start ecosystem.config.js --env production
+            pm2 restart saassurface-api --update-env 2>/dev/null || pm2 start ecosystem.config.cjs --env production
 
   health-check:
-    name: Verify API Health
+    name: Verify Deployment
     runs-on: ubuntu-latest
-    needs: deploy-backend # Run this job after the backend is deployed
+    needs: [deploy-frontend, deploy-backend]
     steps:
-      - name: 😴 Wait for server to initialize
+      - name: Wait for server
         run: sleep 15
 
-      - name: 💚 Ping health check endpoint
+      - name: Health check
         run: |
           response=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 15 "https://api.saassurface.com/health")
           if [ "$response" -ne 200 ]; then
-            echo "Health check failed with status $response!"
+            echo "Health check FAILED (status $response)"
             exit 1
           fi
-          echo "API is healthy and responding with status 200."
+          echo "API healthy (200)"
+
+      - name: Notify success
+        if: success()
+        run: echo "Deployment to ${{ github.event.inputs.environment || 'production' }} succeeded"

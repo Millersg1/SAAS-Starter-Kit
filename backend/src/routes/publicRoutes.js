@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { query } from '../config/database.js';
 import { getBrandById } from '../models/brandModel.js';
 import { getInvoiceItems } from '../models/invoiceModel.js';
@@ -8,6 +9,13 @@ import { sendContactEmail } from '../utils/emailUtils.js';
 import { handlePublicSurveyView, handlePublicSurveySubmit } from '../controllers/surveyController.js';
 
 const router = express.Router();
+
+// Stricter rate limit for public state-changing endpoints
+const publicWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { status: 'fail', message: 'Too many requests, please try again later.' },
+});
 
 /**
  * GET /api/public/invoice/:token
@@ -72,7 +80,7 @@ router.get('/invoice/:token', catchAsync(async (req, res, next) => {
  * POST /api/public/invoice/:token/pay
  * Create Stripe Checkout Session for a public invoice payment.
  */
-router.post('/invoice/:token/pay', catchAsync(async (req, res, next) => {
+router.post('/invoice/:token/pay', publicWriteLimiter, catchAsync(async (req, res, next) => {
   const { token } = req.params;
 
   const result = await query(
@@ -138,7 +146,7 @@ router.post('/invoice/:token/pay', catchAsync(async (req, res, next) => {
  * POST /api/public/contact
  * Contact form submission — sends email to sales inbox.
  */
-router.post('/contact', catchAsync(async (req, res, next) => {
+router.post('/contact', publicWriteLimiter, catchAsync(async (req, res, next) => {
   const { name, email, company, message } = req.body;
 
   if (!name || !email || !message) {
@@ -161,6 +169,62 @@ router.post('/contact', catchAsync(async (req, res, next) => {
   }
 
   res.status(200).json({ status: 'success', message: 'Your message has been sent. We\'ll be in touch shortly.' });
+}));
+
+/**
+ * POST /api/public/surf-lead
+ * Surf chatbot lead capture — saves to lead_submissions and notifies owner.
+ */
+router.post('/surf-lead', publicWriteLimiter, catchAsync(async (req, res, next) => {
+  const { name, email, phone, company } = req.body;
+
+  if (!name || !email) {
+    return next(new AppError('Name and email are required.', 400));
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return next(new AppError('Please provide a valid email address.', 400));
+  }
+
+  // Check for duplicate (same email in last 24 hours)
+  const existing = await query(
+    `SELECT id FROM lead_submissions WHERE email = $1 AND submitted_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
+    [email]
+  );
+
+  if (existing.rows.length === 0) {
+    // Save as lead submission
+    await query(
+      `INSERT INTO lead_submissions (name, email, data, source, status, submitted_at)
+       VALUES ($1, $2, $3, 'surf_chatbot', 'new', NOW())`,
+      [name, email, JSON.stringify({ phone: phone || '', company: company || '', source: 'surf_chatbot', page: 'homepage' })]
+    );
+  }
+
+  // Send notification email to sales
+  try {
+    await sendContactEmail({
+      name,
+      email,
+      company: company || '',
+      message: `New Surf chatbot lead from the homepage.\n\nName: ${name}\nEmail: ${email}\nCompany: ${company || 'Not provided'}\n\nThis lead was captured by the Surf AI assistant on saassurface.com.`,
+    });
+  } catch (err) {
+    console.error('Surf lead notification email failed:', err.message);
+    // Don't fail the request — lead is already saved
+  }
+
+  res.status(200).json({ status: 'success', message: 'Lead captured.' });
+}));
+
+/**
+ * GET /api/public/pricing
+ * Get current pricing tier (founding or standard) with slots remaining.
+ */
+router.get('/pricing', catchAsync(async (req, res) => {
+  const { getCurrentPricingTier } = await import('../utils/foundingMemberPricing.js');
+  const pricing = await getCurrentPricingTier();
+  res.json({ status: 'success', data: pricing });
 }));
 
 /** Public survey endpoints — no auth required */

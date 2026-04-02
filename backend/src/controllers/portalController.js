@@ -14,7 +14,11 @@ import { createProject } from '../models/projectModel.js';
 import { createActivity } from '../models/clientActivityModel.js';
 import { triggerWorkflow } from '../utils/workflowEngine.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set. Portal cannot start.');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const PORTAL_TOKEN_EXPIRE = process.env.PORTAL_TOKEN_EXPIRE || '7d';
 
 /**
@@ -437,4 +441,81 @@ export const rejectProposal = catchAsync(async (req, res, next) => {
   });
 
   res.status(200).json({ status: 'success', data: { proposal: updated } });
+});
+
+// ── Voice Agents (client-facing) ───────────────────────────────────────────
+
+export const getPortalVoiceAgents = catchAsync(async (req, res) => {
+  const brandId = req.portalBrandId;
+  const result = await query(
+    `SELECT id, name, greeting, voice, phone_number FROM voice_agents WHERE brand_id = $1 AND is_active = TRUE ORDER BY name`,
+    [brandId]
+  );
+  res.json({ status: 'success', data: { agents: result.rows } });
+});
+
+export const requestVoiceAgentCall = catchAsync(async (req, res, next) => {
+  const brandId = req.portalBrandId;
+  const clientId = req.portalClient.id;
+  const { agentId } = req.params;
+  const { phone } = req.body;
+
+  if (!phone) return next(new AppError('Phone number is required.', 400));
+
+  // Verify agent exists and is active
+  const agentResult = await query(
+    `SELECT * FROM voice_agents WHERE id = $1 AND brand_id = $2 AND is_active = TRUE`,
+    [agentId, brandId]
+  );
+  if (!agentResult.rows[0]) return next(new AppError('Voice agent not found.', 404));
+
+  const agent = agentResult.rows[0];
+
+  // Get Twilio connection
+  const connResult = await query(
+    `SELECT account_sid, auth_token, phone_number FROM twilio_connections WHERE brand_id = $1 AND is_active = TRUE LIMIT 1`,
+    [brandId]
+  );
+  const conn = connResult.rows[0];
+  if (!conn) return next(new AppError('Phone system not configured.', 500));
+
+  // Initiate outbound call with the AI agent
+  const { default: twilio } = await import('twilio');
+  const client = twilio(conn.account_sid, conn.auth_token);
+
+  const baseUrl = process.env.APP_URL || process.env.BACKEND_URL || 'https://api.saassurface.com';
+  const twimlUrl = `${baseUrl}/api/voice-agents/outbound-twiml/${agentId}/${brandId}`;
+
+  const call = await client.calls.create({
+    from: agent.phone_number || conn.phone_number,
+    to: phone,
+    url: twimlUrl,
+    method: 'POST',
+  });
+
+  // Log the call
+  await query(
+    `INSERT INTO voice_agent_calls (voice_agent_id, brand_id, caller_phone, direction, twilio_call_sid, status, started_at)
+     VALUES ($1, $2, $3, 'outbound', $4, 'in_progress', NOW())`,
+    [agentId, brandId, phone, call.sid]
+  );
+
+  res.status(201).json({ status: 'success', message: 'Call initiated — you will receive a call shortly.' });
+});
+
+export const getPortalVoiceAgentCalls = catchAsync(async (req, res) => {
+  const brandId = req.portalBrandId;
+  const clientPhone = req.portalClient.phone;
+
+  const result = await query(
+    `SELECT vac.id, vac.direction, vac.duration_seconds, vac.summary, vac.sentiment, vac.started_at,
+            va.name as agent_name
+     FROM voice_agent_calls vac
+     LEFT JOIN voice_agents va ON va.id = vac.voice_agent_id
+     WHERE vac.brand_id = $1 AND vac.caller_phone = $2
+     ORDER BY vac.started_at DESC LIMIT 20`,
+    [brandId, clientPhone || '']
+  );
+
+  res.json({ status: 'success', data: { calls: result.rows } });
 });

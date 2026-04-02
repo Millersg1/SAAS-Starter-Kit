@@ -1,6 +1,6 @@
 import * as workflowModel from '../models/workflowModel.js';
 import { query } from '../config/database.js';
-import nodemailer from 'nodemailer';
+import { getTransporter as getSmtpTransporter } from './emailUtils.js';
 
 // ── LEGACY: existing linear step execution (unchanged) ─────────────────────
 
@@ -15,12 +15,7 @@ async function executeStep(step, enrollment) {
       )).rows[0];
       if (!entityRow?.email) break;
 
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
-      });
+      const transporter = getSmtpTransporter();
       await transporter.sendMail({
         from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
         to: entityRow.email,
@@ -175,12 +170,7 @@ async function executeGraphNode(node, enrollment) {
       const clientName = entityRow?.name || '';
       const subject = (config.subject || 'Message from us').replace(/\{\{client\.name\}\}/g, clientName);
       const body = (config.body || '').replace(/\{\{client\.name\}\}/g, clientName).replace(/\{\{client\.email\}\}/g, toEmail);
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD }
-      });
+      const transporter = getSmtpTransporter();
       await transporter.sendMail({
         from: `${process.env.SMTP_FROM_NAME} <${process.env.SMTP_FROM_EMAIL}>`,
         to: toEmail, subject, html: body.replace(/\n/g, '<br>'), text: body
@@ -287,6 +277,22 @@ async function executeGraphNode(node, enrollment) {
 
     case 'send_webhook': {
       if (!config.url) break;
+      // SSRF protection: block private/internal URLs
+      try {
+        const parsed = new URL(config.url);
+        const host = parsed.hostname.toLowerCase();
+        if (host === 'localhost' || host === '127.0.0.1' || host === '::1' ||
+            host.startsWith('10.') || host.startsWith('192.168.') ||
+            /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+            host.endsWith('.local') || host === '0.0.0.0' ||
+            parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+          console.error(`Workflow webhook blocked — private/invalid URL: ${config.url}`);
+          break;
+        }
+      } catch {
+        console.error(`Workflow webhook blocked — malformed URL: ${config.url}`);
+        break;
+      }
       const clientRow = (await query(
         `SELECT id, name, email, phone, company, tags FROM clients WHERE id = $1`,
         [enrollment.entity_id]

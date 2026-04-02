@@ -14,8 +14,9 @@ const dbConfig = {
   password: process.env.DB_PASSWORD,
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+  connectionTimeoutMillis: 5000, // Return an error after 5 seconds if connection could not be established
   statement_timeout: 30000, // Kill queries running longer than 30 seconds
+  allowExitOnIdle: false, // Keep pool alive
 };
 
 // Create a new pool
@@ -28,7 +29,8 @@ pool.on('connect', () => {
 
 pool.on('error', (err) => {
   console.error('❌ Unexpected error on idle client - database.js:29', err);
-  process.exit(-1);
+  // Do NOT process.exit — the pool will remove the bad client and create a new one.
+  // Exiting here would kill the server for transient network blips.
 });
 
 // Helper function to execute queries
@@ -37,7 +39,9 @@ export const query = async (text, params) => {
   try {
     const res = await pool.query(text, params);
     const duration = Date.now() - start;
-    console.log('Executed query - database.js:39', { text, duration, rows: res.rowCount });
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Executed query - database.js:39', { text, duration, rows: res.rowCount });
+    }
     return res;
   } catch (error) {
     console.error('Database query error: - database.js:42', error);

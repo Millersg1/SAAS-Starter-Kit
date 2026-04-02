@@ -502,10 +502,18 @@ export const importClients = async (req, res, next) => {
     if (!member) {
       return res.status(403).json({ status: 'fail', message: 'You do not have access to this brand' });
     }
+    // Only admins/owners can bulk import
+    if (!['owner', 'admin'].includes(member.role)) {
+      return res.status(403).json({ status: 'fail', message: 'Only admins can bulk import clients.' });
+    }
 
     const rows = req.body.clients;
     if (!Array.isArray(rows) || rows.length === 0) {
       return res.status(400).json({ status: 'fail', message: 'No client data provided' });
+    }
+    // Cap import size to prevent abuse
+    if (rows.length > 500) {
+      return res.status(400).json({ status: 'fail', message: 'Cannot import more than 500 clients at once.' });
     }
 
     const results = { created: 0, skipped: 0, errors: [] };
